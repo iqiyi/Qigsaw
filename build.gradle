@@ -1,0 +1,38 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+
+buildscript {
+
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath "com.android.tools.build:gradle:${AGP_VERSION}"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+    }
+}
+
+subprojects {
+    apply from: rootProject.file('./gradle/checkStyle.gradle')
+}
+
+ext {
+    versions = [
+            'compileSdk': 28,
+            'minSdk'    : 14,
+            'targetSdk' : 28,
+            'support'   : '27.1.1'
+    ]
+    sample=false
+}

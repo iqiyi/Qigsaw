@@ -1,0 +1,18 @@
+apply plugin: 'com.android.dynamic-feature'
+apply plugin: 'com.iqiyi.qigsaw.dynamicfeature'
+
+android {
+    compileSdkVersion versions.compileSdk
+    defaultConfig {
+        minSdkVersion versions.minSdk
+        targetSdkVersion versions.targetSdk
+        versionCode 1
+        versionName "1.1"
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':app')
+}

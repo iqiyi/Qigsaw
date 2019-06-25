@@ -1,0 +1,26 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.iqiyi.android.qigsaw.core.splitinstall">
+
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <service
+            android:name=".remote.SplitInstallService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.iqiyi.android.play.core.splitinstall.BIND_SPLIT_INSTALL_SERVICE" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name=".SplitCleanService"
+            android:exported="false" />
+
+        <activity
+            android:name="com.iqiyi.android.qigsaw.core.splitinstall.ObtainUserConfirmationActivity"
+            android:screenOrientation="portrait"
+            android:exported="false"
+            android:theme="@style/Theme.ActivityDialogStyle" />
+    </application>
+
+</manifest>

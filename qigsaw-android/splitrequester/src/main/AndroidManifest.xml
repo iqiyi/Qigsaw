@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.iqiyi.android.qigsaw.core.splitrequest" >
+    <application>
+        <service
+            android:name="com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitUpdateService"
+            android:exported="false" />
+    </application>
+</manifest>
+

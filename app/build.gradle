@@ -1,0 +1,121 @@
+apply plugin: 'com.android.application'
+if (sample) {
+    apply plugin: 'com.iqiyi.qigsaw.sample.application'
+} else {
+    apply plugin: 'com.iqiyi.qigsaw.application'
+}
+
+android {
+    compileSdkVersion versions.compileSdk
+
+    defaultConfig {
+        applicationId "com.iqiyi.qigsaw.sample"
+        minSdkVersion versions.minSdk
+        targetSdkVersion versions.targetSdk
+        multiDexEnabled true
+        multiDexKeepProguard file('multidexkeep.pro')
+        versionCode 271
+        versionName "1.0.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("./keystore/debug.jks")
+            storePassword "qigsawtest"
+            keyAlias "qigsawtest"
+            keyPassword "qigsawtest"
+        }
+        release {
+            storeFile file("./keystore/release.jks")
+            storePassword "qigsawtest"
+            keyAlias "qigsawtest"
+            keyPassword "qigsawtest"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            zipAlignEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+
+        debug {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+    dynamicFeatures = [':java', ':assets', ":native"]
+}
+
+def qigsawPath = file("qigsaw/")
+
+qigsawSplit {
+
+    /**
+     * optional，default 'null'
+     * if you want to update split version, oldApk must be set.
+     */
+    oldApk = "${qigsawPath}/app.apk"
+
+    /**
+     * optional, default 'null'
+     *
+     * restrict split only work in processes which declared in split AndroidManifest file.
+     */
+    restrictWorkProcessesForSplits = ['java']
+
+    /**
+     * optional, default '1.0.0'
+     * when update splits, you need upgrade value of splitInfoVersion
+     */
+    splitInfoVersion = '1.0.0'
+
+    /**
+     * optional，default 'null'
+     * if you want to update splits, applyMapping must be set.
+     */
+    applyMapping = "${qigsawPath}/mapping.txt"
+
+    /**
+     * optional, default 'false'
+     * Whether upload all split APKs to CDN, ignored 'onDemand' declared in split AndroidManifest file.
+     */
+    releaseSplitApk = false
+
+}
+
+if (sample) {
+
+    splitUpload {
+
+        /**
+         * Whether upload all split apks to test env
+         */
+        useTestEnv = true
+
+        /**
+         * You can decide which split apks should be upload to test env.
+         */
+        testOnly = ["java"]
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    api "com.android.support:appcompat-v7:${versions.support}"
+    implementation "com.android.support:multidex:1.0.3"
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    if (sample) {
+        api "com.iqiyi.android.qigsaw:core:${VERSION_NAME}"
+    } else {
+        api project(':splitcore')
+    }
+    implementation project(':downloader')
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}

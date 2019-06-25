@@ -1,0 +1,13 @@
+package com.google.android.play.core.remote;
+
+import android.os.IBinder;
+import android.support.annotation.RestrictTo;
+
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+
+@RestrictTo(LIBRARY_GROUP)
+public interface IRemote<T> {
+
+    T asInterface(IBinder remote);
+
+}

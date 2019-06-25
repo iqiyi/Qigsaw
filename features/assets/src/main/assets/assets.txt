@@ -1,0 +1,2 @@
+This text originates from a dynamically loaded feature.
+The source can be found in features/assets/assets/assets.txt.

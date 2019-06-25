@@ -1,0 +1,11 @@
+include ':app', ':downloader'
+include ':assets'
+include ':java'
+include ':native'
+
+project(':app').projectDir = new File("../app")
+project(':downloader').projectDir = new File("../downloader")
+
+project(':assets').projectDir = new File("../features/assets")
+project(':java').projectDir = new File("../features/java")
+project(':native').projectDir = new File("../features/native")

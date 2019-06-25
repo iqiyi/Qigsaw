@@ -1,0 +1,75 @@
+apply plugin: 'groovy'
+
+applyRootProjectProperties()
+
+buildscript {
+
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+    }
+}
+
+
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "com.android.tools.build:gradle:${AGP_VERSION}"
+    implementation 'javassist:javassist:3.12.1.GA'
+    implementation 'commons-io:commons-io:2.5'
+    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation gradleApi()
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/groovy'
+        }
+
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+allprojects {
+
+    repositories {
+        google()
+        jcenter()
+    }
+
+}
+
+void applyRootProjectProperties() {
+    Properties gradle_properties = new Properties()
+    File gradlePropertiesFile = project.rootProject.file('../gradle.properties')
+    if (gradlePropertiesFile.exists()) {
+        gradle_properties.load(gradlePropertiesFile.newDataInputStream())
+    }
+
+    Properties local_properties = new Properties()
+    File localGradlePropertiesFile = project.rootProject.file('../local.properties')
+    println localGradlePropertiesFile.path
+    if (localGradlePropertiesFile.exists()) {
+        local_properties.load(localGradlePropertiesFile.newDataInputStream())
+    }
+
+    gradle_properties.each { key, value ->
+        project.ext[key] = value
+    }
+
+    local_properties.each { key, value ->
+        project.ext[key] = value
+    }
+}
+
+
+apply from: file('../gradle/checkStyle.gradle')
+apply from: file('../gradle/java-artifacts.gradle')
+apply from: file('../gradle/gradle-bintray-upload.gradle')

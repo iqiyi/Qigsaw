@@ -1,0 +1,66 @@
+apply plugin: 'groovy'
+
+buildscript {
+
+    repositories {
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+    }
+}
+applyRootProjectProperties()
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "com.android.tools.build:gradle:${AGP_VERSION}"
+    implementation "com.iqiyi.android.qigsaw:gradle-plugin:${VERSION_NAME}"
+    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    implementation 'com.squareup.retrofit2:adapter-rxjava:2.4.0'
+    implementation gradleApi()
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDir 'src/main/groovy'
+        }
+
+        resources {
+            srcDir 'src/main/resources'
+        }
+    }
+}
+
+allprojects {
+
+    repositories {
+        google()
+        jcenter()
+    }
+
+}
+
+void applyRootProjectProperties() {
+    Properties gradle_properties = new Properties()
+    File gradlePropertiesFile = project.rootProject.file('../gradle.properties')
+    if (gradlePropertiesFile.exists()) {
+        gradle_properties.load(gradlePropertiesFile.newDataInputStream())
+    }
+
+    Properties local_properties = new Properties()
+    File localGradlePropertiesFile = project.rootProject.file('../../local.properties')
+    if (localGradlePropertiesFile.exists()) {
+        local_properties.load(localGradlePropertiesFile.newDataInputStream())
+    }
+
+    gradle_properties.each { key, value ->
+        project.ext[key] = value
+    }
+
+    local_properties.each { key, value ->
+        project.ext[key] = value
+    }
+}

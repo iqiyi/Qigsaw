@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.iqiyi.qigsaw.sample.java">
+
+    <dist:module
+        dist:onDemand="true"
+        dist:title="@string/module_java">
+        <dist:fusing dist:include="true" />
+    </dist:module>
+
+    <application
+        android:name=".JavaSampleApplication"
+        tools:ignore="GoogleAppIndexingWarning">
+        <activity
+            android:name=".JavaSampleActivity"
+            android:process=":qigsaw" />
+
+        <provider
+            android:name=".JavaContentProvider"
+            android:authorities="java.feature"
+            android:enabled="true"
+            android:exported="false" />
+
+    </application>
+
+</manifest>

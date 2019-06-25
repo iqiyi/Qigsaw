@@ -1,0 +1,35 @@
+apply plugin: 'com.android.dynamic-feature'
+apply plugin: 'com.iqiyi.qigsaw.dynamicfeature'
+
+android {
+    compileSdkVersion versions.compileSdk
+
+    defaultConfig {
+
+        minSdkVersion versions.minSdk
+        targetSdkVersion versions.targetSdk
+        versionCode 1
+        versionName "1.0"
+        ndk {
+            abiFilter 'armeabi-v7a'
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "src/main/jni/CMakeLists.txt"
+        }
+    }
+
+    sourceSets { main { jni.srcDirs = ['src/main/jni', 'src/main/jni/'] } }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(':app')
+}

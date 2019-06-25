@@ -1,0 +1,110 @@
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+group = GROUP_ID
+archivesBaseName = POM_ARTIFACT_ID
+version = VERSION_NAME
+
+def isReleaseBuild() {
+    return version.contains("SNAPSHOT") == false
+}
+
+def readPropertyFromLocalProperties(String key) {
+    Properties properties = new Properties()
+    try {
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    } catch (Exception e) {
+        println("load local properties failed msg:${e.message}")
+    }
+    return properties.getProperty(key)
+}
+
+def getBintrayUser() {
+    return hasProperty('BINTRAY_USER') ? BINTRAY_USER : readPropertyFromLocalProperties('BINTRAY_USER')
+}
+
+def getBintrayKey() {
+    return hasProperty('BINTRAY_APIKEY') ? BINTRAY_APIKEY : readPropertyFromLocalProperties('BINTRAY_APIKEY')
+}
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom.project {
+            name POM_NAME
+            artifactId  POM_ARTIFACT_ID
+            packaging POM_PACKAGING
+            version VERSION_NAME
+            // Add your description here
+            description POM_DESCRIPTION
+            url POM_URL
+            // Set your license
+            licenses {
+                license {
+                    name BINTRAY_LICENCE
+                    url POM_LICENCE_URL
+                }
+            }
+            developers {
+                developer {
+                    id POM_DEVELOPER_ID
+                    name POM_DEVELOPER_NAME
+                    email POM_DEVELOPER_EMAIL
+                }
+            }
+            scm {
+                connection POM_SCM_CONNECTION
+                developerConnection POM_SCM_DEV_CONNECTION
+                url POM_URL
+            }
+        }
+    }
+}
+
+bintray {
+    user = getBintrayUser()
+    key = getBintrayKey()
+    configurations = ['archives']
+
+    pkg {
+        repo = BINTRAY_REPO
+        userOrg = BINTRAY_ORGANIZATION
+        name = "${GROUP_ID}:${POM_ARTIFACT_ID}"
+        licenses = [BINTRAY_LICENCE]
+        vcsUrl = POM_SCM_URL
+        websiteUrl = POM_URL
+        issueTrackerUrl = POM_ISSUE_URL
+        publicDownloadNumbers = true
+        publish = true
+        dryRun = false
+        version {
+            name = VERSION_NAME
+            released = new Date()
+            vcsTag = VERSION_NAME
+            gpg {
+                sign = true
+            }
+        }
+    }
+}
+
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        tasks.withType(Javadoc) {
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
+
+tasks.getByName("bintrayUpload") {
+    it.doFirst {
+        if (!isReleaseBuild()) {
+            throw new GradleException("bintrayUpload only support release version")
+        }
+    }
+}
+
+tasks.getByName("bintrayUpload").dependsOn tasks.getByName("checkstyle")
+
+
+
