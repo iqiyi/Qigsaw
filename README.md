@@ -19,7 +19,7 @@ Then "apply" the plugin and import dependencies by adding the following lines to
 ```gradle
 dependencies {
     //qigsaw core lib
-    implementation "com.iqiyi.android.qigsaw:core:1.1.3"
+    implementation "com.iqiyi.android.qigsaw:splitcore:1.1.3"
 }
 ...
 ...
@@ -70,7 +70,7 @@ Qigsaw supports some functions which Android App Bundle doesn't yet.
 
 1. Learn more from [qigsaw-sample-android](./qigsaw-android-sample).
 2. Study the source code.
-3. Check wiki or FAQ for help.
+3. Check [wiki](https://github.com/iqiyi/Qigsaw/wiki) or FAQ for help.
 4. Contact us <a href="mailto:kisson_cjw@hotmail.com">kisson_cjw@hotmail.com</a>.
 
 ## Contributing
@@ -79,4 +79,4 @@ For more information about contributing, issues or pull requests, please check o
 
 ## License
 
-Qigsaw is MIT licensed. Read the LICENSE file for detail.
+Qigsaw is MIT licensed. Read the [LICENSE](./LICENSE) file for detail.
