@@ -39,7 +39,7 @@ apply plugin: 'com.iqiyi.qigsaw.dynamicfeature'
 ```
 Considering that every app has its own downloader, qigsaw just provides an interface Downloader and you are expected to implement it. Learn more from the sample [SampleDownloader](./app/src/main/java/com/iqiyi/qigsaw/sample/downloader/SampleDownloader.java).
 
-Qigsaw-gradle-plugin will upload split APKs which require dynamic delivery during compilation, so you have to implement SplitApkUploader to upload split APKs to your own CND server. Learn more from the sample [SampleSplitApkUploader](./qigsaw-android-sample/buildsrc/src/main/groovy/com/iqiyi/qigsaw/buildtool/gradle/sample/upload/SampleSplitApkUploader.groovy).
+Qigsaw-gradle-plugin will upload split APKs which require dynamic delivery during compilation, so you have to implement SplitApkUploader to upload split APKs to your own CND server. Learn more from the sample [SampleSplitApkUploader](./qigsaw-android-sample/buildSrc/src/main/groovy/com/iqiyi/qigsaw/buildtool/gradle/sample/upload/SampleSplitApkUploader.groovy).
 
 How to install qigsaw? Learn more from the sample [QigsawApplication](./app/src/main/java/com/iqiyi/qigsaw/sample/QigsawApplication.java).
 
