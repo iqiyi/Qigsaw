@@ -110,7 +110,7 @@ dependencies {
     implementation "com.android.support:multidex:1.0.3"
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
     if (sample) {
-        api "com.iqiyi.android.qigsaw:core:${VERSION_NAME}"
+        api "com.iqiyi.android.qigsaw:splitcore:${VERSION_NAME}"
     } else {
         api project(':splitcore')
     }
