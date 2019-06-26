@@ -25,7 +25,7 @@
 
     <string name="installer_pending">Pending&#8230;</string>
 
-    <string name="installer_downloading">Downloading&#8230;%s%</string>
+    <string name="installer_downloading">Downloading&#8230;</string>
     <string name="installer_downloaded">Download completely</string>
     <string name="installer_installing">Installing&#8230;</string>
     <string name="installer_installed">Install completely</string>

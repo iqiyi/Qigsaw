@@ -251,7 +251,7 @@ public class QigsawInstaller extends Activity {
     private void onDownloading(SplitInstallSessionState state) {
         mProgress.setProgress(Long.valueOf(state.bytesDownloaded()).intValue());
         double progress = (double) (state.bytesDownloaded() / state.totalBytesToDownload());
-        updateProgressMessage(String.format(getString(R.string.installer_downloading), decimalFormat.format(progress)));
+        updateProgressMessage(getString(R.string.installer_downloading) + decimalFormat.format(progress) + "%");
     }
 
     private void onDownloaded() {
