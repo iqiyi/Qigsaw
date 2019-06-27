@@ -47,8 +47,7 @@ public class GroupDownloadContext {
     private static Map<Integer, List<DownloadTask>> tasksMap = new HashMap<>();
 
     public Map<Integer, List<DownloadTask>> getTasksMapDeepClone() {
-        Map<Integer, List<DownloadTask>> tasksMapDeepClone = new HashMap<>();
-        tasksMapDeepClone.putAll(tasksMap);
+        Map<Integer, List<DownloadTask>> tasksMapDeepClone = new HashMap<>(tasksMap);
         return tasksMapDeepClone;
     }
 

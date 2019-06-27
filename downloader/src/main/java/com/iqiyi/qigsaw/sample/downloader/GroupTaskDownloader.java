@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class GroupTaskDownloader {
 
-    private static final String TAG = "Split:GroupTaskDownloader";
+    private static final String TAG = "GroupTaskDownloader";
 
     private Map<Integer, List<DownloadTask>> tasksMapsDeepClone = new ConcurrentHashMap<>();
 
@@ -43,9 +43,6 @@ public class GroupTaskDownloader {
     public void setCallbackProgress(CallbackProgress callbackProgress) {
         this.callbackProgress = callbackProgress;
     }
-
-    private String[] progressMessage = new String[3]; //totalSize,downloadedSize,progress
-
 
     /**
      * build the serial task queue (group of tasks) and start the download.
@@ -108,7 +105,6 @@ public class GroupTaskDownloader {
             @Override
             public void connected(@NonNull DownloadTask task, int blockCount, long currentOffset, long totalLength) {
                 Log.d(TAG, "connected: " + task.getFilename());
-                progressMessage[0] = totalLength + "KB";
             }
 
             @Override
@@ -117,8 +113,6 @@ public class GroupTaskDownloader {
                     return;
                 }
                 Log.d(TAG, task.getFilename() + "  progress: " + currentOffset * 100 / totalLength + "%");
-                progressMessage[1] = currentOffset / 1024 + "KB";
-                progressMessage[2] = currentOffset * 100 / totalLength + "%";
                 if (callbackProgress != null) {
                     callbackProgress.onProgress(currentOffset, totalLength);
                 }
@@ -167,6 +161,7 @@ public class GroupTaskDownloader {
             @Override
             protected void error(@NonNull DownloadTask task, @NonNull Exception e) {
                 Log.d(TAG, "error: " + e.getMessage());
+                isCompleted = false;
                 groupTaskDownloadCallBack.onError(e.hashCode());
             }
 
