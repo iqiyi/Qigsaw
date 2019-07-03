@@ -82,25 +82,27 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     @Override
     public void startInstall(List<Bundle> moduleNames, Callback callback) {
         List<String> moduleNameList = unBundleModuleNames(moduleNames);
-        int errorCode = onPreInstallSplits(moduleNameList);
+        List<SplitInfo> needInstallSplits = getSplitInfoList(moduleNameList);
+        int errorCode = onPreInstallSplits(moduleNameList, isAllSplitsBuiltIn(needInstallSplits));
         if (errorCode != SplitInstallInternalErrorCode.NO_ERROR) {
             callback.onError(bundleErrorCode(errorCode));
         } else {
-            startDownloadSplits(moduleNameList, callback);
+            startDownloadSplits(moduleNameList, needInstallSplits, callback);
         }
     }
 
     @Override
     public void deferredInstall(List<Bundle> moduleNames, Callback callback) {
         List<String> moduleNameList = unBundleModuleNames(moduleNames);
-        int errorCode = onPreInstallSplits(moduleNameList);
+        List<SplitInfo> needInstallSplits = getSplitInfoList(moduleNameList);
+        int errorCode = onPreInstallSplits(moduleNameList, isAllSplitsBuiltIn(needInstallSplits));
         if (errorCode == SplitInstallInternalErrorCode.NO_ERROR) {
             if (!getInstalledSplitInstallInfo().isEmpty()) {
                 if (getInstalledSplitInstallInfo().containsAll(moduleNameList)) {
                     callback.onDeferredInstall(null);
                 }
             } else {
-                deferredDownloadSplits(moduleNameList, callback);
+                deferredDownloadSplits(moduleNameList, needInstallSplits, callback);
             }
         } else {
             callback.onError(bundleErrorCode(errorCode));
@@ -181,7 +183,16 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         sessionManager.emitSessionState(sessionState);
     }
 
-    private int onPreInstallSplits(List<String> moduleNames) {
+    private boolean isAllSplitsBuiltIn(List<SplitInfo> needInstallSplits) {
+        for (SplitInfo info : needInstallSplits) {
+            if (!info.isBuiltIn()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int onPreInstallSplits(List<String> moduleNames, boolean ignoredNetworkError) {
         if (!getInstalledSplitInstallInfo().isEmpty()) {
             if (!getInstalledSplitInstallInfo().containsAll(moduleNames)) {
                 return SplitInstallInternalErrorCode.INVALID_REQUEST;
@@ -189,15 +200,15 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         } else {
             int errorCode = checkInternalErrorCode();
             if (errorCode == SplitInstallInternalErrorCode.NO_ERROR) {
-                errorCode = checkRequestErrorCode(moduleNames);
+                errorCode = checkRequestErrorCode(moduleNames, ignoredNetworkError);
             }
             return errorCode;
         }
         return SplitInstallInternalErrorCode.NO_ERROR;
     }
 
-    private int checkRequestErrorCode(List<String> moduleNames) {
-        if (!isNetworkAvailable(appContext)) {
+    private int checkRequestErrorCode(List<String> moduleNames, boolean ignoredNetworkError) {
+        if (!ignoredNetworkError && !isNetworkAvailable(appContext)) {
             return SplitInstallInternalErrorCode.NETWORK_ERROR;
         }
         if (!isRequestValid(moduleNames)) {
@@ -252,8 +263,8 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private void deferredDownloadSplits(final List<String> moduleNames,
+                                        final List<SplitInfo> needInstallSplits,
                                         final Callback callback) {
-        List<SplitInfo> needInstallSplits = getSplitInfoList(moduleNames);
         try {
             Pair<List<DownloadRequest>, long[]> result = onPreDownloadSplits(needInstallSplits);
             callback.onDeferredInstall(null);
@@ -276,13 +287,13 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private void startDownloadSplits(final List<String> moduleNames,
+                                     final List<SplitInfo> needInstallSplits,
                                      final Callback callback) {
         if (sessionManager.isActiveSessionsLimitExceeded()) {
             SplitLog.w(TAG, "Start install request error code: ACTIVE_SESSIONS_LIMIT_EXCEEDED");
             callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.ACTIVE_SESSIONS_LIMIT_EXCEEDED));
             return;
         }
-        List<SplitInfo> needInstallSplits = getSplitInfoList(moduleNames);
         int sessionId = createSessionId(needInstallSplits);
         SplitLog.d(TAG, "startInstall session id: " + sessionId);
         SplitInstallInternalSessionState sessionState = sessionManager.getSessionState(sessionId);
@@ -421,11 +432,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             try {
                 processor.load(appContext, splitInfo);
             } finally {
-                try {
-                    processor.close();
-                } catch (IOException error) {
-                    //ignored
-                }
+                FileUtil.closeQuietly(processor);
             }
             //create download request
             DownloadRequest request = DownloadRequest.newBuilder()

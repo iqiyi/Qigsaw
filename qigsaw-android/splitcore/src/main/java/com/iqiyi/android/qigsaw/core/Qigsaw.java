@@ -27,7 +27,11 @@ package com.iqiyi.android.qigsaw.core;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
+import android.os.Build;
+import android.os.Looper;
+import android.os.MessageQueue;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -97,7 +101,7 @@ public class Qigsaw {
         if (logger != null) {
             SplitLog.setSplitLogImp(logger);
         }
-        Context appContext = getApplicationContext(context);
+        final Context appContext = getApplicationContext(context);
         SplitBaseInfoProvider.setPackageName(manifestPackageName);
         //create AABCompat instance
         AABExtension.install(appContext);
@@ -109,7 +113,7 @@ public class Qigsaw {
         SplitLoadReporterManager.install(loadReporter);
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         //load all installed splits for qigsaw.
-        loadManager.load(workProcesses);
+        loadManager.load(workProcesses, !isSplitAppComponentFactoryExisting(appContext));
         //getInstance all installed splits for AAB.
         SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(appContext);
         Set<String> loadedSplits = infoProvider.getInstalledSplitsForAAB();
@@ -129,7 +133,13 @@ public class Qigsaw {
             SplitInstallReporterManager.install(installReporter);
             SplitUpdateReporterManager.install(updateReporter);
             SplitDownloaderManager.install(downloader);
-            cleanStaleSplits(appContext);
+            Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+                @Override
+                public boolean queueIdle() {
+                    cleanStaleSplits(appContext);
+                    return false;
+                }
+            });
         }
         SplitCompat.install(appContext);
     }
@@ -196,6 +206,37 @@ public class Qigsaw {
             appContext = context.getApplicationContext();
         }
         return appContext;
+    }
+
+    private static boolean isSplitAppComponentFactoryExisting(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return false;
+        }
+        ApplicationInfo appInfo = context.getApplicationInfo();
+        if (appInfo == null
+                || appInfo.appComponentFactory == null) {
+            return false;
+        }
+        if (appInfo.appComponentFactory.equals(SplitAppComponentFactory.class.getName())) {
+            return true;
+        }
+        return isSubclassOfSplitAppComponentFactory(appInfo.appComponentFactory);
+    }
+
+    private static boolean isSubclassOfSplitAppComponentFactory(String className) {
+        boolean ret = false;
+        try {
+            Class<?> originClazz = Class.forName(className);
+            for (Class<?> clazz = originClazz; clazz != null; clazz = clazz.getSuperclass()) {
+                if (clazz.getName().equals(SplitAppComponentFactory.class.getName())) {
+                    ret = true;
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ignored) {
+
+        }
+        return ret;
     }
 
 }

@@ -27,6 +27,8 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.os.Looper;
+import android.os.MessageQueue;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -55,7 +57,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private PathClassLoader mClassloader;
 
-
     SplitLoadManagerImpl(Context context) {
         super(context);
         SplitInfoManagerService.install(context);
@@ -63,13 +64,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public void load(String[] processes) {
+    public void load(String[] processes, boolean needHookClassLoader) {
         if (processes == null || processes.length == 0) {
-            loadInternal();
+            loadInternal(needHookClassLoader);
         } else {
             for (String process : processes) {
                 if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
-                    loadInternal();
+                    loadInternal(needHookClassLoader);
                 }
             }
         }
@@ -90,14 +91,18 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean needActivate) {
-        return new SplitLoadTask(this, splitFileIntents, loadListener, needActivate);
+    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean processStarting) {
+        return new SplitLoadTask(this, splitFileIntents, loadListener, processStarting);
     }
 
     private List<Intent> createInstalledSplitFileIntents(@NonNull Collection<SplitInfo> splitInfoList) {
         List<Intent> splitFileIntents = new ArrayList<>();
         for (SplitInfo splitInfo : splitInfoList) {
             if (canBeWorkedInThisProcessForSplit(splitInfo)) {
+                if (getLoadedSplitNames().contains(splitInfo.getSplitName())) {
+                    SplitLog.i(TAG, "Split %s has been load!'createInstalledSplitFileIntents'", splitInfo.getSplitName());
+                    continue;
+                }
                 SplitLog.i(TAG, "Split %s will work in this process", splitInfo.getSplitName());
                 Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo);
                 if (splitFileIntent != null) {
@@ -129,14 +134,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    void loadInstalledSplits(boolean needActivate) {
+    public void loadInstalledSplits(boolean processStarting) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         if (manager != null) {
             Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
             if (splitInfoList != null) {
                 List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList);
                 if (!splitFileIntents.isEmpty()) {
-                    createSplitLoadTask(splitFileIntents, null, needActivate).run();
+                    createSplitLoadTask(splitFileIntents, null, processStarting).run();
                 } else {
                     SplitLog.w(TAG, "There are no installed splits!");
                 }
@@ -148,9 +153,20 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
     }
 
-    private void loadInternal() {
-        injectClassLoader(getContext().getClassLoader());
-        loadInstalledSplits(false);
+    private void loadInternal(boolean needHookClassLoader) {
+        if (needHookClassLoader) {
+            SplitLog.i(TAG, "AppComponentFactory is not declared in app Manifest, so we need hook PathClassLoader!");
+            injectClassLoader(getContext().getClassLoader());
+        } else {
+            SplitLog.i(TAG, "AppComponentFactory is  declared in app Manifest!");
+        }
+        Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+            @Override
+            public boolean queueIdle() {
+                loadInstalledSplits(true);
+                return false;
+            }
+        });
     }
 
     private String getCompleteProcessName(@Nullable String process) {

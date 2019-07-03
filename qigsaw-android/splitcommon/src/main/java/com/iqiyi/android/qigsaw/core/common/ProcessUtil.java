@@ -40,7 +40,12 @@ public class ProcessUtil {
     }
 
     public static String getProcessName(Context context) {
-        String processName = getProcessNameClassical(context);
+        String processName = null;
+        try {
+            processName = getProcessNameClassical(context);
+        } catch (Exception ignored) {
+            //may be occur DeadSystemException
+        }
         if (TextUtils.isEmpty(processName)) {
             processName = getProcessNameSecure();
             SplitLog.i(TAG, "Get process name: %s in secure mode.", processName);
