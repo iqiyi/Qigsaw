@@ -19,3 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+-dontwarn edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+-dontwarn org.conscrypt.*
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement

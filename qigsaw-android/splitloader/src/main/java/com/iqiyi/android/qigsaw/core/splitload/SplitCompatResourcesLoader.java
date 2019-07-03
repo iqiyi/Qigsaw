@@ -52,7 +52,6 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * Developer is forbidden to use this Class.
- *
  */
 @RestrictTo(LIBRARY_GROUP)
 public class SplitCompatResourcesLoader {
@@ -93,7 +92,9 @@ public class SplitCompatResourcesLoader {
         if (loadedSplitPath != null) {
             if (!loadedResDirsInAsset.containsAll(loadedSplitPath)) {
                 for (String splitPath : loadedSplitPath) {
-                    installSplitResDirs(context, resources, splitPath);
+                    if (!loadedResDirsInAsset.contains(splitPath)) {
+                        installSplitResDirs(context, resources, splitPath);
+                    }
                 }
             }
         }

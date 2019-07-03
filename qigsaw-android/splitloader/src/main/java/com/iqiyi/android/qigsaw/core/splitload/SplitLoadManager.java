@@ -62,7 +62,7 @@ public abstract class SplitLoadManager {
     /**
      * Load all installed splits.
      */
-    public abstract void load(String[] processes);
+    public abstract void load(String[] processes, boolean needHookClassLoader);
 
     /**
      * Called this method in {@link Application#getResources()}.
@@ -90,7 +90,7 @@ public abstract class SplitLoadManager {
         return loadedSplitNames;
     }
 
-    abstract void loadInstalledSplits(boolean needActivate);
+    public abstract void loadInstalledSplits(boolean needActivate);
 
     abstract PathClassLoader getInjectedClassloader();
 
