@@ -38,6 +38,8 @@ import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 
+import java.security.MessageDigest
+
 class ComponentInfoCreatorTransform extends Transform {
 
     Project project
@@ -137,7 +139,7 @@ class ComponentInfoCreatorTransform extends Transform {
         transformInvocation.inputs.each { TransformInput input ->
             input.jarInputs.each { JarInput jarInput ->
                 def jarName = jarInput.name
-                def md5 = jarInput.file.getAbsolutePath().md5()
+                def md5 = getStringMD5(jarInput.file.getAbsolutePath())
                 File dest = transformInvocation.outputProvider.getContentLocation(jarName + md5,
                         jarInput.contentTypes, jarInput.scopes, Format.JAR)
                 FileUtils.copyFile(jarInput.file, dest)
@@ -154,6 +156,10 @@ class ComponentInfoCreatorTransform extends Transform {
                 getOutputTypes(), getScopes(),
                 Format.DIRECTORY)
         weave(addFieldMap, dest)
+    }
+
+    static String getStringMD5(String str) {
+        return MessageDigest.getInstance("MD5").digest(str.bytes).encodeHex().toString()
     }
 
     static void weave(Map<String, List> addFieldMap, File dest) {

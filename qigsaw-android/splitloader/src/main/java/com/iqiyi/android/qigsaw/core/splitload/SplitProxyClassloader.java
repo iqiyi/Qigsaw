@@ -72,7 +72,7 @@ final class SplitProxyClassloader extends PathClassLoader {
                         lastClassNotFound = name;
                         SplitLog.w(TAG, "class %s is not found", name);
                         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                        loadManager.loadInstalledSplits(true);
+                        loadManager.loadInstalledSplits(false);
                         return findClass(name);
                     } else {
                         SplitLog.e(TAG, "SplitLoadManagerService has not been created!", name);

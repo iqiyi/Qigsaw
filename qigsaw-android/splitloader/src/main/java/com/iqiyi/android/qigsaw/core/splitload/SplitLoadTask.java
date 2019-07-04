@@ -53,14 +53,14 @@ final class SplitLoadTask implements Runnable {
 
     private final SplitActivator splitActivator;
 
-    private final boolean needActivate;
+    private final boolean processStarting;
 
     SplitLoadTask(SplitLoadManager loadManager,
                   @NonNull List<Intent> splitFileIntents,
                   @Nullable OnSplitLoadListener loadListener,
-                  boolean needActivate) {
+                  boolean processStarting) {
         this.loadManager = loadManager;
-        this.needActivate = needActivate;
+        this.processStarting = processStarting;
         this.splitActivator = new SplitActivator(AABExtension.getInstance());
         this.splitFileIntents = splitFileIntents;
         this.loadListener = loadListener;
@@ -93,20 +93,19 @@ final class SplitLoadTask implements Runnable {
                 continue;
             }
             //activate application
-            if (needActivate) {
+            try {
+                splitActivator.activate(splitName);
+            } catch (SplitLoadException e) {
+                SplitLog.printErrStackTrace(TAG, e, "Failed to activate %s", splitName);
+                errors.add(new SplitLoadError(splitName, e.getErrorCode(), e.getCause()));
                 try {
-                    splitActivator.activate(splitName);
-                } catch (SplitLoadException e) {
-                    SplitLog.printErrStackTrace(TAG, e, "Failed to activate %s", splitName);
-                    errors.add(new SplitLoadError(splitName, e.getErrorCode(), e.getCause()));
-                    try {
-                        SplitCompatDexLoader.unLoad(classLoader);
-                    } catch (Throwable throwable1) {
-                        //ignored
-                    }
-                    continue;
+                    SplitCompatDexLoader.unLoad(classLoader);
+                } catch (Throwable throwable1) {
+                    //ignored
                 }
+                continue;
             }
+
             splits.add(new Split(splitName, splitApkPath));
             File splitDir = new File(splitFileIntent.getStringExtra(SplitConstants.KET_SPLIT_DIR));
             if (!splitDir.setLastModified(System.currentTimeMillis())) {
@@ -125,23 +124,23 @@ final class SplitLoadTask implements Runnable {
         SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
         List<String> requestModuleNames = getRequestModuleNames();
         if (errors.isEmpty()) {
-            if (needActivate) {
-                if (loadReporter != null) {
-                    loadReporter.onLoadOKUnderUserTriggering(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
-                }
-            } else {
+            if (processStarting) {
                 if (loadReporter != null) {
                     loadReporter.onLoadOKUnderProcessStarting(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
                 }
+            } else {
+                if (loadReporter != null) {
+                    loadReporter.onLoadOKUnderUserTriggering(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
+                }
             }
         } else {
-            if (needActivate) {
+            if (processStarting) {
                 if (loadReporter != null) {
-                    loadReporter.onLoadFailedUnderUserTriggering(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
+                    loadReporter.onLoadFailedUnderProcessStarting(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
                 }
             } else {
                 if (loadReporter != null) {
-                    loadReporter.onLoadFailedUnderProcessStarting(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
+                    loadReporter.onLoadFailedUnderUserTriggering(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
                 }
             }
         }

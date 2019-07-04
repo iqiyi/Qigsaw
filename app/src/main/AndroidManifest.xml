@@ -8,13 +8,15 @@
     <application
         android:name=".QigsawApplication"
         android:allowBackup="true"
+        android:appComponentFactory="com.iqiyi.qigsaw.sample.SampleSplitAppComponentFactory"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning"
-        tools:replace="android:name">
+        tools:replace="android:name"
+        tools:targetApi="p">
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

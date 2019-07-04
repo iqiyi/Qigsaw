@@ -52,7 +52,6 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * Developer is forbidden to use this Class.
- *
  */
 @RestrictTo(LIBRARY_GROUP)
 public class SplitCompatResourcesLoader {
@@ -89,11 +88,13 @@ public class SplitCompatResourcesLoader {
 
     private static void checkOrUpdateResources(Context context, Resources resources) throws Throwable {
         List<String> loadedResDirsInAsset = getLoadedResourcesDirs(resources.getAssets());
-        Collection<String> loadedSplitPath = getLoadedSplitPaths();
-        if (loadedSplitPath != null) {
-            if (!loadedResDirsInAsset.containsAll(loadedSplitPath)) {
-                for (String splitPath : loadedSplitPath) {
-                    installSplitResDirs(context, resources, splitPath);
+        Collection<String> loadedSplitPaths = getLoadedSplitPaths();
+        if (loadedSplitPaths != null && !loadedSplitPaths.isEmpty()) {
+            if (!loadedResDirsInAsset.containsAll(loadedSplitPaths)) {
+                for (String splitPath : loadedSplitPaths) {
+                    if (!loadedResDirsInAsset.contains(splitPath)) {
+                        installSplitResDirs(context, resources, splitPath);
+                    }
                 }
             }
         }
@@ -102,14 +103,7 @@ public class SplitCompatResourcesLoader {
     private static Collection<String> getLoadedSplitPaths() {
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         if (loadManager != null) {
-            Set<Split> splits = loadManager.getLoadedSplits();
-            if (!splits.isEmpty()) {
-                Collection<String> loadedSplits = new ArrayList<>();
-                for (Split split : splits) {
-                    loadedSplits.add(split.splitApkPath);
-                }
-                return loadedSplits;
-            }
+            return loadManager.getLoadedSplitApkPaths();
         }
         return null;
     }
