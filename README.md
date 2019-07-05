@@ -6,6 +6,8 @@
 
 Qigsaw is a dynamic modularization library which is based on [Android App Bundles](https://developer.android.com/guide/app-bundle/). It supports dynamic delivery for split APK without reinstalling the base one.
 
+[README 中文版](./README.zh-CN.md)
+
 ![qigsaw](./assets/qigsaw.png)
 
 ## Getting started
