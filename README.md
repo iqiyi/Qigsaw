@@ -77,6 +77,9 @@ Qigsaw supports some functions which Android App Bundle doesn't yet.
 2. Study the source code.
 3. Check [wiki](https://github.com/iqiyi/Qigsaw/wiki) or FAQ for help.
 4. Contact us <a href="mailto:kisson_cjw@hotmail.com">kisson_cjw@hotmail.com</a>.
+5. Join QQ group chat.
+
+![qigsaw_qq_group_chat](./assets/qigsaw_qq_group_chat.jpeg)
 
 ## Contributing
 
