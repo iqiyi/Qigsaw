@@ -30,3 +30,5 @@ dependencies {
 }
 apply from: rootProject.file('gradle/android-artifacts.gradle')
 apply from: rootProject.file('gradle/gradle-bintray-upload.gradle')
+apply from: rootProject.file('gradle/gradle-maven-upload.gradle')
+

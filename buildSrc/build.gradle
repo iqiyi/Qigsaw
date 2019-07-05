@@ -73,3 +73,5 @@ void applyRootProjectProperties() {
 apply from: file('../gradle/checkStyle.gradle')
 apply from: file('../gradle/java-artifacts.gradle')
 apply from: file('../gradle/gradle-bintray-upload.gradle')
+apply from: file('../gradle/gradle-maven-upload.gradle')
+

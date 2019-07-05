@@ -34,7 +34,7 @@ import java.util.List;
 public interface SplitLoadReporter {
 
     /**
-     * Qigsaw would load all installed splits when {@link android.app.Application#attachBaseContext(Context)} method is called.
+     * Qigsaw would defer to load all installed splits when {@link android.app.Application#attachBaseContext(Context)} method is called.
      * When all modules are loaded successfully, this method would be invoked.
      *
      * @param requestModuleNames modules need to be loaded.
@@ -44,7 +44,7 @@ public interface SplitLoadReporter {
     void onLoadOKUnderProcessStarting(List<String> requestModuleNames, String processName, long cost);
 
     /**
-     * Qigsaw would load all installed splits when {@link android.app.Application#attachBaseContext(Context)} method is called.
+     * Qigsaw would defer to all installed splits  when {@link android.app.Application#attachBaseContext(Context)} method is called.
      * When all modules are loaded completely, and at least one module failed, this method will be invoked.
      *
      * @param requestModuleNames modules need to be loaded.
