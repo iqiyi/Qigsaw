@@ -32,7 +32,7 @@ dependencies {
 apply plugin: 'com.iqiyi.qigsaw.application'
 ```
 
-最后在`dynamicfeature/build.gradle`文件中应用如下所以插件。
+最后在`dynamicfeature/build.gradle`文件中应用如下所示插件。
 
 ```
 apply plugin: 'com.iqiyi.qigsaw.dynamicfeature'
