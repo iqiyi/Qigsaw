@@ -21,13 +21,13 @@ android {
 
     signingConfigs {
         debug {
-            storeFile file("./keystore/debug.jks")
+            storeFile new File(project.rootProject.projectDir.absolutePath + "/keystore/debug.jks")
             storePassword "qigsawtest"
             keyAlias "qigsawtest"
             keyPassword "qigsawtest"
         }
         release {
-            storeFile file("./keystore/release.jks")
+            storeFile new File(project.rootProject.projectDir.absolutePath + "/keystore/release.jks")
             storePassword "qigsawtest"
             keyAlias "qigsawtest"
             keyPassword "qigsawtest"

@@ -94,6 +94,8 @@ class SplitInfo {
      */
     LibInfo libInfo
 
+    List<String> dependencies
+
     static class LibInfo {
 
         String abi

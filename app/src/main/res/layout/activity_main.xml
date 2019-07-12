@@ -22,10 +22,7 @@
             android:layout_marginRight="8dp"
             android:gravity="center"
             android:text="@string/instructions"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
 
         <Button

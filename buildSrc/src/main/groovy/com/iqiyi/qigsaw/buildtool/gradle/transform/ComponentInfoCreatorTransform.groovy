@@ -34,6 +34,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
@@ -81,6 +82,7 @@ class ComponentInfoCreatorTransform extends Transform {
         BaseAppModuleExtension android = project.extensions.getByType(BaseAppModuleExtension)
         def dynamicFeatures = android.dynamicFeatures
         Map<String, List> addFieldMap = new HashMap<>()
+
         for (String dynamicFeature : dynamicFeatures) {
             Project dynamicFeatureProject = project.rootProject.project(dynamicFeature)
             AppExtension dynamicAndroid = dynamicFeatureProject.extensions.getByType(AppExtension)
@@ -89,8 +91,16 @@ class ComponentInfoCreatorTransform extends Transform {
                 ApplicationVariant appVariant = variant
                 if (appVariant.name == transformInvocation.context.variantName) {
                     appVariant.outputs.each {
-                        it.processManifestProvider.get().outputs.files.each {
-                            if (it.isDirectory() && it.getParentFile().name.equals("merged_manifests")) {
+                        Task processManifestTask
+                        try {
+                            processManifestTask = it.getProcessManifestProvider().get()
+                        } catch (Exception e) {
+                            processManifestTask = it.processManifest
+                        }
+                        processManifestTask.outputs.files.each {
+                            String parentFileName = it.getParentFile().name
+                            if (it.isDirectory()
+                                    && (parentFileName.equals("merged_manifests") || it.name.equals("merged"))) {
                                 splitManifest = new File(it, "AndroidManifest.xml")
                             }
                         }

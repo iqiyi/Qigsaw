@@ -30,6 +30,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.support.v4.util.ArraySet;
 import android.text.TextUtils;
 import android.util.Pair;
 
@@ -82,26 +83,48 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     @Override
     public void startInstall(List<Bundle> moduleNames, Callback callback) {
         List<String> moduleNameList = unBundleModuleNames(moduleNames);
-        List<SplitInfo> needInstallSplits = getSplitInfoList(moduleNameList);
-        int errorCode = onPreInstallSplits(moduleNameList, isAllSplitsBuiltIn(needInstallSplits));
+        int errorCode = onPreInstallSplits(moduleNameList);
         if (errorCode != SplitInstallInternalErrorCode.NO_ERROR) {
             callback.onError(bundleErrorCode(errorCode));
         } else {
+            List<SplitInfo> needInstallSplits = getNeed2BeInstalledSplits(moduleNameList);
+            //check network status
+            if (!isAllSplitsBuiltIn(needInstallSplits) && !isNetworkAvailable(appContext)) {
+                callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.NETWORK_ERROR));
+                return;
+            }
+            Set<String> allDependencies = getAllDependencies(needInstallSplits);
+            if (!allDependencies.isEmpty()) {
+                if (!moduleNameList.containsAll(allDependencies)) {
+                    SplitLog.e(TAG, "QIGSAW WARNING: Your request must contains all dynamic feature dependencies, otherwise it maybe occur runtime error!");
+                }
+            }
             startDownloadSplits(moduleNameList, needInstallSplits, callback);
         }
+    }
+
+    private Set<String> getAllDependencies(List<SplitInfo> needInstallSplits) {
+        Set<String> splitDependencies = new ArraySet<>();
+        for (SplitInfo info : needInstallSplits) {
+            List<String> dependencies = info.getDependencies();
+            if (dependencies != null) {
+                splitDependencies.addAll(dependencies);
+            }
+        }
+        return splitDependencies;
     }
 
     @Override
     public void deferredInstall(List<Bundle> moduleNames, Callback callback) {
         List<String> moduleNameList = unBundleModuleNames(moduleNames);
-        List<SplitInfo> needInstallSplits = getSplitInfoList(moduleNameList);
-        int errorCode = onPreInstallSplits(moduleNameList, isAllSplitsBuiltIn(needInstallSplits));
+        int errorCode = onPreInstallSplits(moduleNameList);
         if (errorCode == SplitInstallInternalErrorCode.NO_ERROR) {
             if (!getInstalledSplitInstallInfo().isEmpty()) {
                 if (getInstalledSplitInstallInfo().containsAll(moduleNameList)) {
                     callback.onDeferredInstall(null);
                 }
             } else {
+                List<SplitInfo> needInstallSplits = getNeed2BeInstalledSplits(moduleNameList);
                 deferredDownloadSplits(moduleNameList, needInstallSplits, callback);
             }
         } else {
@@ -165,12 +188,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     @Override
     public void continueInstallWithUserConfirmation(int sessionId, List<DownloadRequest> requests) {
         SplitInstallInternalSessionState sessionState = sessionManager.getSessionState(sessionId);
-        List<String> moduleNames = sessionState.moduleNames();
-        List<SplitInfo> splitInfoList = new ArrayList<>();
-        for (String moduleName : moduleNames) {
-            splitInfoList.add(SplitInfoManagerService.getInstance().getSplitInfo(appContext, moduleName));
-        }
-        StartDownloadCallback downloadCallback = new StartDownloadCallback(appContext, sessionId, sessionManager, moduleNames, splitInfoList);
+        StartDownloadCallback downloadCallback = new StartDownloadCallback(appContext, sessionId, sessionManager, sessionState.moduleNames(), sessionState.needInstalledSplits);
         sessionManager.changeSessionState(sessionId, SplitInstallInternalSessionStatus.PENDING);
         sessionManager.emitSessionState(sessionState);
         userDownloader.startDownload(sessionState.sessionId(), requests, downloadCallback);
@@ -192,7 +210,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         return true;
     }
 
-    private int onPreInstallSplits(List<String> moduleNames, boolean ignoredNetworkError) {
+    private int onPreInstallSplits(List<String> moduleNames) {
         if (!getInstalledSplitInstallInfo().isEmpty()) {
             if (!getInstalledSplitInstallInfo().containsAll(moduleNames)) {
                 return SplitInstallInternalErrorCode.INVALID_REQUEST;
@@ -200,17 +218,14 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         } else {
             int errorCode = checkInternalErrorCode();
             if (errorCode == SplitInstallInternalErrorCode.NO_ERROR) {
-                errorCode = checkRequestErrorCode(moduleNames, ignoredNetworkError);
+                errorCode = checkRequestErrorCode(moduleNames);
             }
             return errorCode;
         }
         return SplitInstallInternalErrorCode.NO_ERROR;
     }
 
-    private int checkRequestErrorCode(List<String> moduleNames, boolean ignoredNetworkError) {
-        if (!ignoredNetworkError && !isNetworkAvailable(appContext)) {
-            return SplitInstallInternalErrorCode.NETWORK_ERROR;
-        }
+    private int checkRequestErrorCode(List<String> moduleNames) {
         if (!isRequestValid(moduleNames)) {
             return SplitInstallInternalErrorCode.INVALID_REQUEST;
         }
@@ -250,12 +265,13 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         return installedSplitInstallInfo;
     }
 
-    private List<SplitInfo> getSplitInfoList(List<String> moduleNames) {
+    private List<SplitInfo> getNeed2BeInstalledSplits(List<String> moduleNames) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
+        assert manager != null;
+        Collection<SplitInfo> allSplits = manager.getAllSplitInfo(appContext);
         List<SplitInfo> needInstallSplits = new ArrayList<>();
-        for (String name : moduleNames) {
-            SplitInfo info = manager.getSplitInfo(appContext, name);
-            if (info != null) {
+        for (SplitInfo info : allSplits) {
+            if (moduleNames.contains(info.getSplitName())) {
                 needInstallSplits.add(info);
             }
         }
@@ -301,7 +317,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         if (sessionState != null) {
             needUserConfirmation = sessionState.status() == SplitInstallInternalSessionStatus.REQUIRES_USER_CONFIRMATION;
         } else {
-            sessionState = new SplitInstallInternalSessionState(sessionId, moduleNames);
+            sessionState = new SplitInstallInternalSessionState(sessionId, moduleNames, needInstallSplits);
         }
         if (!needUserConfirmation && sessionManager.isIncompatibleWithExistingSession(moduleNames)) {
             SplitLog.w(TAG, "Start install request error code: INCOMPATIBLE_WITH_EXISTING_SESSION");
@@ -362,6 +378,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     private boolean isRequestValid(List<String> moduleNames) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         List<String> allSplits = new ArrayList<>();
+        assert manager != null;
         Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(appContext);
         for (SplitInfo info : splitInfoList) {
             allSplits.add(info.getSplitName());
@@ -371,6 +388,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     private boolean isModuleAvailable(List<String> moduleNames) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
+        assert manager != null;
         Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(appContext);
         for (String moduleName : moduleNames) {
             for (SplitInfo info : splitInfoList) {

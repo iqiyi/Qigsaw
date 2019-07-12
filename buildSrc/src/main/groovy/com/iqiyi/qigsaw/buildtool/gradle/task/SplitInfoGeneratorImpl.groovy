@@ -42,9 +42,13 @@ class SplitInfoGeneratorImpl implements SplitInfoGenerator {
 
     String variantName
 
+    Map<String, List<String>> dynamicFeatureDependenciesMap
+
     SplitInfoGeneratorImpl(Project appProject,
                            AppExtension splitExtension,
-                           String variantName) {
+                           String variantName,
+                           Map<String, List<String>> dynamicFeatureDependenciesMap) {
+        this.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
         this.appProject = appProject
         this.android = splitExtension
         this.variantName = variantName
@@ -68,6 +72,7 @@ class SplitInfoGeneratorImpl implements SplitInfoGenerator {
                 android.defaultConfig.minSdkVersion.apiLevel,
                 versionName + "@" + versionCode,
         )
+        splitInfo.dependencies = dynamicFeatureDependenciesMap.get(splitName)
         ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
         boolean releaseSplitApk = appProject.extensions.qigsawSplit.releaseSplitApk
         splitInfo.builtIn = !manifestReader.readOnDemand() || !releaseSplitApk

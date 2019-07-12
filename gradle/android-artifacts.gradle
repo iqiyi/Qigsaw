@@ -7,13 +7,16 @@ android {
     }
 }
 
-
 task androidJavadocs(type: Javadoc) {
     source = android.sourceSets.main.java.sourceFiles
     source += files('build/generated/aidl_source_output_dir/release/compileReleaseAidl/out')
     android.libraryVariants.all { variant ->
         if (variant.name == 'release') {
-            owner.classpath += variant.getJavaCompileProvider().get().classpath
+            try {
+                owner.classpath += variant.getJavaCompileProvider().get().classpath
+            } catch(Exception e) {
+                owner.classpath += variant.getJavaCompile().classpath
+            }
         }
     }
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))

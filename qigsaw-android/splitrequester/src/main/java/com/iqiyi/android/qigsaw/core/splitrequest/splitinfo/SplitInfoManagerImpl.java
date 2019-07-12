@@ -287,8 +287,16 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
                     workProcesses.add(processes.optString(k));
                 }
             }
+            JSONArray dependenciesArray = itemObj.optJSONArray("dependencies");
+            List<String> dependencies = null;
+            if (dependenciesArray != null && dependenciesArray.length() > 0) {
+                dependencies = new ArrayList<>(dependenciesArray.length());
+                for (int m = 0; m < dependenciesArray.length(); m++) {
+                    dependencies.add(dependenciesArray.optString(m));
+                }
+            }
             SplitInfo splitInfo = new SplitInfo(splitName, appVersionName, version, url, apkMd5,
-                    size, builtIn, minSdkVersion, dexNumber, workProcesses, libDetail);
+                    size, builtIn, minSdkVersion, dexNumber, workProcesses, dependencies, libDetail);
             splitInfoMap.put(splitName, splitInfo);
         }
         JSONArray updateSplitsArray = contentObj.optJSONArray("updateSplits");

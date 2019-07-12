@@ -58,6 +58,8 @@ public class SplitInfo {
 
     private final List<String> workProcesses;
 
+    private final List<String> dependencies;
+
     SplitInfo(String splitName,
               String appVersion,
               String version,
@@ -68,6 +70,7 @@ public class SplitInfo {
               int minSdkVersion,
               int dexNumber,
               List<String> workProcesses,
+              List<String> dependencies,
               LibInfo libInfo) {
         this.splitName = splitName;
         this.appVersion = appVersion;
@@ -79,6 +82,7 @@ public class SplitInfo {
         this.minSdkVersion = minSdkVersion;
         this.dexNumber = dexNumber;
         this.workProcesses = workProcesses;
+        this.dependencies = dependencies;
         this.libInfo = libInfo;
         this.isMultiDex = dexNumber > 1;
     }
@@ -109,6 +113,10 @@ public class SplitInfo {
 
     public LibInfo getLibInfo() {
         return libInfo;
+    }
+
+    public List<String> getDependencies() {
+        return dependencies;
     }
 
     public boolean isMultiDex() {

@@ -29,12 +29,14 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcelable;
 
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
+
 import java.util.ArrayList;
 import java.util.List;
 
 final class SplitInstallInternalSessionState {
 
-    private List<String> moduleNames;
+    private final List<String> moduleNames;
 
     private long bytesDownloaded;
 
@@ -50,9 +52,14 @@ final class SplitInstallInternalSessionState {
 
     private List<Intent> splitFileIntents;
 
-    SplitInstallInternalSessionState(int sessionId, List<String> moduleNames) {
+    final List<SplitInfo> needInstalledSplits;
+
+    SplitInstallInternalSessionState(int sessionId,
+                                     List<String> moduleNames,
+                                     List<SplitInfo> needInstalledSplits) {
         this.sessionId = sessionId;
         this.moduleNames = moduleNames;
+        this.needInstalledSplits = needInstalledSplits;
     }
 
     List<String> moduleNames() {

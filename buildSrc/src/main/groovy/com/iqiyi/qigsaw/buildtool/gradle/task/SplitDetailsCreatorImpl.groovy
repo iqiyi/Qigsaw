@@ -34,6 +34,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploader
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploaderInstance
 import org.gradle.api.Project
+import org.gradle.api.Task
 
 class SplitDetailsCreatorImpl implements SplitDetailsCreator {
 
@@ -96,7 +97,13 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
         appProject.extensions.android.applicationVariants.each {
             ApplicationVariant appVariant = it
             if (appVariant.name.equalsIgnoreCase(variantName)) {
-                outputDir = appVariant.getPackageApplicationProvider().get().outputDirectory
+                Task packageApplicationTask
+                try {
+                    packageApplicationTask = appVariant.getPackageApplicationProvider().get()
+                } catch (Exception e) {
+                    packageApplicationTask = appVariant.packageApplication
+                }
+                outputDir = packageApplicationTask.outputDirectory
             }
         }
         if (outputDir != null) {

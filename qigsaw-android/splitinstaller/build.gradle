@@ -23,7 +23,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "com.android.support:support-annotations:${versions.support}"
+    implementation "com.android.support:support-core-utils:${versions.support}"
     testImplementation 'junit:junit:4.12'
     implementation project(':splitcommon')
     implementation project(':splitreporter')

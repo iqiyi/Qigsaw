@@ -20,6 +20,22 @@ android {
         }
     }
 
+    signingConfigs {
+        debug {
+            storeFile new File(project.rootProject.projectDir.absolutePath + "/keystore/debug.jks")
+            storePassword "qigsawtest"
+            keyAlias "qigsawtest"
+            keyPassword "qigsawtest"
+        }
+        release {
+            storeFile new File(project.rootProject.projectDir.absolutePath + "/keystore/release.jks")
+            storePassword "qigsawtest"
+            keyAlias "qigsawtest"
+            keyPassword "qigsawtest"
+        }
+    }
+
+
     externalNativeBuild {
         cmake {
             path "src/main/jni/CMakeLists.txt"

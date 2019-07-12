@@ -33,6 +33,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.transform.ComponentInfoCreatorTransform
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.util.VersionNumber
 
 class QigsawAppBasePlugin extends QigsawPlugin {
@@ -128,7 +129,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         removeRulesAboutMultidex(multidexTask, appVariant)
                     }
                 }
-
                 QigsawAssembleTask qigsawAssembleTask = project.tasks.create(QIGSAW_ASSEMBLE_TASK_PREFIX + variantName,
                         QigsawAssembleTask,
                         assetsDir,
@@ -137,6 +137,40 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         dynamicFeatures,
                         qigsawId
                 )
+
+                Task showDependencies = getShowDependenciesTask(project, variantName)
+
+                showDependencies.doLast {
+
+                    Map<String, List<String>> dynamicFeatureDependenciesMap = new HashMap<>()
+
+                    List<String> dynamicFeaturesClassPaths = new ArrayList<>(featureProjects.size())
+
+                    featureProjects.each {
+                        Project dynamicFeatureProject = it
+                        String str = "${dynamicFeatureProject.group}:${dynamicFeatureProject.name}:${dynamicFeatureProject.version}"
+                        dynamicFeaturesClassPaths.add(str)
+                    }
+
+                    featureProjects.each {
+                        Project dynamicFeatureProject = it
+                        Configuration configuration = dynamicFeatureProject.configurations."${variant.name}CompileClasspath"
+                        configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
+                            def identifier = it.module.id
+                            List<String> dynamicFeatureDependencies = new ArrayList<>(0)
+                            String classPath = "${identifier.group}:${identifier.name}:${identifier.version}"
+                            if (dynamicFeaturesClassPaths.contains(classPath)) {
+                                dynamicFeatureDependencies.add(identifier.name)
+                            }
+                            if (!dynamicFeatureDependencies.isEmpty()) {
+                                dynamicFeatureDependenciesMap.put(dynamicFeatureProject.name, dynamicFeatureDependencies)
+                            }
+                        }
+                    }
+
+                    qigsawAssembleTask.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
+                }
+
                 qigsawAssembleTask.setGroup(QIGSAW)
 
                 //set task dependency
@@ -154,10 +188,13 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
                     }
+
+                    Task assembleTask = getAssemble(appVariant)
+                    qigsawAssembleTask.dependsOn showDependencies
                     generateAssetsTask.finalizedBy(qigsawAssembleTask)
                     mergeAssetsTask.mustRunAfter(qigsawAssembleTask)
-                    qigsawAssembleTask.finalizedBy(appVariant.assembleProvider.get())
-                    appVariant.assembleProvider.get().doLast {
+                    qigsawAssembleTask.finalizedBy(assembleTask)
+                    assembleTask.doLast {
                         qigsawAssembleTask.clearQigsawIntermediates()
                     }
                     Task dexSplitterTask = getDexSplitterTask(project, variantName)
@@ -184,14 +221,28 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         }
     }
 
+
     private static void configQigsawAssembleTaskDependencies(Project dynamicFeatureProject, String baseAppVariant, Task qigsawAssembleTask) {
         AppExtension dynamicFeatureAndroid = dynamicFeatureProject.extensions.getByType(AppExtension)
         dynamicFeatureAndroid.applicationVariants.all { variant ->
             ApplicationVariant appVariant = variant
             if (appVariant.name.equalsIgnoreCase(baseAppVariant)) {
-                qigsawAssembleTask.dependsOn appVariant.assembleProvider.get()
+                qigsawAssembleTask.dependsOn getAssemble(appVariant)
             }
         }
+    }
+
+    static Task getAssemble(ApplicationVariant variant) {
+        try {
+            return variant.assembleProvider.get()
+        } catch (Exception e) {
+            return variant.assemble
+        }
+    }
+
+    static Task getShowDependenciesTask(Project project, String variantName) {
+        String taskName = "showDependencies${variantName}"
+        return project.tasks.create(taskName)
     }
 
     static Task getGenerateBuildConfigTask(Project project, String variantName) {

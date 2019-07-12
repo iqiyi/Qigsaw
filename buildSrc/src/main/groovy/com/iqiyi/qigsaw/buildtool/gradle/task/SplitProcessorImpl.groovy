@@ -48,9 +48,13 @@ class SplitProcessorImpl implements SplitProcessor {
 
     private String variantName
 
+    private Map<String, List<String>> dynamicFeatureDependenciesMap
+
     SplitProcessorImpl(Project appProject,
                        AppExtension splitExtension,
-                       String variantName) {
+                       String variantName,
+                       Map<String, List<String>> dynamicFeatureDependenciesMap) {
+        this.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
         this.appProject = appProject
         this.android = splitExtension
         this.variantName = variantName
@@ -93,7 +97,7 @@ class SplitProcessorImpl implements SplitProcessor {
 
     @Override
     final SplitInfo createSplitInfo(String splitName, File splitSignedApk, File splitManifest) {
-        SplitInfoGenerator infoGenerator = new SplitInfoGeneratorImpl(appProject, android, variantName)
+        SplitInfoGenerator infoGenerator = new SplitInfoGeneratorImpl(appProject, android, variantName, dynamicFeatureDependenciesMap)
         SplitInfo splitInfo = infoGenerator.generate(splitName, splitSignedApk, splitManifest)
         return splitInfo
     }
