@@ -24,6 +24,7 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
@@ -44,24 +45,22 @@ public final class SplitApkInstaller {
 
     }
 
-    @Nullable
-    private static SplitInstallSupervisor createSplitInstallSupervisor(Context context) {
-        Downloader downloader = SplitDownloaderManager.getDownloader();
-        if (downloader != null) {
-            SplitInstallSessionManager sessionManager = new SplitInstallSessionManagerImpl(context);
-            return new SplitInstallSupervisorImpl(context, sessionManager, downloader);
+    public static void install(Context context,
+                               Downloader downloader,
+                               Class<? extends Activity> obtainUserConfirmationActivityClass) {
+        if (sSplitApkInstallerRef.get() == null) {
+            sSplitApkInstallerRef.set(new SplitInstallSupervisorImpl(
+                    context,
+                    new SplitInstallSessionManagerImpl(context),
+                    downloader,
+                    obtainUserConfirmationActivityClass)
+            );
         }
-        return null;
     }
 
+
     @Nullable
-    public static SplitInstallSupervisor getSplitInstallSupervisor(Context context) {
-        if (sSplitApkInstallerRef.get() == null) {
-            SplitInstallSupervisor instance = createSplitInstallSupervisor(context);
-            if (instance != null) {
-                sSplitApkInstallerRef.set(instance);
-            }
-        }
+    public static SplitInstallSupervisor getSplitInstallSupervisor() {
         return sSplitApkInstallerRef.get();
     }
 }

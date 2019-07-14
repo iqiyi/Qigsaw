@@ -24,7 +24,6 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
@@ -40,9 +39,9 @@ abstract class DefaultTask implements Runnable, SplitInstallSupervisor.Callback 
 
     private final SplitInstallSupervisor installSupervisor;
 
-    DefaultTask(Context context, ISplitInstallServiceCallback callback) {
+    DefaultTask(ISplitInstallServiceCallback callback) {
         this.mCallback = callback;
-        installSupervisor = SplitApkInstaller.getSplitInstallSupervisor(context);
+        installSupervisor = SplitApkInstaller.getSplitInstallSupervisor();
     }
 
     @Override

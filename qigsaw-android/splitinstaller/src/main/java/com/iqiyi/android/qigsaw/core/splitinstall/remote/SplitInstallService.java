@@ -52,32 +52,32 @@ public final class SplitInstallService extends Service {
 
         @Override
         public void startInstall(String packageName, List<Bundle> moduleNames, Bundle versionCode, ISplitInstallServiceCallback callback) {
-            getHandler(packageName).post(new OnStartInstallTask(getApplicationContext(), callback, moduleNames));
+            getHandler(packageName).post(new OnStartInstallTask(callback, moduleNames));
         }
 
         @Override
         public void cancelInstall(String packageName, int sessionId, Bundle versionCode, ISplitInstallServiceCallback callback) {
-            getHandler(packageName).post(new OnCancelInstallTask(getApplicationContext(), callback, sessionId));
+            getHandler(packageName).post(new OnCancelInstallTask(callback, sessionId));
         }
 
         @Override
         public void getSessionState(String packageName, int sessionId, ISplitInstallServiceCallback callback) {
-            getHandler(packageName).post(new OnGetSessionStateTask(getApplicationContext(), callback, sessionId));
+            getHandler(packageName).post(new OnGetSessionStateTask(callback, sessionId));
         }
 
         @Override
         public void getSessionStates(String packageName, ISplitInstallServiceCallback callback) {
-            getHandler(packageName).post(new OnGetSessionStatesTask(getApplicationContext(), callback));
+            getHandler(packageName).post(new OnGetSessionStatesTask(callback));
         }
 
         @Override
         public void deferredInstall(String packageName, List<Bundle> moduleNames, Bundle versionCode, ISplitInstallServiceCallback callback) {
-            getHandler(packageName).post(new OnDeferredInstallTask(getApplicationContext(), callback, moduleNames));
+            getHandler(packageName).post(new OnDeferredInstallTask(callback, moduleNames));
         }
 
         @Override
         public void deferredUninstall(String packageName, List<Bundle> moduleNames, Bundle versionCode, ISplitInstallServiceCallback callback) {
-            getHandler(packageName).post(new OnDeferredUninstallTask(getApplicationContext(), callback, moduleNames));
+            getHandler(packageName).post(new OnDeferredUninstallTask(callback, moduleNames));
         }
     };
 

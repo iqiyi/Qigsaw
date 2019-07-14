@@ -24,7 +24,6 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
@@ -37,8 +36,8 @@ final class OnStartInstallTask extends DefaultTask {
 
     private final List<Bundle> mModuleNames;
 
-    OnStartInstallTask(Context context, ISplitInstallServiceCallback callback, List<Bundle> moduleNames) {
-        super(context, callback);
+    OnStartInstallTask(ISplitInstallServiceCallback callback, List<Bundle> moduleNames) {
+        super(callback);
         this.mModuleNames = moduleNames;
     }
 

@@ -24,7 +24,6 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
@@ -38,10 +37,8 @@ final class OnDeferredUninstallTask extends DefaultTask {
 
     private final List<Bundle> mModuleNames;
 
-    OnDeferredUninstallTask(Context context,
-                            ISplitInstallServiceCallback callback,
-                            List<Bundle> moduleNames) {
-        super(context, callback);
+    OnDeferredUninstallTask(ISplitInstallServiceCallback callback, List<Bundle> moduleNames) {
+        super(callback);
         this.mModuleNames = moduleNames;
     }
 

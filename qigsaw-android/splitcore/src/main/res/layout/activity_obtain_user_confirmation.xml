@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:paddingTop="5dp"
+        android:textColor="@color/colorBlack"
         android:text="@string/warm_prompt"
         android:textSize="26sp" />
 
@@ -21,6 +22,7 @@
         android:layout_height="wrap_content"
         android:paddingLeft="15dp"
         android:paddingTop="15dp"
+        android:textColor="@color/colorGrey"
         android:paddingRight="15dp"
         android:text="@string/prompt_desc"
         android:textSize="16sp" />

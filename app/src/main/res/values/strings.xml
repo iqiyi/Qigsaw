@@ -14,4 +14,9 @@
     <string name="install_all_deferred">Install deferred</string>
     <string name="request_uninstall">Request module uninstall</string>
     <string name="title_aiapps">Module Title</string>
+
+    <string name="sample_warm_prompt">Warm Prompt</string>
+    <string name="sample_prompt_desc">Using this feature will consume about %s M traffic data, Do you want to continue downloading?</string>
+    <string name="sample_confirm">Confirm</string>
+    <string name="sample_cancel">Cancel</string>
 </resources>

@@ -62,6 +62,11 @@ public class SplitConfiguration {
      */
     private final SplitLog.Logger logger;
 
+    /**
+     * Customized dialog for requiring user confirmation whether allowed to download splits while using mobile data
+     */
+    private final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
+
     public static SplitConfiguration.Builder newBuilder() {
         return new SplitConfiguration.Builder();
     }
@@ -73,6 +78,7 @@ public class SplitConfiguration {
         this.loadReporter = builder.loadReporter;
         this.updateReporter = builder.updateReporter;
         this.logger = builder.logger;
+        this.obtainUserConfirmationDialogClass = builder.obtainUserConfirmationDialogClass;
 
     }
 
@@ -100,6 +106,10 @@ public class SplitConfiguration {
         return logger;
     }
 
+    public Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass() {
+        return obtainUserConfirmationDialogClass;
+    }
+
     public static class Builder {
 
         private String[] workProcesses;
@@ -113,6 +123,8 @@ public class SplitConfiguration {
         private SplitUpdateReporter updateReporter;
 
         private SplitLog.Logger logger;
+
+        private Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
         private Builder() {
 
@@ -145,6 +157,11 @@ public class SplitConfiguration {
 
         public Builder updateReporter(SplitUpdateReporter updateReporter) {
             this.updateReporter = updateReporter;
+            return this;
+        }
+
+        public Builder obtainUserConfirmationDialogClass(Class<? extends ObtainUserConfirmationDialog> clazz) {
+            this.obtainUserConfirmationDialogClass = clazz;
             return this;
         }
 

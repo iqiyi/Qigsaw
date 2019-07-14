@@ -44,7 +44,7 @@ import com.iqiyi.android.qigsaw.core.common.SplitAABInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.splitdownload.Downloader;
-import com.iqiyi.android.qigsaw.core.splitinstall.SplitDownloaderManager;
+import com.iqiyi.android.qigsaw.core.splitinstall.SplitApkInstaller;
 import com.iqiyi.android.qigsaw.core.splitinstall.SplitInstallReporterManager;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManager;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
@@ -87,6 +87,7 @@ public class Qigsaw {
         SplitLoadReporter loadReporter = null;
         SplitUpdateReporter updateReporter = null;
         SplitLog.Logger logger = null;
+        Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass = null;
         if (configuration != null) {
             manifestPackageName = configuration.getManifestPackageName();
             workProcesses = configuration.getWorkProcesses();
@@ -94,6 +95,7 @@ public class Qigsaw {
             loadReporter = configuration.getLoadReporter();
             updateReporter = configuration.getUpdateReporter();
             logger = configuration.getLogger();
+            obtainUserConfirmationDialogClass = configuration.obtainUserConfirmationDialogClass();
         }
         if (TextUtils.isEmpty(manifestPackageName)) {
             manifestPackageName = context.getPackageName();
@@ -130,9 +132,12 @@ public class Qigsaw {
             if (updateReporter == null) {
                 updateReporter = new DefaultSplitUpdateReporter(appContext);
             }
+            if (obtainUserConfirmationDialogClass == null) {
+                obtainUserConfirmationDialogClass = DefaultObtainUserConfirmationDialog.class;
+            }
+            SplitApkInstaller.install(appContext, downloader, obtainUserConfirmationDialogClass);
             SplitInstallReporterManager.install(installReporter);
             SplitUpdateReporterManager.install(updateReporter);
-            SplitDownloaderManager.install(downloader);
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
                 @Override
                 public boolean queueIdle() {

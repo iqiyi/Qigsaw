@@ -156,7 +156,7 @@ public class SampleDownloader implements Downloader {
 
     @Override
     public boolean isDeferredDownloadOnlyWhenUsingWifiData() {
-        return false;
+        return true;
     }
 
 }

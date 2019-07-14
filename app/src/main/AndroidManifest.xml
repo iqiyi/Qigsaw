@@ -29,6 +29,12 @@
             android:name=".QigsawInstaller"
             android:theme="@style/Theme.ActivityDialogStyle" />
 
+        <activity
+            android:name=".SampleObtainUserConfirmationDialog"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ActivityDialogStyle" />
+
     </application>
 
 

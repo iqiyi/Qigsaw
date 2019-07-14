@@ -63,7 +63,7 @@ abstract class SplitInstaller {
      * @param splitApk  file of split apk.
      * @return a list of extracted dex files
      */
-    protected abstract List<File> extractMultiDex(SplitInfo info, File splitApk) throws InstallException;
+    protected abstract List<File> extractMultiDex(SplitInfo splitInfo, File splitApk) throws InstallException;
 
     /**
      * Extract split native library files.

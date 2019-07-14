@@ -15,12 +15,6 @@
         <service
             android:name=".SplitCleanService"
             android:exported="false" />
-
-        <activity
-            android:name="com.iqiyi.android.qigsaw.core.splitinstall.ObtainUserConfirmationActivity"
-            android:screenOrientation="portrait"
-            android:exported="false"
-            android:theme="@style/Theme.ActivityDialogStyle" />
     </application>
 
 </manifest>

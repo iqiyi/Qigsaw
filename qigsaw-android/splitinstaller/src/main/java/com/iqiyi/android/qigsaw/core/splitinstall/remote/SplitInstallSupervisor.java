@@ -58,9 +58,9 @@ public abstract class SplitInstallSupervisor {
 
     public abstract void getSessionStates(Callback callback) throws RemoteException;
 
-    public abstract void continueInstallWithUserConfirmation(int sessionId, List<DownloadRequest> requests);
+    public abstract boolean continueInstallWithUserConfirmation(int sessionId);
 
-    public abstract void cancelInstallWithoutUserConfirmation(int sessionId);
+    public abstract boolean cancelInstallWithoutUserConfirmation(int sessionId);
 
     protected static Bundle bundleErrorCode(int errorCode) {
         Bundle bundle = new Bundle();
