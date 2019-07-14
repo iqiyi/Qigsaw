@@ -1,5 +1,8 @@
 package com.google.android.play.core.splitinstall;
 
+import android.app.Activity;
+import android.content.IntentSender;
+
 import com.google.android.play.core.tasks.Task;
 
 import java.util.List;
@@ -21,6 +24,11 @@ public interface SplitInstallManager {
      * Initiates a split creteSplitInstallService request.
      */
     Task<Integer> startInstall(SplitInstallRequest request);
+
+    /**
+     * Starts the user confirmation dialog from the provided {@link com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus}.
+     */
+    boolean startConfirmationDialogForResult(SplitInstallSessionState sessionState, Activity activity, int requestCode) throws IntentSender.SendIntentException;
 
     /**
      * Starts a request to cancel a pending split creteSplitInstallService.

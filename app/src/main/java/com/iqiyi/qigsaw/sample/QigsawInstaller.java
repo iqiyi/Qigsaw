@@ -38,6 +38,8 @@ public class QigsawInstaller extends Activity {
 
     public static final int INSTALL_REQUEST_CODE = 10;
 
+    private static final int USER_CONFIRMATION_REQ_CODE = 11;
+
     public static final String KEY_MODULE_NAMES = "moduleNames";
 
     private SplitInstallManager mInstallManager;
@@ -133,6 +135,19 @@ public class QigsawInstaller extends Activity {
     protected void onPause() {
         super.onPause();
         mInstallManager.unregisterListener(myListener);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == USER_CONFIRMATION_REQ_CODE) {
+            switch (resultCode) {
+                case RESULT_OK:
+                    break;
+                case RESULT_CANCELED:
+                    break;
+            }
+        }
     }
 
     private void startInstall() {
@@ -236,7 +251,7 @@ public class QigsawInstaller extends Activity {
 
     private void onRequiresUserConfirmation(SplitInstallSessionState state) {
         try {
-            startIntentSender(state.resolutionIntent().getIntentSender(), null, 0, 0, 0);
+            mInstallManager.startConfirmationDialogForResult(state, this, USER_CONFIRMATION_REQ_CODE);
         } catch (IntentSender.SendIntentException e) {
             e.printStackTrace();
         }

@@ -1,6 +1,8 @@
 package com.google.android.play.core.splitinstall;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.IntentSender;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -10,6 +12,7 @@ import android.os.Looper;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 
+import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus;
 import com.google.android.play.core.tasks.Task;
 import com.google.android.play.core.tasks.Tasks;
 
@@ -63,6 +66,17 @@ final class SplitInstallManagerImpl implements SplitInstallManager {
         } else {
             return mInstallService.startInstall(request.getModuleNames());
         }
+    }
+
+    @Override
+    public boolean startConfirmationDialogForResult(SplitInstallSessionState sessionState, Activity activity, int requestCode)
+            throws IntentSender.SendIntentException {
+        if (sessionState.status() == SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION && sessionState.resolutionIntent() != null) {
+            activity.startIntentSenderForResult(sessionState.resolutionIntent().getIntentSender(),
+                    requestCode, null, 0, 0, 0);
+            return true;
+        }
+        return false;
     }
 
     @Override

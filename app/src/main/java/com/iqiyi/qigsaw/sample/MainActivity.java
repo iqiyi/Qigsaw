@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 case RESULT_OK:
                     if (data != null) {
                         ArrayList<String> moduleNames = data.getStringArrayListExtra(QigsawInstaller.KEY_MODULE_NAMES);
-                        if (moduleNames != null && !moduleNames.isEmpty()) {
+                        if (moduleNames != null && moduleNames.size() == 1) {
                             loadAndLaunchModule(moduleNames.get(0));
                         }
                     }

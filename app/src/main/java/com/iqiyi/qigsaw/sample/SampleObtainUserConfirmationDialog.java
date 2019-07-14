@@ -30,7 +30,7 @@ public final class SampleObtainUserConfirmationDialog extends ObtainUserConfirma
         TextView descText = findViewById(R.id.sample_user_conformation_tv);
         DecimalFormat df = new DecimalFormat("#.00");
         double convert = getRealTotalBytesNeedToDownload() / (1024f * 1024f);
-        descText.setText(String.format(getString(com.iqiyi.android.qigsaw.core.R.string.prompt_desc), df.format(convert)));
+        descText.setText(String.format(getString(R.string.sample_prompt_desc), df.format(convert)));
         findViewById(R.id.sample_user_confirm).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
