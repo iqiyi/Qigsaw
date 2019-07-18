@@ -92,7 +92,7 @@ class QigsawAssembleTask extends DefaultTask {
                 if (assembleTask.name.endsWith(variantName)) {
                     appVariant.outputs.each {
                         splitApk = it.outputFile
-                        File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(project, appVariant.name.capitalize())
+                        File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(dynamicFeatureProject, appVariant.name.capitalize())
                         splitManifest = new File(mergedManifestDir, "AndroidManifest.xml")
                     }
                 }
