@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">qigsaw-splitcore</string>
+    <string name="warm_prompt">Warm Prompt</string>
+    <string name="prompt_desc">Using this feature will consume about %s M traffic data, Do you want to continue downloading?</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+</resources>

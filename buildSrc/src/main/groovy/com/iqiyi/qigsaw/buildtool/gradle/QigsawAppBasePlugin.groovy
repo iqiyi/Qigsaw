@@ -28,6 +28,7 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
 import com.iqiyi.qigsaw.buildtool.gradle.transform.ComponentInfoCreatorTransform
 import org.gradle.api.GradleException
@@ -47,7 +48,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         if (!project.plugins.hasPlugin('com.android.application')) {
             throw new GradleException('generateQigsawApk: Android Application plugin required')
         }
-        def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
+        def versionAGP = VersionNumber.parse(AGPCompat.getAndroidGradlePluginVersionCompat())
         if (versionAGP < VersionNumber.parse("3.2.0")) {
             throw new GradleException('generateQigsawApk: Android Gradle Version is required 3.2.0 at least!')
         }
@@ -59,7 +60,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
         project.afterEvaluate {
             //if AAPT2 is disable, package id of plugin resources can not be customized.
-            if (!isAapt2EnabledCompat(project)) {
+            if (!AGPCompat.isAapt2EnabledCompat(project)) {
                 throw new GradleException('generateQigsawApk: AAPT2 required')
             }
             def dynamicFeatures = android.dynamicFeatures
@@ -91,15 +92,15 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 ApplicationVariant appVariant = variant
                 String variantName = appVariant.name.capitalize()
                 def variantData = appVariant.variantData
-                Task generateAssetsTask = getGenerateAssetsTask(project, variantName)
+                Task generateAssetsTask = AGPCompat.getGenerateAssetsTask(project, variantName)
                 if (generateAssetsTask == null) {
                     throw new RuntimeException("Cannot found generateAssetsTask, current variantName: " + variantName)
                 }
 
-                Task mergeAssetsTask = getMergeAssetsTask(project, variantName)
-                Task processManifestTask = getProcessManifestTask(project, variantName)
-                Task packageTask = getPackageTask(project, variantName)
-                Task generateBuildConfigTask = getGenerateBuildConfigTask(project, variantName)
+                Task mergeAssetsTask = AGPCompat.getMergeAssetsTask(project, variantName)
+                Task processManifestTask = AGPCompat.getProcessManifestTask(project, variantName)
+                Task packageTask = AGPCompat.getPackageTask(project, variantName)
+                Task generateBuildConfigTask = AGPCompat.getGenerateBuildConfigTask(project, variantName)
 
                 QigsawBuildConfigGenerator generator = new QigsawBuildConfigGenerator(generateBuildConfigTask)
                 generator.injectFields("DEFAULT_SPLIT_INFO_VERSION", splitInfoVersion)
@@ -111,8 +112,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     QigsawProguardConfigTask proguardConfigTask = project.tasks.create("qigsawProcess${variantName}Proguard", QigsawProguardConfigTask)
                     proguardConfigTask.applicationVariant = appVariant
                     proguardConfigTask.packageName = packageName
-                    Task r8Task = getR8Task(project, variantName)
-                    Task proguardTask = getProguardTask(project, variantName)
+                    Task r8Task = AGPCompat.getR8Task(project, variantName)
+                    Task proguardTask = AGPCompat.getProguardTask(project, variantName)
                     if (proguardTask != null) {
                         proguardTask.dependsOn proguardConfigTask
                     } else {
@@ -124,7 +125,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 }
                 boolean multiDexEnabled = variantData.variantConfiguration.isMultiDexEnabled()
                 if (multiDexEnabled) {
-                    def multidexTask = getMultiDexTask(project, variantName)
+                    def multidexTask = AGPCompat.getMultiDexTask(project, variantName)
                     if (multidexTask != null) {
                         removeRulesAboutMultidex(multidexTask, appVariant)
                     }
@@ -138,7 +139,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         qigsawId
                 )
 
-                Task showDependencies = getShowDependenciesTask(project, variantName)
+                Task showDependencies = createShowDependenciesTask(project, variantName)
 
                 showDependencies.doLast {
 
@@ -189,7 +190,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         }
                     }
 
-                    Task assembleTask = getAssemble(appVariant)
+                    Task assembleTask = AGPCompat.getAssemble(appVariant)
                     qigsawAssembleTask.dependsOn showDependencies
                     generateAssetsTask.finalizedBy(qigsawAssembleTask)
                     mergeAssetsTask.mustRunAfter(qigsawAssembleTask)
@@ -197,7 +198,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     assembleTask.doLast {
                         qigsawAssembleTask.clearQigsawIntermediates()
                     }
-                    Task dexSplitterTask = getDexSplitterTask(project, variantName)
+                    processManifestTask.doLast {
+                        SplitProviderProcessor providerProcessor = new SplitProviderProcessor(project, dynamicFeatureNames, variantName)
+                        providerProcessor.process()
+                    }
+                    Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
                     packageTask.doFirst {
                         if (dexSplitterTask != null) {
                             println("start to remerge dex files!")
@@ -221,38 +226,19 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         }
     }
 
-
     private static void configQigsawAssembleTaskDependencies(Project dynamicFeatureProject, String baseAppVariant, Task qigsawAssembleTask) {
         AppExtension dynamicFeatureAndroid = dynamicFeatureProject.extensions.getByType(AppExtension)
         dynamicFeatureAndroid.applicationVariants.all { variant ->
             ApplicationVariant appVariant = variant
             if (appVariant.name.equalsIgnoreCase(baseAppVariant)) {
-                qigsawAssembleTask.dependsOn getAssemble(appVariant)
+                qigsawAssembleTask.dependsOn AGPCompat.getAssemble(appVariant)
             }
         }
     }
 
-    static Task getAssemble(ApplicationVariant variant) {
-        try {
-            return variant.assembleProvider.get()
-        } catch (Exception e) {
-            return variant.assemble
-        }
-    }
-
-    static Task getShowDependenciesTask(Project project, String variantName) {
+    static Task createShowDependenciesTask(Project project, String variantName) {
         String taskName = "showDependencies${variantName}"
         return project.tasks.create(taskName)
-    }
-
-    static Task getGenerateBuildConfigTask(Project project, String variantName) {
-        String taskName = "generate${variantName}BuildConfig"
-        return project.tasks.findByName(taskName)
-    }
-
-    static Task getR8Task(Project project, String variantName) {
-        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
-        return project.tasks.findByName(r8TaskName)
     }
 
     static void removeRulesAboutMultidex(Task multidexTask, ApplicationVariant appVariant) {
@@ -260,96 +246,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
             AdjustManifestKeepHandler handler = new AdjustManifestKeepHandler(project, appVariant)
             handler.execute()
         }
-    }
-
-    static Task getMultiDexTask(Project project, String variantName) {
-        String multiDexTaskName = "transformClassesWithMultidexlistFor${variantName}"
-        return project.tasks.findByName(multiDexTaskName)
-    }
-
-    static Task getProguardTask(Project project, String variantName) {
-        String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
-        return project.tasks.findByName(proguardTaskName)
-    }
-
-    static Task getGenerateAssetsTask(Project project, String variantName) {
-        String generateAssetsTaskName = "generate${variantName}Assets"
-        return project.tasks.findByName(generateAssetsTaskName)
-    }
-
-    static Task getMergeAssetsTask(Project project, String variantName) {
-        String mergeAssetsTaskName = "merge${variantName}Assets"
-        return project.tasks.findByName(mergeAssetsTaskName)
-    }
-
-    static Task getPackageTask(Project project, String variantName) {
-        String packageTaskName = "package${variantName}"
-        return project.tasks.findByName(packageTaskName)
-    }
-
-    static Task getDexSplitterTask(Project project, String variantName) {
-        String proguardTaskName = "transformDexWithDexSplitterFor${variantName}"
-        return project.tasks.findByName(proguardTaskName)
-
-    }
-
-    /**
-     * get android gradle plugin version by reflect
-     */
-    static String getAndroidGradlePluginVersionCompat() {
-        String version = null
-        try {
-            Class versionModel = Class.forName("com.android.builder.model.Version")
-            def versionFiled = versionModel.getDeclaredField("ANDROID_GRADLE_PLUGIN_VERSION")
-            versionFiled.setAccessible(true)
-            version = versionFiled.get(null)
-        } catch (Exception e) {
-
-        }
-        return version
-    }
-
-    /**
-     * get whether aapt2 is enabled
-     */
-    static boolean isAapt2EnabledCompat(Project project) {
-        if (getAndroidGradlePluginVersionCompat() >= '3.3.0') {
-            //when agp' version >= 3.3.0, use aapt2 default and no way to switch to aapt.
-            return true
-        }
-        boolean aapt2Enabled = false
-        try {
-            def projectOptions = getProjectOptions(project)
-            Object enumValue = resolveEnumValue("ENABLE_AAPT2", Class.forName("com.android.build.gradle.options.BooleanOption"))
-            aapt2Enabled = projectOptions.get(enumValue)
-        } catch (Exception e) {
-            //ignored
-        }
-        return aapt2Enabled
-    }
-
-    /**
-     * get com.android.build.gradle.options.ProjectOptions obj by reflect
-     */
-    static def getProjectOptions(Project project) {
-        try {
-            def basePlugin = project.getPlugins().hasPlugin('com.android.application') ? project.getPlugins().findPlugin('com.android.application') : project.getPlugins().findPlugin('com.android.library')
-            return Class.forName("com.android.build.gradle.BasePlugin").getMetaClass().getProperty(basePlugin, 'projectOptions')
-        } catch (Exception e) {
-        }
-        return null
-    }
-
-    /**
-     * get enum obj by reflect
-     */
-    static <T> T resolveEnumValue(String value, Class<T> type) {
-        for (T constant : type.getEnumConstants()) {
-            if (constant.toString().equalsIgnoreCase(value)) {
-                return constant
-            }
-        }
-        return null
     }
 
     static String getQigsawId(Project project) {

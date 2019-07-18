@@ -26,6 +26,7 @@ package com.iqiyi.android.qigsaw.core;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
@@ -103,21 +104,21 @@ public class Qigsaw {
         if (logger != null) {
             SplitLog.setSplitLogImp(logger);
         }
-        final Context appContext = getApplicationContext(context);
+        final Context baseContext = getBaseContext(context);
         SplitBaseInfoProvider.setPackageName(manifestPackageName);
         //create AABCompat instance
-        AABExtension.install(appContext);
+        AABExtension.install(baseContext);
         //create SplitLoadManager instance.
-        SplitLoadManagerService.install(appContext);
+        SplitLoadManagerService.install(baseContext);
         if (loadReporter == null) {
-            loadReporter = new DefaultSplitLoadReporter(appContext);
+            loadReporter = new DefaultSplitLoadReporter(baseContext);
         }
         SplitLoadReporterManager.install(loadReporter);
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         //load all installed splits for qigsaw.
-        loadManager.load(workProcesses, !isSplitAppComponentFactoryExisting(appContext));
+        loadManager.load(workProcesses, !isSplitAppComponentFactoryExisting(baseContext));
         //getInstance all installed splits for AAB.
-        SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(appContext);
+        SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(baseContext);
         Set<String> loadedSplits = infoProvider.getInstalledSplitsForAAB();
         //if installed splits of aab are not empty, qigsaw would not work.
         if (loadedSplits.isEmpty()) {
@@ -125,28 +126,28 @@ public class Qigsaw {
         }
         AABExtension.getInstance().onBaseContextAttached(loadedSplits);
         //only work in main process!
-        if (ProcessUtil.isMainProcess(appContext)) {
+        if (ProcessUtil.isMainProcess(baseContext)) {
             if (installReporter == null) {
-                installReporter = new DefaultSplitInstallReporter(appContext);
+                installReporter = new DefaultSplitInstallReporter(baseContext);
             }
             if (updateReporter == null) {
-                updateReporter = new DefaultSplitUpdateReporter(appContext);
+                updateReporter = new DefaultSplitUpdateReporter(baseContext);
             }
             if (obtainUserConfirmationDialogClass == null) {
                 obtainUserConfirmationDialogClass = DefaultObtainUserConfirmationDialog.class;
             }
-            SplitApkInstaller.install(appContext, downloader, obtainUserConfirmationDialogClass);
+            SplitApkInstaller.install(baseContext, downloader, obtainUserConfirmationDialogClass);
             SplitInstallReporterManager.install(installReporter);
             SplitUpdateReporterManager.install(updateReporter);
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
                 @Override
                 public boolean queueIdle() {
-                    cleanStaleSplits(appContext);
+                    cleanStaleSplits(baseContext);
                     return false;
                 }
             });
         }
-        SplitCompat.install(appContext);
+        SplitCompat.install(baseContext);
     }
 
     /**
@@ -203,14 +204,12 @@ public class Qigsaw {
         }
     }
 
-    private static Context getApplicationContext(Context context) {
-        Context appContext;
-        if (context.getApplicationContext() == null) {
-            appContext = context;
-        } else {
-            appContext = context.getApplicationContext();
+    private static Context getBaseContext(Context context) {
+        Context ctx = context;
+        while (ctx instanceof ContextWrapper) {
+            ctx = ((ContextWrapper) ctx).getBaseContext();
         }
-        return appContext;
+        return ctx;
     }
 
     private static boolean isSplitAppComponentFactoryExisting(Context context) {

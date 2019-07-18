@@ -45,26 +45,4 @@ abstract class QigsawPlugin implements Plugin<Project> {
         }
         return false
     }
-
-    static Task getProcessManifestTask(Project project, String variantName) {
-        String mergeManifestTaskName = "process${variantName}Manifest"
-        return project.tasks.findByName(mergeManifestTaskName)
-    }
-
-    static Task getSplitComponentTransformTask(Project project, String variantName) {
-        return project.tasks.findByName("transformClassesWithSplitComponentTransformFor${variantName}")
-    }
-
-    static File getMergedManifestDir(Project project, String variantName) {
-        Task processManifest = getProcessManifestTask(project, variantName)
-        File mergedManifestDir = null
-        if (processManifest != null) {
-            processManifest.outputs.files.each {
-                if (it.toPath().toString().contains(File.separator + "merged_manifests" + File.separator)) {
-                    mergedManifestDir = it.toPath().toFile()
-                }
-            }
-        }
-        return mergedManifestDir
-    }
 }

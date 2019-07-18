@@ -25,28 +25,8 @@
 package com.iqiyi.android.qigsaw.core.extension;
 
 import android.app.Application;
-import android.content.pm.ProviderInfo;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 interface AABExtensionManager {
-
-    /**
-     * Remove providers of unloaded splits
-     *
-     * @param unLoadSplits list of unloaded splits.
-     * @return map of split's {@link ProviderInfo}.
-     */
-    Map<String, List<ProviderInfo>> removeSplitProviders(Set<String> unLoadSplits) throws AABExtensionException;
-
-    /**
-     * Install providers of loaded splits.
-     *
-     * @param providers list of split's {@link ProviderInfo}.
-     */
-    void installSplitProviders(List<ProviderInfo> providers) throws AABExtensionException;
 
     /**
      * Create {@link Application} instance for split.

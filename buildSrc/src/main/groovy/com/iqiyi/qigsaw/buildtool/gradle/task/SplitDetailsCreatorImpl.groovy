@@ -30,6 +30,7 @@ import com.google.gson.Gson
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetailsCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploader
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploaderInstance
@@ -97,12 +98,7 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
         appProject.extensions.android.applicationVariants.each {
             ApplicationVariant appVariant = it
             if (appVariant.name.equalsIgnoreCase(variantName)) {
-                Task packageApplicationTask
-                try {
-                    packageApplicationTask = appVariant.getPackageApplicationProvider().get()
-                } catch (Exception e) {
-                    packageApplicationTask = appVariant.packageApplication
-                }
+                Task packageApplicationTask = AGPCompat.getPackageApplication(appVariant)
                 outputDir = packageApplicationTask.outputDirectory
             }
         }

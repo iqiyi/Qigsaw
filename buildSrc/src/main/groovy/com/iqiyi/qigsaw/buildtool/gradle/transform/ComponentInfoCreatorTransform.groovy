@@ -30,6 +30,7 @@ import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.google.common.collect.ImmutableSet
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import org.apache.commons.io.FileUtils
@@ -37,6 +38,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
 import java.security.MessageDigest
@@ -90,21 +92,8 @@ class ComponentInfoCreatorTransform extends Transform {
             dynamicAndroid.applicationVariants.all { variant ->
                 ApplicationVariant appVariant = variant
                 if (appVariant.name == transformInvocation.context.variantName) {
-                    appVariant.outputs.each {
-                        Task processManifestTask
-                        try {
-                            processManifestTask = it.getProcessManifestProvider().get()
-                        } catch (Exception e) {
-                            processManifestTask = it.processManifest
-                        }
-                        processManifestTask.outputs.files.each {
-                            String parentFileName = it.getParentFile().name
-                            if (it.isDirectory()
-                                    && (parentFileName.equals("merged_manifests") || it.name.equals("merged"))) {
-                                splitManifest = new File(it, "AndroidManifest.xml")
-                            }
-                        }
-                    }
+                    File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(dynamicFeatureProject, appVariant.name.capitalize())
+                    splitManifest = new File(mergedManifestDir, "AndroidManifest.xml")
                 }
             }
             String splitName = dynamicFeatureProject.getName().toUpperCase()
@@ -172,6 +161,7 @@ class ComponentInfoCreatorTransform extends Transform {
         return MessageDigest.getInstance("MD5").digest(str.bytes).encodeHex().toString()
     }
 
+
     static void weave(Map<String, List> addFieldMap, File dest) {
         ClassWriter cw = new ClassWriter(0)
         cw.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC, "com/iqiyi/android/qigsaw/core/extension/ComponentInfo", null, "java/lang/Object", null)
@@ -184,6 +174,10 @@ class ComponentInfoCreatorTransform extends Transform {
             if (name.endsWith("APPLICATION")) {
                 cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
                         name, "Ljava/lang/String;", null, value.get(0)).visitEnd()
+            } else if (name.endsWith("PROVIDERS")) {
+                for (String providerName : value) {
+                    createSplitProviderClassFile(dest, providerName)
+                }
             } else {
                 cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
                         name, "Ljava/lang/String;", null,
@@ -204,5 +198,36 @@ class ComponentInfoCreatorTransform extends Transform {
                 .withOutputStream { os ->
             os.write(cw.toByteArray())
         }
+    }
+
+    static void createSplitProviderClassFile(File dest, String providerClassName) {
+        providerClassName = providerClassName + "_Decorated"
+        ClassWriter cw = new ClassWriter(0)
+        String folderName = providerClassName.replace(".", File.separator)
+        File providerClassFile = new File(dest.absolutePath + File.separator + folderName + ".class")
+        if (!providerClassFile.getParentFile().exists()) {
+            providerClassFile.getParentFile().mkdirs()
+        }
+
+        cw.visit(Opcodes.V1_7,
+                Opcodes.ACC_PUBLIC,
+                providerClassName.replace(".", "/"), null,
+                "com/iqiyi/android/qigsaw/core/extension/ContentProviderProxy",
+                null)
+
+        MethodVisitor mw = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V",
+                null, null)
+        mw.visitVarInsn(Opcodes.ALOAD, 0)
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "com/iqiyi/android/qigsaw/core/extension/ContentProviderProxy", "<init>",
+                "()V")
+        mw.visitInsn(Opcodes.RETURN)
+        mw.visitMaxs(1, 1)
+        mw.visitEnd()
+
+        providerClassFile
+                .withOutputStream { os ->
+            os.write(cw.toByteArray())
+        }
+
     }
 }

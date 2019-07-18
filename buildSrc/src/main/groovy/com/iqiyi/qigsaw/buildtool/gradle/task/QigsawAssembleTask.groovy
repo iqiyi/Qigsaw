@@ -29,6 +29,7 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetailsCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TopoSort
 import org.gradle.api.DefaultTask
@@ -87,28 +88,12 @@ class QigsawAssembleTask extends DefaultTask {
 
             android.applicationVariants.all { variant ->
                 ApplicationVariant appVariant = variant
-                Task assembleTask
-                try {
-                    assembleTask = appVariant.getAssembleProvider().get()
-                } catch (Exception e) {
-                    assembleTask = appVariant.assemble
-                }
+                Task assembleTask = AGPCompat.getAssemble(appVariant)
                 if (assembleTask.name.endsWith(variantName)) {
                     appVariant.outputs.each {
                         splitApk = it.outputFile
-                        Task processManifestTask
-                        try {
-                            processManifestTask = it.getProcessManifestProvider().get()
-                        } catch (Exception e) {
-                            processManifestTask = it.processManifest
-                        }
-                        processManifestTask.outputs.files.each {
-                            String parentFileName = it.getParentFile().name
-                            if (it.isDirectory()
-                                    && (parentFileName.equals("merged_manifests") || it.name.equals("merged"))) {
-                                splitManifest = new File(it, "AndroidManifest.xml")
-                            }
-                        }
+                        File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(project, appVariant.name.capitalize())
+                        splitManifest = new File(mergedManifestDir, "AndroidManifest.xml")
                     }
                 }
             }

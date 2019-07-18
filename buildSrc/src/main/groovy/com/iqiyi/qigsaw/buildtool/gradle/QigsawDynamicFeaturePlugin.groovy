@@ -26,6 +26,7 @@ package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitComponentTransform
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -47,7 +48,7 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
         project.afterEvaluate {
             android.applicationVariants.all { variant ->
                 ApplicationVariant appVariant = variant
-                File manifestOutputDirectory = getMergedManifestDir(project, appVariant.name.capitalize())
+                File manifestOutputDirectory = AGPCompat.getMergedManifestDirCompat(project, appVariant.name.capitalize())
                 File manifestFile = new File(manifestOutputDirectory, "AndroidManifest.xml")
                 Task splitComponentTransformTask = getSplitComponentTransformTask(project, appVariant.name.capitalize())
                 if (splitComponentTransformTask != null) {
@@ -59,5 +60,9 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
                 }
             }
         }
+    }
+
+    static Task getSplitComponentTransformTask(Project project, String variantName) {
+        return project.tasks.findByName("transformClassesWithSplitComponentTransformFor${variantName}")
     }
 }

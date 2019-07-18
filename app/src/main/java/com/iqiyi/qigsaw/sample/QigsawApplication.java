@@ -29,11 +29,8 @@ public class QigsawApplication extends Application {
                 .loadReporter(new SampleSplitLoadReporter(this))
                 .installReporter(new SampleSplitInstallReporter(this))
                 .updateReporter(new SampleSplitUpdateReporter(this))
-                .obtainUserConfirmationDialogClass(SampleObtainUserConfirmationDialog.class)
                 .build();
-        Qigsaw.install(this,
-                new SampleDownloader(),
-                configuration);
+        Qigsaw.install(this, new SampleDownloader(), configuration);
     }
 
     @Override

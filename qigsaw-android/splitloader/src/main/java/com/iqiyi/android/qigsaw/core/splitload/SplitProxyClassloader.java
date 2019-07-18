@@ -48,16 +48,15 @@ final class SplitProxyClassloader extends PathClassLoader {
         this.originClassLoader = (PathClassLoader) parent;
     }
 
-    private static void reflectPackageInfoClassloader(Context appContext, ClassLoader reflectClassLoader) throws Exception {
-        Context baseContext = (Context) HiddenApiReflection.findField(appContext, "mBase").get(appContext);
+    private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
         Object basePackageInfo = HiddenApiReflection.findField(baseContext, "mPackageInfo").get(baseContext);
         HiddenApiReflection.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
         Thread.currentThread().setContextClassLoader(reflectClassLoader);
     }
 
-    static PathClassLoader inject(ClassLoader originalClassloader, Context appContext) throws Exception {
+    static PathClassLoader inject(ClassLoader originalClassloader, Context baseContext) throws Exception {
         SplitProxyClassloader classLoader = new SplitProxyClassloader("", originalClassloader);
-        reflectPackageInfoClassloader(appContext, classLoader);
+        reflectPackageInfoClassloader(baseContext, classLoader);
         return classLoader;
     }
 

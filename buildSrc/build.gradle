@@ -22,6 +22,7 @@ dependencies {
     implementation 'javassist:javassist:3.12.1.GA'
     implementation 'commons-io:commons-io:2.5'
     implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'org.dom4j:dom4j:2.0.2'
     implementation gradleApi()
 }
 
