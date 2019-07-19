@@ -154,7 +154,7 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
             } else {
                 String uploadedUrl = uploader.uploadSync(appProject, splitInfo.splitApk, splitInfo.splitName)
                 if (uploadedUrl != null && uploadedUrl.startsWith("http")) {
-                    splitInfo.url = uploader.uploadSync(appProject, splitInfo.splitApk, splitInfo.splitName)
+                    splitInfo.url = uploadedUrl
                     return
                 }
             }
