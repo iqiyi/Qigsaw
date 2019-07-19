@@ -40,7 +40,7 @@ apply plugin: 'com.iqiyi.qigsaw.dynamicfeature'
 
 考虑到每个应用程序都有自己的下载器，qigsaw只提供下载接口，交由接入方实现。从[SampleDownloader](./app/src/main/java/com/iqiyi/qigsaw/sample/downloader/SampleDownloader.java)示例中了解更多信息。
 
-Qigsaw-gradle-plugin会在编译期间上传需要动态加载的split APK，因此您必须实现SplitApkUploader才能将split APK上传到您的CND服务器。从[SampleSplitApkUploader](./app/src/main/groovy/com/iqiyi/qigsaw/buildtool/gradle/sample/upload/SampleSplitApkUploader.groovy)示例中了解更多信息。
+Qigsaw-gradle-plugin会在编译期间上传需要动态加载的split APK，因此您必须实现SplitApkUploader才能将split APK上传到您的CND服务器。从[SampleSplitApkUploader](./qigsaw-android-sample/buildSrc/src/main/groovy/com/iqiyi/qigsaw/buildtool/gradle/sample/upload/SampleSplitApkUploader.groovy)示例中了解更多信息。
 
 如何安装qigsaw？从[QigsawApplication](./app/src/main/java/com/iqiyi/qigsaw/sample/QigsawApplication.java)示例中了解更多信息。
 
