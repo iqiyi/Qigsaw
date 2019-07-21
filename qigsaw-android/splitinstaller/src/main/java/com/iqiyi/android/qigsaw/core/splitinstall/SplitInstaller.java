@@ -108,18 +108,22 @@ abstract class SplitInstaller {
 
         final List<File> multiDexFiles;
 
+        final boolean dependenciesInstalled;
+
         InstallResult(@NonNull String splitName,
                       @NonNull File splitDir,
                       @NonNull File apkFile,
                       @Nullable File optDir,
                       @Nullable File libFile,
-                      @Nullable List<File> multiDexFiles) {
+                      @Nullable List<File> multiDexFiles,
+                      boolean dependenciesInstalled) {
             this.splitName = splitName;
             this.splitDir = splitDir;
             this.apkFile = apkFile;
             this.optDir = optDir;
             this.libFile = libFile;
             this.multiDexFiles = multiDexFiles;
+            this.dependenciesInstalled = dependenciesInstalled;
         }
     }
 

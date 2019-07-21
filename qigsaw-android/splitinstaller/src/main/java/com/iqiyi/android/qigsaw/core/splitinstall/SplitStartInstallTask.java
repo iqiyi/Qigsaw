@@ -64,6 +64,17 @@ final class SplitStartInstallTask extends SplitInstallTask {
 
     @Override
     protected void onInstallCompleted(List<SplitInstaller.InstallResult> installResults, long cost) {
+        List<SplitInstallError> installErrors = new ArrayList<>(0);
+        for (SplitInstaller.InstallResult installResult : installResults) {
+            if (!installResult.dependenciesInstalled) {
+                Throwable exception = new Exception("Split " + installResult.splitName + "' dependencies are not installed!");
+                installErrors.add(new SplitInstallError(installResult.splitName, SplitInstallError.DEPENDENCIES_NOT_INSTALLED, exception));
+            }
+        }
+        if (!installErrors.isEmpty()) {
+            onInstallFailed(installErrors, cost);
+            return;
+        }
         List<Intent> splitFileIntents = new ArrayList<>(installResults.size());
         for (SplitInstaller.InstallResult installResult : installResults) {
             Intent splitFileIntent = new Intent();

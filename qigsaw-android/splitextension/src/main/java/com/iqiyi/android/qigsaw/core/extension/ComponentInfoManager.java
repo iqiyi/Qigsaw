@@ -46,7 +46,7 @@ final class ComponentInfoManager {
     }
 
     static String getSplitApplication(String splitName) {
-        String fieldName = splitName.toUpperCase() + APPLICATION_SUFFIX;
+        String fieldName = splitName + APPLICATION_SUFFIX;
         try {
             Field field = getComponentInfoClass().getField(fieldName);
             field.setAccessible(true);
@@ -62,7 +62,7 @@ final class ComponentInfoManager {
     }
 
     static String[] getSplitActivities(String splitName) {
-        String fieldName = splitName.toUpperCase() + ACTIVITIES_SUFFIX;
+        String fieldName = splitName + ACTIVITIES_SUFFIX;
         try {
             Field field = getComponentInfoClass().getField(fieldName);
             field.setAccessible(true);
@@ -81,7 +81,7 @@ final class ComponentInfoManager {
     }
 
     static String[] getSplitServices(String splitName) {
-        String fieldName = splitName.toUpperCase() + SERVICES_SUFFIX;
+        String fieldName = splitName + SERVICES_SUFFIX;
         try {
             Field field = getComponentInfoClass().getField(fieldName);
             field.setAccessible(true);
@@ -100,7 +100,7 @@ final class ComponentInfoManager {
     }
 
     static String[] getSplitReceivers(String splitName) {
-        String fieldName = splitName.toUpperCase() + RECEIVERS_SUFFIX;
+        String fieldName = splitName + RECEIVERS_SUFFIX;
         try {
             Field field = getComponentInfoClass().getField(fieldName);
             field.setAccessible(true);

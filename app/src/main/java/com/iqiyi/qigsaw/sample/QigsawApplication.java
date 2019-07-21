@@ -10,7 +10,6 @@ import com.iqiyi.android.qigsaw.core.Qigsaw;
 import com.iqiyi.qigsaw.sample.downloader.SampleDownloader;
 import com.iqiyi.qigsaw.sample.reporter.SampleLogger;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitInstallReporter;
-import com.iqiyi.qigsaw.sample.reporter.SampleSplitLoadReporter;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitUpdateReporter;
 
 public class QigsawApplication extends Application {
@@ -26,7 +25,6 @@ public class QigsawApplication extends Application {
                 .workProcesses(workProcesses)
                 .logger(new SampleLogger())
                 .manifestPackageName(base.getPackageName())
-                .loadReporter(new SampleSplitLoadReporter(this))
                 .installReporter(new SampleSplitInstallReporter(this))
                 .updateReporter(new SampleSplitUpdateReporter(this))
                 .build();

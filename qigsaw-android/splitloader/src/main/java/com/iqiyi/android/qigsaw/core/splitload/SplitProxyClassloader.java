@@ -71,7 +71,7 @@ final class SplitProxyClassloader extends PathClassLoader {
                         lastClassNotFound = name;
                         SplitLog.w(TAG, "class %s is not found", name);
                         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                        loadManager.loadInstalledSplits(false);
+                        loadManager.loadInstalledSplits();
                         return findClass(name);
                     } else {
                         SplitLog.e(TAG, "SplitLoadManagerService has not been created!", name);
@@ -79,6 +79,7 @@ final class SplitProxyClassloader extends PathClassLoader {
                 }
             } else {
                 SplitLog.w(TAG, "class %s is still not found!", name);
+                lastClassNotFound = null;
                 if (AABExtension.getInstance().isSplitActivities(name)) {
                     SplitLog.w(TAG, "Split activity %s not found, return a fake activity to avoid crash", name);
                     return FakeActivity.class;
@@ -91,7 +92,6 @@ final class SplitProxyClassloader extends PathClassLoader {
                     SplitLog.w(TAG, "Split receiver %s not found, return a fake receiver to avoid crash", name);
                     return FakeReceiver.class;
                 }
-                lastClassNotFound = null;
             }
             throw error;
         }

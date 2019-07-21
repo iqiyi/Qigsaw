@@ -187,7 +187,12 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
                 for (SplitInfo appliedInfo : appliedSplitDetails.splits) {
                     if (info.splitName.equals(appliedInfo.splitName)) {
                         if (info.version.equals(appliedInfo.version)) {
-                            info.url = appliedInfo.url
+                            if (info.md5.equals(appliedInfo.md5)) {
+                                info.url = appliedInfo.url
+                            } else {
+                                uploadSplitAPKIfNeed(info)
+                                appProject.logger.error(String.format("Split %s md5 has been changed, but version is not changed!!!!", info.splitName))
+                            }
                         } else {
                             info.builtIn = false
                             updateSplits.add(info.splitName)

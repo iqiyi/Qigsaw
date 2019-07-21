@@ -81,7 +81,7 @@ public abstract class SplitLoadManager {
      * @param loadListener     a callback to be invoked when splits loaded.
      * @return load splits runnable.
      */
-    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean needActivate);
+    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener);
 
     /**
      * Get names of loaded splits
@@ -101,7 +101,7 @@ public abstract class SplitLoadManager {
         return loadedSplitApkPaths;
     }
 
-    public abstract void loadInstalledSplits(boolean processStarting);
+    public abstract void loadInstalledSplits();
 
     abstract PathClassLoader getInjectedClassloader();
 

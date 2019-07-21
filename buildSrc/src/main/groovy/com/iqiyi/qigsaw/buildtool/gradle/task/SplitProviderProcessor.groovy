@@ -84,7 +84,7 @@ class SplitProviderProcessor {
                         String appProviderName = appEle.attribute("name").value
                         String splitProviderName = splitEle.attribute("name").value
                         if (appProviderName.equals(splitProviderName)) {
-                            appEle.attribute("name").setValue(appProviderName + "_Decorated")
+                            appEle.attribute("name").setValue(appProviderName + "_Decorated_" + splitNode.left())
                         }
                     }
                 }

@@ -53,14 +53,10 @@ final class SplitLoadTask implements Runnable {
 
     private final SplitActivator splitActivator;
 
-    private final boolean processStarting;
-
     SplitLoadTask(SplitLoadManager loadManager,
                   @NonNull List<Intent> splitFileIntents,
-                  @Nullable OnSplitLoadListener loadListener,
-                  boolean processStarting) {
+                  @Nullable OnSplitLoadListener loadListener) {
         this.loadManager = loadManager;
-        this.processStarting = processStarting;
         this.splitActivator = new SplitActivator(AABExtension.getInstance());
         this.splitFileIntents = splitFileIntents;
         this.loadListener = loadListener;
@@ -124,24 +120,12 @@ final class SplitLoadTask implements Runnable {
         SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
         List<String> requestModuleNames = getRequestModuleNames();
         if (errors.isEmpty()) {
-            if (processStarting) {
-                if (loadReporter != null) {
-                    loadReporter.onLoadOKUnderProcessStarting(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
-                }
-            } else {
-                if (loadReporter != null) {
-                    loadReporter.onLoadOKUnderUserTriggering(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
-                }
+            if (loadReporter != null) {
+                loadReporter.onLoadOK(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
             }
         } else {
-            if (processStarting) {
-                if (loadReporter != null) {
-                    loadReporter.onLoadFailedUnderProcessStarting(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
-                }
-            } else {
-                if (loadReporter != null) {
-                    loadReporter.onLoadFailedUnderUserTriggering(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
-                }
+            if (loadReporter != null) {
+                loadReporter.onLoadFailed(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
             }
         }
     }

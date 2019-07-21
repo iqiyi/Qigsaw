@@ -91,22 +91,22 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean processStarting) {
-        return new SplitLoadTask(this, splitFileIntents, loadListener, processStarting);
+    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {
+        return new SplitLoadTask(this, splitFileIntents, loadListener);
     }
 
-    private List<Intent> createInstalledSplitFileIntents(@NonNull Collection<SplitInfo> splitInfoList, boolean processStarting) {
+    private List<Intent> createInstalledSplitFileIntents(@NonNull Collection<SplitInfo> splitInfoList) {
         List<Intent> splitFileIntents = new ArrayList<>();
         for (SplitInfo splitInfo : splitInfoList) {
             if (canBeWorkedInThisProcessForSplit(splitInfo)) {
                 if (getLoadedSplitNames().contains(splitInfo.getSplitName())) {
-                    SplitLog.i(TAG, "Split %s has been load!'createInstalledSplitFileIntents'", splitInfo.getSplitName());
+                    SplitLog.i(TAG, "Split %s has been load! 'createInstalledSplitFileIntents'", splitInfo.getSplitName());
                     continue;
                 }
                 SplitLog.i(TAG, "Split %s will work in this process", splitInfo.getSplitName());
-                Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo, processStarting);
+                Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo);
                 if (splitFileIntent != null) {
-                    SplitLog.i(TAG, "installed split name " + splitInfo.getSplitName());
+                    SplitLog.i(TAG, "Split %s has been installed! 'createInstalledSplitFileIntents'", splitInfo.getSplitName());
                     splitFileIntents.add(splitFileIntent);
                 }
             } else {
@@ -134,14 +134,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public void loadInstalledSplits(boolean processStarting) {
+    public void loadInstalledSplits() {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         if (manager != null) {
             Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
             if (splitInfoList != null) {
-                List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList, processStarting);
+                List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList);
                 if (!splitFileIntents.isEmpty()) {
-                    createSplitLoadTask(splitFileIntents, null, processStarting).run();
+                    createSplitLoadTask(splitFileIntents, null).run();
                 } else {
                     SplitLog.w(TAG, "There are no installed splits!");
                 }
@@ -163,7 +163,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
             @Override
             public boolean queueIdle() {
-                loadInstalledSplits(true);
+                loadInstalledSplits();
                 return false;
             }
         });
@@ -183,7 +183,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     /**
      * fast check operation
      */
-    private Intent createLastInstalledSplitFileIntent(SplitInfo splitInfo, boolean processStarting) {
+    private Intent createLastInstalledSplitFileIntent(SplitInfo splitInfo) {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
         File markFile = new File(splitDir, splitInfo.getMd5());
@@ -191,7 +191,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         if (markFile.exists()) {
             SplitLog.i(TAG, "Split %s mark file is existed!", splitName);
             List<String> dependencies = splitInfo.getDependencies();
-            if (processStarting && dependencies != null) {
+            if (dependencies != null) {
                 SplitLog.i(TAG, "Split %s has dependencies %s !", splitName, dependencies);
                 for (String dependency : dependencies) {
                     SplitInfo dependencySplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getContext(), dependency);
@@ -237,7 +237,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             if (multiDexFiles != null) {
                 splitFileIntent.putStringArrayListExtra(SplitConstants.KEY_MULTI_DEX, multiDexFiles);
             }
-            SplitLog.i("SplitCompat", "Split %s has been installed, so we can load it", splitName);
+            SplitLog.i(TAG, "Split %s has been installed, so we can load it!", splitName);
             return splitFileIntent;
         }
         SplitLog.i(TAG, "Split %s mark file is not existed!", splitName);

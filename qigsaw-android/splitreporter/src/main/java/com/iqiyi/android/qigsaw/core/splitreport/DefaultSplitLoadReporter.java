@@ -41,22 +41,12 @@ public class DefaultSplitLoadReporter implements SplitLoadReporter {
     }
 
     @Override
-    public void onLoadOKUnderProcessStarting(List<String> requestModuleNames, String processName, long cost) {
-        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms when process starting!", requestModuleNames, processName, cost);
+    public void onLoadOK(List<String> requestModuleNames, String processName, long cost) {
+        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms!", requestModuleNames, processName, cost);
     }
 
     @Override
-    public void onLoadFailedUnderProcessStarting(List<String> requestModuleNames, String processName, List<SplitLoadError> errors, long cost) {
-        SplitLog.w(TAG, "Failed to load %s in process %s cost %d ms when process starting!", errors.toString(), processName, cost);
-    }
-
-    @Override
-    public void onLoadOKUnderUserTriggering(List<String> requestModuleNames, String processName, long cost) {
-        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms when user triggering!", requestModuleNames, processName, cost);
-    }
-
-    @Override
-    public void onLoadFailedUnderUserTriggering(List<String> requestModuleNames, String processName, List<SplitLoadError> errors, long cost) {
-        SplitLog.w(TAG, "Failed to load %s in process %s cost %d ms when user triggering!", errors.toString(), processName, cost);
+    public void onLoadFailed(List<String> requestModuleNames, String processName, List<SplitLoadError> errors, long cost) {
+        SplitLog.w(TAG, "Failed to load %s in process %s cost %d ms!", errors.toString(), processName, cost);
     }
 }

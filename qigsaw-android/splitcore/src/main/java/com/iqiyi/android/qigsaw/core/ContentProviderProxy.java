@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.extension;
+package com.iqiyi.android.qigsaw.core;
 
 import android.content.ContentProvider;
 import android.content.ContentProviderOperation;
@@ -44,6 +44,8 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManager;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -54,7 +56,7 @@ public abstract class ContentProviderProxy extends ContentProvider {
 
     private ContentProvider realContentProvider;
 
-    private static final String NAME_SUFFIX = "_Decorated";
+    private static final String NAME_INFIX = "_Decorated_";
 
     private ProviderInfo providerInfo;
 
@@ -63,17 +65,46 @@ public abstract class ContentProviderProxy extends ContentProvider {
     }
 
     private ContentProvider ensureRealContentProvider() {
+        //check split whether loaded
         if (realContentProvider != null) {
             return realContentProvider;
         }
-        try {
+        realContentProvider = createRealContentProviderSafely();
+        return realContentProvider;
+    }
+
+    private synchronized ContentProvider createRealContentProviderSafely() {
+        if (SplitLoadManagerService.hasInstance()) {
             String className = getClass().getName();
-            String realContentProviderClassName = className.split(NAME_SUFFIX)[0];
-            realContentProvider = (ContentProvider) Class.forName(realContentProviderClassName).newInstance();
+            String[] cuts = className.split(NAME_INFIX);
+            String realContentProviderClassName = cuts[0];
+            String splitName = cuts[1];
+            SplitLog.d(TAG, "Start to create %s provider: %s", splitName, realContentProviderClassName);
+            SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
+            if (loadManager.getLoadedSplitNames().contains(splitName)) {
+                SplitLog.d(TAG, "Split %s is loaded ,so create provider %s directly", splitName, realContentProviderClassName);
+                return createRealContentProvider(realContentProviderClassName);
+            } else {
+                //try to load all installed splits.
+                SplitLog.d(TAG, "Try to load all installed splits, in order to create provider " + realContentProviderClassName);
+                loadManager.loadInstalledSplits();
+                if (loadManager.getLoadedSplitNames().contains(splitName)) {
+                    return createRealContentProvider(realContentProviderClassName);
+                }
+                SplitLog.w(TAG, "Failed to load split %s in ContentProviderProxy", splitName);
+            }
+        }
+        return null;
+    }
+
+    private ContentProvider createRealContentProvider(String realContentProviderClassName) {
+        try {
+            ContentProvider realContentProvider = (ContentProvider) Class.forName(realContentProviderClassName).newInstance();
             realContentProvider.attachInfo(getContext(), providerInfo);
+            SplitLog.d(TAG, "Success to create provider " + realContentProviderClassName);
             return realContentProvider;
-        } catch (Exception e) {
-            SplitLog.w(TAG, "Failed to create ContentProvider " + providerInfo.name, e);
+        } catch (Throwable e) {
+            SplitLog.w(TAG, "Failed to create ContentProvider: " + providerInfo.name, e);
         }
         return null;
     }
@@ -91,10 +122,10 @@ public abstract class ContentProviderProxy extends ContentProvider {
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
         if (ensureRealContentProvider() != null) {
             realContentProvider.onConfigurationChanged(newConfig);
         }
-        super.onConfigurationChanged(newConfig);
     }
 
     @Nullable

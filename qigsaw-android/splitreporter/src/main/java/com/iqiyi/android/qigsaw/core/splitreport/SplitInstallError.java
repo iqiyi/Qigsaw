@@ -63,6 +63,11 @@ public class SplitInstallError {
      */
     public static final int MARK_CREATE_FAILED = -17;
 
+    /**
+     * split's dependencies are not installed.
+     */
+    public static final int DEPENDENCIES_NOT_INSTALLED = -18;
+
     private final String moduleName;
 
     private final int errorCode;

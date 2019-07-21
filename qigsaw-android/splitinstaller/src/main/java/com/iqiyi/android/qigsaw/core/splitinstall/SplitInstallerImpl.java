@@ -33,6 +33,7 @@ import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
@@ -94,7 +95,23 @@ final class SplitInstallerImpl extends SplitInstaller {
             }
         }
         createInstalledMark(info);
-        return new InstallResult(info.getSplitName(), splitDir, sourceApk, optimizedDir, libDir, multiDexFiles);
+        return new InstallResult(info.getSplitName(), splitDir, sourceApk, optimizedDir, libDir, multiDexFiles, checkDependenciesInstalledStatus(info));
+    }
+
+    private boolean checkDependenciesInstalledStatus(SplitInfo info) {
+        List<String> dependencies = info.getDependencies();
+        if (dependencies != null) {
+            for (String dependency : dependencies) {
+                SplitInfo dependencySplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getApplicationContext(), dependency);
+                File dependencySplitDir = SplitPathManager.require().getSplitDir(dependencySplitInfo);
+                File dependencyMarkFile = new File(dependencySplitDir, dependencySplitInfo.getMd5());
+                if (!dependencyMarkFile.exists()) {
+                    SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override

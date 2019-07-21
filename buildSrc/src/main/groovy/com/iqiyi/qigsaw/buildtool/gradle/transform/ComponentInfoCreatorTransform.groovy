@@ -35,7 +35,6 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
@@ -96,7 +95,7 @@ class ComponentInfoCreatorTransform extends Transform {
                     splitManifest = new File(mergedManifestDir, "AndroidManifest.xml")
                 }
             }
-            String splitName = dynamicFeatureProject.getName().toUpperCase()
+            String splitName = dynamicFeatureProject.getName()
             if (null != splitManifest) {
                 ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
 
@@ -176,7 +175,7 @@ class ComponentInfoCreatorTransform extends Transform {
                         name, "Ljava/lang/String;", null, value.get(0)).visitEnd()
             } else if (name.endsWith("PROVIDERS")) {
                 for (String providerName : value) {
-                    createSplitProviderClassFile(dest, providerName)
+                    createSplitProviderClassFile(dest, name, providerName)
                 }
             } else {
                 cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
@@ -200,8 +199,9 @@ class ComponentInfoCreatorTransform extends Transform {
         }
     }
 
-    static void createSplitProviderClassFile(File dest, String providerClassName) {
-        providerClassName = providerClassName + "_Decorated"
+    static void createSplitProviderClassFile(File dest, String name, String providerClassName) {
+        String splitName = name.split("_")[0]
+        providerClassName = providerClassName + "_Decorated_" + splitName
         ClassWriter cw = new ClassWriter(0)
         String folderName = providerClassName.replace(".", File.separator)
         File providerClassFile = new File(dest.absolutePath + File.separator + folderName + ".class")
@@ -212,13 +212,13 @@ class ComponentInfoCreatorTransform extends Transform {
         cw.visit(Opcodes.V1_7,
                 Opcodes.ACC_PUBLIC,
                 providerClassName.replace(".", "/"), null,
-                "com/iqiyi/android/qigsaw/core/extension/ContentProviderProxy",
+                "com/iqiyi/android/qigsaw/core/ContentProviderProxy",
                 null)
 
         MethodVisitor mw = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V",
                 null, null)
         mw.visitVarInsn(Opcodes.ALOAD, 0)
-        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "com/iqiyi/android/qigsaw/core/extension/ContentProviderProxy", "<init>",
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "com/iqiyi/android/qigsaw/core/ContentProviderProxy", "<init>",
                 "()V")
         mw.visitInsn(Opcodes.RETURN)
         mw.visitMaxs(1, 1)

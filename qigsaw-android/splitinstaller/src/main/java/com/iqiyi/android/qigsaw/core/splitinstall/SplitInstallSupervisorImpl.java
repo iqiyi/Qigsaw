@@ -97,23 +97,24 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
                 callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.NETWORK_ERROR));
                 return;
             }
-            Set<String> allDependencies = getAllDependencies(needInstallSplits);
+            Set<String> allDependencies = getAllDependencies(moduleNameList, needInstallSplits);
             if (!allDependencies.isEmpty()) {
-                if (!moduleNameList.containsAll(allDependencies)) {
-                    SplitLog.e(TAG, "QIGSAW WARNING: Your request must contains all dynamic feature dependencies, otherwise it maybe occur runtime error!");
-                }
+                SplitLog.e(TAG, "QIGSAW WARNING: Your request must contains all dynamic feature dependencies, otherwise it maybe occur runtime error!");
             }
             startDownloadSplits(moduleNameList, needInstallSplits, callback);
         }
     }
 
-    private Set<String> getAllDependencies(List<SplitInfo> needInstallSplits) {
-        Set<String> splitDependencies = new ArraySet<>();
+    private Set<String> getAllDependencies(List<String> moduleNames, List<SplitInfo> needInstallSplits) {
+        Set<String> splitDependencies = new ArraySet<>(0);
         for (SplitInfo info : needInstallSplits) {
             List<String> dependencies = info.getDependencies();
             if (dependencies != null) {
                 splitDependencies.addAll(dependencies);
             }
+        }
+        if (!splitDependencies.isEmpty()) {
+            splitDependencies.removeAll(moduleNames);
         }
         return splitDependencies;
     }
@@ -283,7 +284,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         assert manager != null;
         Collection<SplitInfo> allSplits = manager.getAllSplitInfo(appContext);
-        List<SplitInfo> needInstallSplits = new ArrayList<>();
+        List<SplitInfo> needInstallSplits = new ArrayList<>(moduleNames.size());
         for (SplitInfo info : allSplits) {
             if (moduleNames.contains(info.getSplitName())) {
                 needInstallSplits.add(info);
@@ -308,7 +309,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             } else {
                 boolean usingMobileDataPermitted = realTotalBytesNeedToDownload < downloadSizeThresholdValue && !userDownloader.isDeferredDownloadOnlyWhenUsingWifiData();
 
-                userDownloader.deferredDownload(sessionId, createDownloadResquests(needInstallSplits), downloadCallback, usingMobileDataPermitted);
+                userDownloader.deferredDownload(sessionId, createDownloadRequests(needInstallSplits), downloadCallback, usingMobileDataPermitted);
             }
         } catch (IOException e) {
             callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.BUILTIN_SPLIT_APK_COPIED_FAILED));
@@ -325,7 +326,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             return;
         }
         int sessionId = createSessionId(needInstallSplits);
-        List<DownloadRequest> downloadRequests = createDownloadResquests(needInstallSplits);
+        List<DownloadRequest> downloadRequests = createDownloadRequests(needInstallSplits);
         SplitLog.d(TAG, "startInstall session id: " + sessionId);
         SplitInstallInternalSessionState sessionState = sessionManager.getSessionState(sessionId);
         boolean needUserConfirmation = false;
@@ -451,7 +452,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         return true;
     }
 
-    private List<DownloadRequest> createDownloadResquests(Collection<SplitInfo> splitInfoList) {
+    private List<DownloadRequest> createDownloadRequests(Collection<SplitInfo> splitInfoList) {
         List<DownloadRequest> requests = new ArrayList<>(splitInfoList.size());
         for (SplitInfo splitInfo : splitInfoList) {
             File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
