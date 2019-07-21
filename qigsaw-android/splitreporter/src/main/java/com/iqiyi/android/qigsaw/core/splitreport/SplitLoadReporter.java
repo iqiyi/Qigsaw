@@ -46,7 +46,7 @@ public interface SplitLoadReporter {
      * @param requestModuleNames modules need to be loaded.
      * @param processName        current process name.
      * @param errors             a list of {@link SplitLoadError}
-     * @param cost               time in ms.           time in ms.
+     * @param cost               time in ms.
      */
     void onLoadFailed(List<String> requestModuleNames, String processName, List<SplitLoadError> errors, long cost);
 
