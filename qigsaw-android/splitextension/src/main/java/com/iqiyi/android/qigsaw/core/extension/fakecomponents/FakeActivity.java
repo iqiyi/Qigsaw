@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitload.fakecomponents;
+package com.iqiyi.android.qigsaw.core.extension.fakecomponents;
 
 import android.app.Activity;
 import android.os.Bundle;

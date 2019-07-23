@@ -22,28 +22,20 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitload.fakecomponents;
+package com.iqiyi.android.qigsaw.core.extension.fakecomponents;
 
-import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
-import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 
 import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
-public class FakeService extends Service {
-
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
+public class FakeReceiver extends BroadcastReceiver {
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        stopSelf();
-        return super.onStartCommand(intent, flags, startId);
+    public void onReceive(Context context, Intent intent) {
+
     }
 }

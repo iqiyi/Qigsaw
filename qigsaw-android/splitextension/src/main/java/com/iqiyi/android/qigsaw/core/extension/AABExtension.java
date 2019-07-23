@@ -28,14 +28,21 @@ import android.app.Application;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.RestrictTo;
+import android.text.TextUtils;
+import android.util.Pair;
 
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.extension.fakecomponents.FakeActivity;
+import com.iqiyi.android.qigsaw.core.extension.fakecomponents.FakeReceiver;
+import com.iqiyi.android.qigsaw.core.extension.fakecomponents.FakeService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,6 +62,8 @@ public class AABExtension {
     private static final AtomicReference<AABExtension> sAABCompatReference = new AtomicReference<>(null);
 
     private final List<Application> splitApplications = new ArrayList<>();
+
+    private final Map<String, List<ContentProviderProxy>> sSplitContentProviderMap = new HashMap<>();
 
     private final AABExtensionManager extensionManager;
 
@@ -115,26 +124,38 @@ public class AABExtension {
         return app;
     }
 
-    public boolean isSplitActivities(String name) {
-        return extensionManager.isSplitActivities(name);
-    }
-
-    public boolean isSplitServices(String name) {
-        return extensionManager.isSplitServices(name);
-    }
-
-    public boolean isSplitReceivers(String name) {
-        return extensionManager.isSplitReceivers(name);
-    }
-
-    public boolean isSplitComponents(String name) {
-        if (extensionManager.isSplitActivities(name)) {
-            return true;
+    void put(String splitName, ContentProviderProxy providerProxy) {
+        List<ContentProviderProxy> providerProxies = sSplitContentProviderMap.get(splitName);
+        if (providerProxies == null) {
+            providerProxies = new ArrayList<>();
+            sSplitContentProviderMap.put(splitName, providerProxies);
         }
-        if (extensionManager.isSplitServices(name)) {
-            return true;
+        providerProxies.add(providerProxy);
+    }
+
+    public void activateSplitProviders(String splitName) throws AABExtensionException {
+        List<ContentProviderProxy> providerProxies = sSplitContentProviderMap.get(splitName);
+        if (providerProxies != null) {
+            for (ContentProviderProxy providerProxy : providerProxies) {
+                providerProxy.activateRealContentProvider();
+            }
         }
-        return extensionManager.isSplitReceivers(name);
+    }
+
+    public Pair<String, Class<?>> getSplitNameForComponent(String name) {
+        String targetSplitName = extensionManager.getSplitNameForActivity(name);
+        if (!TextUtils.isEmpty(targetSplitName)) {
+            return new Pair<String, Class<?>>(targetSplitName, FakeActivity.class);
+        }
+        targetSplitName = extensionManager.getSplitNameForService(name);
+        if (!TextUtils.isEmpty(targetSplitName)) {
+            return new Pair<String, Class<?>>(targetSplitName, FakeService.class);
+        }
+        targetSplitName = extensionManager.getSplitNameForReceiver(name);
+        if (!TextUtils.isEmpty(targetSplitName)) {
+            return new Pair<String, Class<?>>(targetSplitName, FakeReceiver.class);
+        }
+        return null;
     }
 
     private Set<String> getSplitNames() {

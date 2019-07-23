@@ -27,8 +27,6 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.os.Looper;
-import android.os.MessageQueue;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -57,20 +55,37 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private PathClassLoader mClassloader;
 
-    SplitLoadManagerImpl(Context context) {
+    private final String[] processes;
+
+    SplitLoadManagerImpl(Context context,
+                         String[] processes) {
         super(context);
+        this.processes = processes;
         SplitInfoManagerService.install(context);
         SplitPathManager.install(context);
     }
 
     @Override
-    public void load(String[] processes, boolean needHookClassLoader) {
+    public void load(boolean needHookClassLoader) {
         if (processes == null || processes.length == 0) {
-            loadInternal(needHookClassLoader);
+            hookPathClassLoaderIfNeed(needHookClassLoader);
         } else {
             for (String process : processes) {
                 if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
-                    loadInternal(needHookClassLoader);
+                    hookPathClassLoaderIfNeed(needHookClassLoader);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onCreate() {
+        if (processes == null || processes.length == 0) {
+            loadInstalledSplits();
+        } else {
+            for (String process : processes) {
+                if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
+                    loadInstalledSplits();
                 }
             }
         }
@@ -153,20 +168,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
     }
 
-    private void loadInternal(boolean needHookClassLoader) {
+    private void hookPathClassLoaderIfNeed(boolean needHookClassLoader) {
         if (needHookClassLoader) {
             SplitLog.i(TAG, "AppComponentFactory is not declared in app Manifest, so we need hook PathClassLoader!");
             injectClassLoader(getContext().getClassLoader());
         } else {
             SplitLog.i(TAG, "AppComponentFactory is  declared in app Manifest!");
         }
-        Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override
-            public boolean queueIdle() {
-                loadInstalledSplits();
-                return false;
-            }
-        });
     }
 
     private String getCompleteProcessName(@Nullable String process) {

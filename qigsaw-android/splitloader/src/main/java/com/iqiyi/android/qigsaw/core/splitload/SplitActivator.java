@@ -45,6 +45,12 @@ final class SplitActivator {
         } catch (AABExtensionException e) {
             throw new SplitLoadException(SplitLoadError.ACTIVATE_APPLICATION_FAILED, e);
         }
+
+        try {
+            aabExtension.activateSplitProviders(splitName);
+        } catch (AABExtensionException e) {
+            throw new SplitLoadException(SplitLoadError.ACTIVATE_PROVIDERS_FAILED, e);
+        }
         if (app != null) {
             app.onCreate();
         }

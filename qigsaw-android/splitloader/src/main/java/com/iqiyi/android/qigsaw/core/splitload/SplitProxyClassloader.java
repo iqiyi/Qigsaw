@@ -26,12 +26,10 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
+import android.util.Pair;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
-import com.iqiyi.android.qigsaw.core.splitload.fakecomponents.FakeActivity;
-import com.iqiyi.android.qigsaw.core.splitload.fakecomponents.FakeReceiver;
-import com.iqiyi.android.qigsaw.core.splitload.fakecomponents.FakeService;
 
 import dalvik.system.PathClassLoader;
 
@@ -40,8 +38,6 @@ final class SplitProxyClassloader extends PathClassLoader {
     private static final String TAG = "SplitDexClassloader";
 
     private PathClassLoader originClassLoader;
-
-    private String lastClassNotFound = null;
 
     private SplitProxyClassloader(String dexPath, ClassLoader parent) {
         super(dexPath, parent);
@@ -65,32 +61,25 @@ final class SplitProxyClassloader extends PathClassLoader {
         try {
             return originClassLoader.loadClass(name);
         } catch (ClassNotFoundException error) {
-            if (lastClassNotFound == null) {
-                if (AABExtension.getInstance().isSplitComponents(name)) {
-                    if (SplitLoadManagerService.hasInstance()) {
-                        lastClassNotFound = name;
-                        SplitLog.w(TAG, "class %s is not found", name);
-                        SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                        loadManager.loadInstalledSplits();
-                        return findClass(name);
+            Pair<String, Class<?>> result = AABExtension.getInstance().getSplitNameForComponent(name);
+            if (result != null) {
+                if (SplitLoadManagerService.hasInstance()) {
+                    SplitLog.w(TAG, "class %s is not found", name);
+                    SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
+                    loadManager.loadInstalledSplits();
+                    if (loadManager.getLoadedSplitNames().contains(result.first)) {
+                        try {
+                            return originClassLoader.loadClass(name);
+                        } catch (ClassNotFoundException e) {
+                            SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, result.second.getSimpleName());
+                            return result.second;
+                        }
                     } else {
-                        SplitLog.e(TAG, "SplitLoadManagerService has not been created!", name);
+                        SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, result.second.getSimpleName());
+                        return result.second;
                     }
-                }
-            } else {
-                SplitLog.w(TAG, "class %s is still not found!", name);
-                lastClassNotFound = null;
-                if (AABExtension.getInstance().isSplitActivities(name)) {
-                    SplitLog.w(TAG, "Split activity %s not found, return a fake activity to avoid crash", name);
-                    return FakeActivity.class;
-                }
-                if (AABExtension.getInstance().isSplitServices(name)) {
-                    SplitLog.w(TAG, "Split service %s not found, return a fake service to avoid crash", name);
-                    return FakeService.class;
-                }
-                if (AABExtension.getInstance().isSplitReceivers(name)) {
-                    SplitLog.w(TAG, "Split receiver %s not found, return a fake receiver to avoid crash", name);
-                    return FakeReceiver.class;
+                } else {
+                    SplitLog.e(TAG, "SplitLoadManagerService has not been created!");
                 }
             }
             throw error;

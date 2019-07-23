@@ -39,12 +39,6 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
 
     private SplitComponentInfoProvider infoProvider;
 
-    private List<String> splitActivities;
-
-    private List<String> splitServices;
-
-    private List<String> splitReceivers;
-
     AABExtensionManagerImpl(Context context, SplitComponentInfoProvider infoProvider) {
         this.context = context;
         this.infoProvider = infoProvider;
@@ -53,7 +47,7 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     @Override
     @SuppressLint("PrivateApi")
     public Application createApplication(String splitName) throws AABExtensionException {
-        Exception error = null;
+        Throwable error = null;
         String applicationName = infoProvider.getSplitApplicationName(splitName);
         if (!TextUtils.isEmpty(applicationName)) {
             try {
@@ -77,7 +71,7 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     @SuppressLint("PrivateApi")
     public void activeApplication(Application app) throws AABExtensionException {
         if (app != null) {
-            Exception error = null;
+            Throwable error = null;
             try {
                 Method method = Application.class.getDeclaredMethod("attach", Context.class);
                 method.setAccessible(true);
@@ -96,47 +90,17 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     }
 
     @Override
-    public boolean isSplitActivities(String name) {
-        if (getSplitActivities() != null) {
-            return getSplitActivities().contains(name);
-        }
-        return false;
+    public String getSplitNameForActivity(String name) {
+        return infoProvider.getSplitNameForActivity(name);
     }
 
     @Override
-    public boolean isSplitServices(String name) {
-        if (getSplitServices() != null) {
-            return getSplitServices().contains(name);
-        }
-        return false;
+    public String getSplitNameForService(String name) {
+        return infoProvider.getSplitNameForService(name);
     }
 
     @Override
-    public boolean isSplitReceivers(String name) {
-        if (getSplitReceivers() != null) {
-            return getSplitReceivers().contains(name);
-        }
-        return false;
-    }
-
-    private List<String> getSplitActivities() {
-        if (splitActivities == null) {
-            splitActivities = infoProvider.getSplitActivities();
-        }
-        return splitActivities;
-    }
-
-    private List<String> getSplitServices() {
-        if (splitServices == null) {
-            splitServices = infoProvider.getSplitServices();
-        }
-        return splitServices;
-    }
-
-    private List<String> getSplitReceivers() {
-        if (splitReceivers == null) {
-            splitReceivers = infoProvider.getSplitReceivers();
-        }
-        return splitReceivers;
+    public String getSplitNameForReceiver(String name) {
+        return infoProvider.getSplitNameForReceiver(name);
     }
 }

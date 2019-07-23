@@ -109,14 +109,14 @@ public class Qigsaw {
         //create AABCompat instance
         AABExtension.install(baseContext);
         //create SplitLoadManager instance.
-        SplitLoadManagerService.install(baseContext);
+        SplitLoadManagerService.install(baseContext, workProcesses);
         if (loadReporter == null) {
             loadReporter = new DefaultSplitLoadReporter(baseContext);
         }
         SplitLoadReporterManager.install(loadReporter);
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         //load all installed splits for qigsaw.
-        loadManager.load(workProcesses, !isSplitAppComponentFactoryExisting(baseContext));
+        loadManager.load(!isSplitAppComponentFactoryExisting(baseContext));
         //getInstance all installed splits for AAB.
         SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(baseContext);
         Set<String> loadedSplits = infoProvider.getInstalledSplitsForAAB();
@@ -155,6 +155,9 @@ public class Qigsaw {
      */
     public static void onApplicationCreated() {
         AABExtension.getInstance().onCreate();
+        if (SplitLoadManagerService.hasInstance()) {
+            SplitLoadManagerService.getInstance().onCreate();
+        }
     }
 
     /**

@@ -64,7 +64,13 @@ public abstract class SplitLoadManager {
     /**
      * Load all installed splits.
      */
-    public abstract void load(String[] processes, boolean needHookClassLoader);
+    public abstract void load(boolean needHookClassLoader);
+
+    /**
+     * Called this method in {@link Application#onCreate()}.
+     * To load all installed splits.
+     */
+    public abstract void onCreate();
 
     /**
      * Called this method in {@link Application#getResources()}.

@@ -36,25 +36,17 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
+import android.util.Pair;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManager;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
-import com.iqiyi.android.qigsaw.core.splitload.fakecomponents.FakeActivity;
-import com.iqiyi.android.qigsaw.core.splitload.fakecomponents.FakeReceiver;
-import com.iqiyi.android.qigsaw.core.splitload.fakecomponents.FakeService;
 
 @RequiresApi(api = Build.VERSION_CODES.P)
 public class SplitAppComponentFactory extends AppComponentFactory {
 
     private static final String TAG = "SplitAppComponentFactory";
-
-    private String lastActivityClassNotFound = null;
-
-    private String lastServiceClassNotFound = null;
-
-    private String lastReceiverClassNotFound = null;
 
     @NonNull
     @CallSuper
@@ -64,24 +56,25 @@ public class SplitAppComponentFactory extends AppComponentFactory {
         try {
             return super.instantiateActivity(cl, className, intent);
         } catch (ClassNotFoundException error) {
-            if (lastActivityClassNotFound == null) {
-                if (AABExtension.getInstance().isSplitActivities(className)) {
-                    if (SplitLoadManagerService.hasInstance()) {
-                        lastActivityClassNotFound = className;
-                        SplitLog.w(TAG, "Activity class %s is not found", className);
-                        SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                        loadManager.loadInstalledSplits();
-                        return instantiateActivity(cl, className, intent);
+            Pair<String, Class<?>> result = AABExtension.getInstance().getSplitNameForComponent(className);
+            if (result != null) {
+                if (SplitLoadManagerService.hasInstance()) {
+                    SplitLog.w(TAG, "class %s is not found", className);
+                    SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
+                    loadManager.loadInstalledSplits();
+                    if (loadManager.getLoadedSplitNames().contains(result.first)) {
+                        try {
+                            return super.instantiateActivity(cl, className, intent);
+                        } catch (ClassNotFoundException e) {
+                            SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", className, result.second.getSimpleName());
+                            return super.instantiateActivity(cl, result.second.getName(), intent);
+                        }
                     } else {
-                        SplitLog.e(TAG, "SplitLoadManagerService has not been created!", className);
+                        SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", className, result.second.getSimpleName());
+                        return super.instantiateActivity(cl, result.second.getName(), intent);
                     }
-                }
-            } else {
-                SplitLog.w(TAG, "Activity class %s is still not found!", className);
-                lastActivityClassNotFound = null;
-                if (AABExtension.getInstance().isSplitActivities(className)) {
-                    SplitLog.w(TAG, "Split activity %s not found, return a fake activity to avoid crash", className);
-                    return instantiateActivity(cl, FakeActivity.class.getName(), intent);
+                } else {
+                    SplitLog.e(TAG, "SplitLoadManagerService has not been created!");
                 }
             }
             throw error;
@@ -103,24 +96,25 @@ public class SplitAppComponentFactory extends AppComponentFactory {
         try {
             return super.instantiateReceiver(cl, className, intent);
         } catch (ClassNotFoundException error) {
-            if (lastReceiverClassNotFound == null) {
-                if (AABExtension.getInstance().isSplitReceivers(className)) {
-                    if (SplitLoadManagerService.hasInstance()) {
-                        lastReceiverClassNotFound = className;
-                        SplitLog.w(TAG, "Receiver class %s is not found", className);
-                        SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                        loadManager.loadInstalledSplits();
-                        return instantiateReceiver(cl, className, intent);
+            Pair<String, Class<?>> result = AABExtension.getInstance().getSplitNameForComponent(className);
+            if (result != null) {
+                if (SplitLoadManagerService.hasInstance()) {
+                    SplitLog.w(TAG, "class %s is not found", className);
+                    SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
+                    loadManager.loadInstalledSplits();
+                    if (loadManager.getLoadedSplitNames().contains(result.first)) {
+                        try {
+                            return super.instantiateReceiver(cl, className, intent);
+                        } catch (ClassNotFoundException e) {
+                            SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", className, result.second.getSimpleName());
+                            return super.instantiateReceiver(cl, result.second.getName(), intent);
+                        }
                     } else {
-                        SplitLog.e(TAG, "SplitLoadManagerService has not been created!", className);
+                        SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", className, result.second.getSimpleName());
+                        return super.instantiateReceiver(cl, result.second.getName(), intent);
                     }
-                }
-            } else {
-                SplitLog.w(TAG, "Receiver class %s is still not found!", className);
-                lastReceiverClassNotFound = null;
-                if (AABExtension.getInstance().isSplitReceivers(className)) {
-                    SplitLog.w(TAG, "Split receiver %s not found, return a fake receiver to avoid crash", className);
-                    return instantiateReceiver(cl, FakeReceiver.class.getName(), intent);
+                } else {
+                    SplitLog.e(TAG, "SplitLoadManagerService has not been created!");
                 }
             }
             throw error;
@@ -142,24 +136,25 @@ public class SplitAppComponentFactory extends AppComponentFactory {
         try {
             return super.instantiateService(cl, className, intent);
         } catch (ClassNotFoundException error) {
-            if (lastServiceClassNotFound == null) {
-                if (AABExtension.getInstance().isSplitServices(className)) {
-                    if (SplitLoadManagerService.hasInstance()) {
-                        lastServiceClassNotFound = className;
-                        SplitLog.w(TAG, "Service class %s is not found", className);
-                        SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                        loadManager.loadInstalledSplits();
-                        return instantiateService(cl, className, intent);
+            Pair<String, Class<?>> result = AABExtension.getInstance().getSplitNameForComponent(className);
+            if (result != null) {
+                if (SplitLoadManagerService.hasInstance()) {
+                    SplitLog.w(TAG, "class %s is not found", className);
+                    SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
+                    loadManager.loadInstalledSplits();
+                    if (loadManager.getLoadedSplitNames().contains(result.first)) {
+                        try {
+                            return super.instantiateService(cl, className, intent);
+                        } catch (ClassNotFoundException e) {
+                            SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", className, result.second.getSimpleName());
+                            return super.instantiateService(cl, result.second.getName(), intent);
+                        }
                     } else {
-                        SplitLog.e(TAG, "SplitLoadManagerService has not been created!", className);
+                        SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", className, result.second.getSimpleName());
+                        return super.instantiateService(cl, result.second.getName(), intent);
                     }
-                }
-            } else {
-                SplitLog.w(TAG, "Service class %s is still not found!", className);
-                lastServiceClassNotFound = null;
-                if (AABExtension.getInstance().isSplitServices(className)) {
-                    SplitLog.w(TAG, "Split service %s not found, return a fake service to avoid crash", className);
-                    return instantiateService(cl, FakeService.class.getName(), intent);
+                } else {
+                    SplitLog.e(TAG, "SplitLoadManagerService has not been created!");
                 }
             }
             throw error;

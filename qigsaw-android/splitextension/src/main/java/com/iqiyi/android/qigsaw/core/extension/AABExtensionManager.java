@@ -43,10 +43,10 @@ interface AABExtensionManager {
      */
     void activeApplication(Application application) throws AABExtensionException;
 
-    boolean isSplitActivities(String name);
+    String getSplitNameForActivity(String name);
 
-    boolean isSplitServices(String name);
+    String getSplitNameForService(String name);
 
-    boolean isSplitReceivers(String name);
+    String getSplitNameForReceiver(String name);
 
 }
