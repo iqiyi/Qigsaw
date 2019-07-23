@@ -98,44 +98,30 @@ public class Qigsaw {
             logger = configuration.getLogger();
             obtainUserConfirmationDialogClass = configuration.obtainUserConfirmationDialogClass();
         }
-        if (TextUtils.isEmpty(manifestPackageName)) {
-            manifestPackageName = context.getPackageName();
-        }
+        final Context baseContext = getBaseContext(context);
+        boolean isMainProcess = ProcessUtil.isMainProcess(baseContext);
+        installReporter(baseContext, isMainProcess, installReporter, loadReporter, updateReporter);
+        //set custom logger
         if (logger != null) {
             SplitLog.setSplitLogImp(logger);
         }
-        final Context baseContext = getBaseContext(context);
+        if (TextUtils.isEmpty(manifestPackageName)) {
+            manifestPackageName = context.getPackageName();
+        }
         SplitBaseInfoProvider.setPackageName(manifestPackageName);
         //create AABCompat instance
         AABExtension.install(baseContext);
-        //create SplitLoadManager instance.
-        //getInstance all installed splits for AAB.
+        //get all installed splits for AAB.
         SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(baseContext);
         //if installed splits of aab are not empty, qigsaw would not work.
         Set<String> aabLoadedSplits = infoProvider.getInstalledSplitsForAAB();
         SplitLoadManagerService.install(baseContext, workProcesses, !aabLoadedSplits.isEmpty());
-        if (loadReporter == null) {
-            loadReporter = new DefaultSplitLoadReporter(baseContext);
-        }
-        SplitLoadReporterManager.install(loadReporter);
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-        //load all installed splits for qigsaw.
-        loadManager.load(!isSplitAppComponentFactoryExisting(baseContext));
+        loadManager.injectPathClassloaderIfNeed(!isSplitAppComponentFactoryExisting(baseContext));
         AABExtension.getInstance().onBaseContextAttached(aabLoadedSplits);
         //only work in main process!
-        if (ProcessUtil.isMainProcess(baseContext)) {
-            if (installReporter == null) {
-                installReporter = new DefaultSplitInstallReporter(baseContext);
-            }
-            if (updateReporter == null) {
-                updateReporter = new DefaultSplitUpdateReporter(baseContext);
-            }
-            if (obtainUserConfirmationDialogClass == null) {
-                obtainUserConfirmationDialogClass = DefaultObtainUserConfirmationDialog.class;
-            }
+        if (isMainProcess) {
             SplitApkInstaller.install(baseContext, downloader, obtainUserConfirmationDialogClass);
-            SplitInstallReporterManager.install(installReporter);
-            SplitUpdateReporterManager.install(updateReporter);
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
                 @Override
                 public boolean queueIdle() {
@@ -145,6 +131,27 @@ public class Qigsaw {
             });
         }
         SplitCompat.install(baseContext);
+    }
+
+    private static void installReporter(Context context,
+                                        boolean isMainProcess,
+                                        SplitInstallReporter installReporter,
+                                        SplitLoadReporter loadReporter,
+                                        SplitUpdateReporter updateReporter) {
+        if (isMainProcess) {
+            if (installReporter == null) {
+                installReporter = new DefaultSplitInstallReporter(context);
+            }
+            if (updateReporter == null) {
+                updateReporter = new DefaultSplitUpdateReporter(context);
+            }
+            SplitInstallReporterManager.install(installReporter);
+            SplitUpdateReporterManager.install(updateReporter);
+        }
+        if (loadReporter == null) {
+            loadReporter = new DefaultSplitLoadReporter(context);
+        }
+        SplitLoadReporterManager.install(loadReporter);
     }
 
     /**

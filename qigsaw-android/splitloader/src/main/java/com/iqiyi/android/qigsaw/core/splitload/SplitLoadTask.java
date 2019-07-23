@@ -85,21 +85,14 @@ final class SplitLoadTask implements Runnable {
                 try {
                     mLock.wait();
                 } catch (InterruptedException e) {
-                    if (loadListener != null) {
-                        loadListener.onFailed(SplitLoadError.INTERRUPTED_ERROR);
-                    }
-                    SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
-                    if (loadReporter != null) {
-                        List<String> requestModuleNames = getRequestModuleNames();
-                        SplitLoadError loadError = new SplitLoadError(requestModuleNames.get(0), SplitLoadError.INTERRUPTED_ERROR, e);
-                        loadReporter.onLoadFailed(requestModuleNames, loadManager.getCurrentProcessName(), Collections.singletonList(loadError), 0);
-                    }
+                    List<SplitLoadError> errors = Collections.singletonList(new SplitLoadError(null, SplitLoadError.INTERRUPTED_ERROR, e));
+                    reportLoadResult(errors, 0);
                 }
             }
         }
     }
 
-    private synchronized void loadSplits() {
+    private void loadSplits() {
         long lastTimeMillis = System.currentTimeMillis();
         SplitLoader loader = new SplitLoaderImpl(loadManager.getContext());
         Set<Split> splits = new ArraySet<>(splitFileIntents.size());
@@ -141,23 +134,27 @@ final class SplitLoadTask implements Runnable {
             }
         }
         loadManager.putSplits(splits);
-        if (loadListener != null) {
-            if (errors.isEmpty()) {
-                loadListener.onCompleted();
-            } else {
+        reportLoadResult(errors, System.currentTimeMillis() - lastTimeMillis);
+    }
+
+    private void reportLoadResult(List<SplitLoadError> errors, long cost) {
+        SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
+        List<String> requestModuleNames = getRequestModuleNames();
+        if (!errors.isEmpty()) {
+            if (loadListener != null) {
                 int lastErrorCode = errors.get(errors.size() - 1).getErrorCode();
                 loadListener.onFailed(lastErrorCode);
             }
-        }
-        SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
-        List<String> requestModuleNames = getRequestModuleNames();
-        if (errors.isEmpty()) {
             if (loadReporter != null) {
-                loadReporter.onLoadOK(requestModuleNames, loadManager.getCurrentProcessName(), System.currentTimeMillis() - lastTimeMillis);
+                loadReporter.onLoadFailed(requestModuleNames, loadManager.getCurrentProcessName(), errors, cost);
             }
+
         } else {
+            if (loadListener != null) {
+                loadListener.onCompleted();
+            }
             if (loadReporter != null) {
-                loadReporter.onLoadFailed(requestModuleNames, loadManager.getCurrentProcessName(), errors, System.currentTimeMillis() - lastTimeMillis);
+                loadReporter.onLoadOK(requestModuleNames, loadManager.getCurrentProcessName(), cost);
             }
         }
     }

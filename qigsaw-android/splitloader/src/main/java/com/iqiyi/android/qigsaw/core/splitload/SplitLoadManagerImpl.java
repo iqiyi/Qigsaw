@@ -55,30 +55,27 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private PathClassLoader mClassloader;
 
-    private final String[] processes;
-
     private final boolean isAAB;
 
     SplitLoadManagerImpl(Context context,
                          String[] processes,
                          boolean isAAB) {
-        super(context);
-        this.processes = processes;
+        super(context, processes);
         this.isAAB = isAAB;
         SplitInfoManagerService.install(context);
         SplitPathManager.install(context);
     }
 
     @Override
-    public void load(boolean needHookClassLoader) {
-        if (processes == null || processes.length == 0) {
-            hookPathClassLoaderIfNeed(needHookClassLoader);
-        } else {
-            for (String process : processes) {
+    public void injectPathClassloaderIfNeed(boolean needHookClassLoader) {
+        if (hasWorkProcess()) {
+            for (String process : getWorkProcesses()) {
                 if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
                     hookPathClassLoaderIfNeed(needHookClassLoader);
                 }
             }
+        } else {
+            hookPathClassLoaderIfNeed(needHookClassLoader);
         }
     }
 
@@ -87,14 +84,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         if (isAAB) {
             return;
         }
-        if (processes == null || processes.length == 0) {
-            loadInstalledSplits();
-        } else {
-            for (String process : processes) {
+        if (hasWorkProcess()) {
+            for (String process : getWorkProcesses()) {
                 if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
                     loadInstalledSplits();
                 }
             }
+        } else {
+            loadInstalledSplits();
         }
     }
 

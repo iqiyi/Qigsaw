@@ -24,6 +24,8 @@
 
 package com.iqiyi.android.qigsaw.core.splitreport;
 
+import android.support.annotation.Nullable;
+
 public class SplitLoadError {
 
     /**
@@ -72,6 +74,7 @@ public class SplitLoadError {
      *
      * @return name of module.
      */
+    @Nullable
     public String getModuleName() {
         return moduleName;
     }
