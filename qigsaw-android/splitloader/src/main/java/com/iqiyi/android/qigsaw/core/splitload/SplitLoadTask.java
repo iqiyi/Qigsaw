@@ -58,6 +58,8 @@ final class SplitLoadTask implements Runnable {
 
     private final Object mLock = new Object();
 
+    private final List<String> moduleNames;
+
     SplitLoadTask(SplitLoadManager loadManager,
                   @NonNull List<Intent> splitFileIntents,
                   @Nullable OnSplitLoadListener loadListener) {
@@ -65,6 +67,7 @@ final class SplitLoadTask implements Runnable {
         this.splitActivator = new SplitActivator(AABExtension.getInstance());
         this.splitFileIntents = splitFileIntents;
         this.loadListener = loadListener;
+        this.moduleNames = getRequestModuleNames();
     }
 
     @Override
@@ -85,7 +88,7 @@ final class SplitLoadTask implements Runnable {
                 try {
                     mLock.wait();
                 } catch (InterruptedException e) {
-                    List<SplitLoadError> errors = Collections.singletonList(new SplitLoadError(null, SplitLoadError.INTERRUPTED_ERROR, e));
+                    List<SplitLoadError> errors = Collections.singletonList(new SplitLoadError(moduleNames.get(0), SplitLoadError.INTERRUPTED_ERROR, e));
                     reportLoadResult(errors, 0);
                 }
             }
@@ -139,14 +142,13 @@ final class SplitLoadTask implements Runnable {
 
     private void reportLoadResult(List<SplitLoadError> errors, long cost) {
         SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
-        List<String> requestModuleNames = getRequestModuleNames();
         if (!errors.isEmpty()) {
             if (loadListener != null) {
                 int lastErrorCode = errors.get(errors.size() - 1).getErrorCode();
                 loadListener.onFailed(lastErrorCode);
             }
             if (loadReporter != null) {
-                loadReporter.onLoadFailed(requestModuleNames, loadManager.getCurrentProcessName(), errors, cost);
+                loadReporter.onLoadFailed(moduleNames, loadManager.getCurrentProcessName(), errors, cost);
             }
 
         } else {
@@ -154,13 +156,13 @@ final class SplitLoadTask implements Runnable {
                 loadListener.onCompleted();
             }
             if (loadReporter != null) {
-                loadReporter.onLoadOK(requestModuleNames, loadManager.getCurrentProcessName(), cost);
+                loadReporter.onLoadOK(moduleNames, loadManager.getCurrentProcessName(), cost);
             }
         }
     }
 
     private List<String> getRequestModuleNames() {
-        List<String> requestModuleNames = new ArrayList<>(0);
+        List<String> requestModuleNames = new ArrayList<>(splitFileIntents.size());
         for (Intent intent : splitFileIntents) {
             requestModuleNames.add(intent.getStringExtra(SplitConstants.KET_NAME));
         }
