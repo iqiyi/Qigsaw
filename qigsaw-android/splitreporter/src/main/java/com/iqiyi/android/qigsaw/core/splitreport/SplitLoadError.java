@@ -51,6 +51,8 @@ public class SplitLoadError {
      */
     public static final int ACTIVATE_PROVIDERS_FAILED = -25;
 
+    public static final int INTERRUPTED_ERROR = -26;
+
     private final String moduleName;
 
     private final int errorCode;

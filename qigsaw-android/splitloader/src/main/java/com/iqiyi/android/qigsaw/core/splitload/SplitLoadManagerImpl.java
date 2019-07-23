@@ -57,10 +57,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private final String[] processes;
 
+    private final boolean isAAB;
+
     SplitLoadManagerImpl(Context context,
-                         String[] processes) {
+                         String[] processes,
+                         boolean isAAB) {
         super(context);
         this.processes = processes;
+        this.isAAB = isAAB;
         SplitInfoManagerService.install(context);
         SplitPathManager.install(context);
     }
@@ -80,6 +84,9 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     @Override
     public void onCreate() {
+        if (isAAB) {
+            return;
+        }
         if (processes == null || processes.length == 0) {
             loadInstalledSplits();
         } else {

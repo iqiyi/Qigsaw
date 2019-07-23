@@ -109,7 +109,11 @@ public class Qigsaw {
         //create AABCompat instance
         AABExtension.install(baseContext);
         //create SplitLoadManager instance.
-        SplitLoadManagerService.install(baseContext, workProcesses);
+        //getInstance all installed splits for AAB.
+        SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(baseContext);
+        //if installed splits of aab are not empty, qigsaw would not work.
+        Set<String> aabLoadedSplits = infoProvider.getInstalledSplitsForAAB();
+        SplitLoadManagerService.install(baseContext, workProcesses, !aabLoadedSplits.isEmpty());
         if (loadReporter == null) {
             loadReporter = new DefaultSplitLoadReporter(baseContext);
         }
@@ -117,14 +121,7 @@ public class Qigsaw {
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         //load all installed splits for qigsaw.
         loadManager.load(!isSplitAppComponentFactoryExisting(baseContext));
-        //getInstance all installed splits for AAB.
-        SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(baseContext);
-        Set<String> loadedSplits = infoProvider.getInstalledSplitsForAAB();
-        //if installed splits of aab are not empty, qigsaw would not work.
-        if (loadedSplits.isEmpty()) {
-            loadedSplits = loadManager.getLoadedSplitNames();
-        }
-        AABExtension.getInstance().onBaseContextAttached(loadedSplits);
+        AABExtension.getInstance().onBaseContextAttached(aabLoadedSplits);
         //only work in main process!
         if (ProcessUtil.isMainProcess(baseContext)) {
             if (installReporter == null) {

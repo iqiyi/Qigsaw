@@ -86,12 +86,12 @@ public class AABExtension {
     /**
      * Called when base app {@link Application#attachBaseContext(Context)} is invoked.
      *
-     * @param loadedSplits list of loaded split name.
+     * @param aabLoadedSplits list of loaded split name for AAB.
      */
-    public void onBaseContextAttached(@NonNull Set<String> loadedSplits) {
+    public void onBaseContextAttached(@NonNull Set<String> aabLoadedSplits) {
         //remove unload split providers
-        if (!loadedSplits.isEmpty()) {
-            for (String splitName : loadedSplits) {
+        if (!aabLoadedSplits.isEmpty()) {
+            for (String splitName : aabLoadedSplits) {
                 try {
                     Application app = createApplication(splitName);
                     if (app != null) {

@@ -25,6 +25,8 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.ArraySet;
@@ -38,6 +40,7 @@ import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadReporter;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -53,6 +56,8 @@ final class SplitLoadTask implements Runnable {
 
     private final SplitActivator splitActivator;
 
+    private final Object mLock = new Object();
+
     SplitLoadTask(SplitLoadManager loadManager,
                   @NonNull List<Intent> splitFileIntents,
                   @Nullable OnSplitLoadListener loadListener) {
@@ -64,7 +69,34 @@ final class SplitLoadTask implements Runnable {
 
     @Override
     public void run() {
-        loadSplits();
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            loadSplits();
+        } else {
+            synchronized (mLock) {
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (mLock) {
+                            loadSplits();
+                            mLock.notifyAll();
+                        }
+                    }
+                });
+                try {
+                    mLock.wait();
+                } catch (InterruptedException e) {
+                    if (loadListener != null) {
+                        loadListener.onFailed(SplitLoadError.INTERRUPTED_ERROR);
+                    }
+                    SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
+                    if (loadReporter != null) {
+                        List<String> requestModuleNames = getRequestModuleNames();
+                        SplitLoadError loadError = new SplitLoadError(requestModuleNames.get(0), SplitLoadError.INTERRUPTED_ERROR, e);
+                        loadReporter.onLoadFailed(requestModuleNames, loadManager.getCurrentProcessName(), Collections.singletonList(loadError), 0);
+                    }
+                }
+            }
+        }
     }
 
     private synchronized void loadSplits() {
