@@ -251,7 +251,7 @@ public class QigsawInstaller extends Activity {
 
     private void onRequiresUserConfirmation(SplitInstallSessionState state) {
         try {
-            mInstallManager.startConfirmationDialogForResult(state, this, USER_CONFIRMATION_REQ_CODE);
+            startIntentSenderForResult(state.resolutionIntent().getIntentSender(), USER_CONFIRMATION_REQ_CODE, null, 0, 0, 0);
         } catch (IntentSender.SendIntentException e) {
             e.printStackTrace();
         }
