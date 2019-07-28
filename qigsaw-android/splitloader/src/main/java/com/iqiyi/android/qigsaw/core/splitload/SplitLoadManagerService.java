@@ -39,8 +39,13 @@ public class SplitLoadManagerService {
 
     private static final AtomicReference<SplitLoadManager> sReference = new AtomicReference<>();
 
-    public static void install(Context context, String[] processes, boolean isAAB) {
-        sReference.compareAndSet(null, create(context, processes, isAAB));
+    public static void install(Context context,
+                               String[] processes,
+                               boolean loadInstalledSplitsOnApplicationCreate,
+                               boolean isAAB) {
+        if (sReference.get() == null) {
+            sReference.set(create(context, processes, loadInstalledSplitsOnApplicationCreate, isAAB));
+        }
     }
 
     public static boolean hasInstance() {
@@ -54,7 +59,10 @@ public class SplitLoadManagerService {
         return sReference.get();
     }
 
-    private static SplitLoadManager create(Context context, String[] processes, boolean isAAB) {
-        return new SplitLoadManagerImpl(context, processes, isAAB);
+    private static SplitLoadManager create(Context context,
+                                           String[] processes,
+                                           boolean loadInstalledSplitsOnApplicationCreate,
+                                           boolean isAAB) {
+        return new SplitLoadManagerImpl(context, processes, loadInstalledSplitsOnApplicationCreate, isAAB);
     }
 }

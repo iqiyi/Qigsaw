@@ -89,6 +89,7 @@ public class Qigsaw {
         SplitUpdateReporter updateReporter = null;
         SplitLog.Logger logger = null;
         Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass = null;
+        boolean loadInstalledSplitsOnApplicationCreate = false;
         if (configuration != null) {
             manifestPackageName = configuration.getManifestPackageName();
             workProcesses = configuration.getWorkProcesses();
@@ -97,6 +98,7 @@ public class Qigsaw {
             updateReporter = configuration.getUpdateReporter();
             logger = configuration.getLogger();
             obtainUserConfirmationDialogClass = configuration.obtainUserConfirmationDialogClass();
+            loadInstalledSplitsOnApplicationCreate = configuration.loadInstalledSplitsOnApplicationCreate();
         }
         final Context baseContext = getBaseContext(context);
         boolean isMainProcess = ProcessUtil.isMainProcess(baseContext);
@@ -115,7 +117,8 @@ public class Qigsaw {
         SplitAABInfoProvider infoProvider = new SplitAABInfoProvider(baseContext);
         //if installed splits of aab are not empty, qigsaw would not work.
         Set<String> aabLoadedSplits = infoProvider.getInstalledSplitsForAAB();
-        SplitLoadManagerService.install(baseContext, workProcesses, !aabLoadedSplits.isEmpty());
+        boolean isAAB = !aabLoadedSplits.isEmpty();
+        SplitLoadManagerService.install(baseContext, workProcesses, loadInstalledSplitsOnApplicationCreate, isAAB);
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         loadManager.injectPathClassloaderIfNeed(!isSplitAppComponentFactoryExisting(baseContext));
         AABExtension.getInstance().onBaseContextAttached(aabLoadedSplits);
