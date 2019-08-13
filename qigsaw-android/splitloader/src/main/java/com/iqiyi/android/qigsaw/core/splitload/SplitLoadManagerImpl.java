@@ -45,7 +45,6 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import dalvik.system.PathClassLoader;
 
@@ -101,17 +100,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     @Override
     public void getResources(Resources resources) {
-        Set<Split> loadedSplits = getLoadedSplits();
-        if (!loadedSplits.isEmpty()) {
-            for (Split split : loadedSplits) {
-                try {
-                    SplitCompatResourcesLoader.loadResources(getContext(), resources, split.splitApkPath);
-                } catch (Throwable throwable) {
-                    throwable.printStackTrace();
-                }
-            }
+        try {
+            SplitCompatResourcesLoader.loadResources(getContext(), resources);
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
         }
     }
+
 
     @Override
     public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {

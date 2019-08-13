@@ -26,27 +26,31 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.Service;
-import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.support.annotation.RequiresApi;
 import android.support.annotation.RestrictTo;
-
+import android.util.DisplayMetrics;
+import android.view.ContextThemeWrapper;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -64,24 +68,14 @@ public class SplitCompatResourcesLoader {
      * Check if split res dir has been added into {@link Resources}, this method should be invoked in {@link Activity#getResources()}.
      * After Android 7.0, WebView.apk resources is added dynamically.
      */
-    @SuppressLint("PrivateApi")
-    public static void loadResources(Activity activity, Resources preResources) throws Throwable {
-        checkOrUpdateResources(activity, preResources);
-    }
-
-    public static void loadResources(Service service) throws Throwable {
-        checkOrUpdateResources(service, service.getBaseContext().getResources());
-    }
-
-    //Todo:: remove receiver param
-    public static void loadResources(BroadcastReceiver receiver, Context context, Resources resources) throws Throwable {
+    public static void loadResources(Context context, Resources resources) throws Throwable {
         checkOrUpdateResources(context, resources);
     }
 
     static void loadResources(Context context, Resources preResources, String splitApkPath) throws Throwable {
         List<String> loadedResDirs = getLoadedResourcesDirs(preResources.getAssets());
         if (!loadedResDirs.contains(splitApkPath)) {
-            installSplitResDirs(context, preResources, splitApkPath);
+            installSplitResDirs(context, preResources, Collections.singletonList(splitApkPath));
             SplitLog.d(TAG, "Install split %s resources for application.", splitApkPath);
         }
     }
@@ -91,11 +85,13 @@ public class SplitCompatResourcesLoader {
         Collection<String> loadedSplitPaths = getLoadedSplitPaths();
         if (loadedSplitPaths != null && !loadedSplitPaths.isEmpty()) {
             if (!loadedResDirsInAsset.containsAll(loadedSplitPaths)) {
+                List<String> unloadedSplitPaths = new ArrayList<>();
                 for (String splitPath : loadedSplitPaths) {
                     if (!loadedResDirsInAsset.contains(splitPath)) {
-                        installSplitResDirs(context, resources, splitPath);
+                        unloadedSplitPaths.add(splitPath);
                     }
                 }
+                installSplitResDirs(context, resources, unloadedSplitPaths);
             }
         }
     }
@@ -108,15 +104,15 @@ public class SplitCompatResourcesLoader {
         return null;
     }
 
-    private static void installSplitResDirs(final Context context, final Resources resources, final String splitFileDir) throws Throwable {
+    private static void installSplitResDirs(final Context context, final Resources resources, final List<String> splitResPaths) throws Throwable {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            V21.installSplitResDirs(resources, splitFileDir);
+            V21.installSplitResDirs(resources, splitResPaths);
         } else {
             //run on UI Thread
             //some rom like zte 4.2.2, fetching @ActivityThread instance in work thread will return null.
             if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
                 SplitLog.i(TAG, "Install res on main thread");
-                V14.installSplitResDirs(context, resources, splitFileDir);
+                V14.installSplitResDirs(context, resources, splitResPaths);
             } else {
                 synchronized (sLock) {
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -124,7 +120,7 @@ public class SplitCompatResourcesLoader {
                         public void run() {
                             synchronized (sLock) {
                                 try {
-                                    V14.installSplitResDirs(context, resources, splitFileDir);
+                                    V14.installSplitResDirs(context, resources, splitResPaths);
                                 } catch (Throwable throwable) {
                                     throw new RuntimeException(throwable);
                                 }
@@ -148,7 +144,7 @@ public class SplitCompatResourcesLoader {
                 existedAppResDirList.add(path);
             }
         } else {
-            Object[] appStringBlocks = (Object[]) VersionCompat.getmStringBlocksField().get(asset);
+            Object[] appStringBlocks = (Object[]) VersionCompat.mStringBlocksInAssetManager().get(asset);
             int totalResCount = appStringBlocks.length;
             for (int appResIndex = 1; appResIndex <= totalResCount; ++appResIndex) {
                 String inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
@@ -160,40 +156,123 @@ public class SplitCompatResourcesLoader {
 
     private static class V21 extends VersionCompat {
 
-        private static void installSplitResDirs(Resources preResources, String splitFileDir) throws Throwable {
+        private static void installSplitResDirs(Resources preResources, List<String> splitResPaths) throws Throwable {
             Method method = VersionCompat.getAddAssetPathMethod();
-            method.invoke(preResources.getAssets(), splitFileDir);
+            for (String splitResPath : splitResPaths) {
+                method.invoke(preResources.getAssets(), splitResPath);
+            }
         }
     }
 
-
     private static class V14 extends VersionCompat {
 
-        private static void installSplitResDirs(Context context, Resources preResources, String splitApkPath) throws Throwable {
-            String appResDir = context.getPackageResourcePath();
-            AssetManager oldAsset = preResources.getAssets();
-            List<String> resDirs = getAppResDirs(appResDir, oldAsset);
-            resDirs.add(splitApkPath);
-            AssetManager newAsset = createAssetManager();
-            for (String recent : resDirs) {
-                int ret = (int) getAddAssetPathMethod().invoke(newAsset, recent);
-                if (ret == 0) {
-                    throw new RuntimeException("invoke addAssetPath failure! apk format maybe incorrect");
+        private static Context getBaseContext(Context context) {
+            Context ctx = context;
+            while (ctx instanceof ContextWrapper) {
+                ctx = ((ContextWrapper) ctx).getBaseContext();
+            }
+            return ctx;
+        }
+
+        private static void checkOrUpdateResourcesForContext(Context context, Resources preResources, Resources newResources)
+                throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
+            //if context is a ContextThemeWrapper.
+            if (context instanceof ContextThemeWrapper && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Resources themeWrapperResources = (Resources) mResourcesInContextThemeWrapper().get(context);
+                if (themeWrapperResources == preResources) {
+                    SplitLog.i(TAG, "context %s type is @ContextThemeWrapper, and it has its own resources instance!", context.getClass().getSimpleName());
+                    mResourcesInContextThemeWrapper().set(context, newResources);
+                    mThemeInContextThemeWrapper().set(context, null);
                 }
             }
-            getmStringBlocksField().set(newAsset, null);
-            getEnsureStringBlocksMethod().invoke(newAsset);
-            getmAssetsField().set(preResources, newAsset);
-            clearPreloadTypedArrayIssue(preResources);
-            preResources.updateConfiguration(preResources.getConfiguration(), preResources.getDisplayMetrics());
+            //find base context
+            Context baseContext = getBaseContext(context);
+            if (baseContext.getClass().getName().equals("android.app.ContextImpl")) {
+                Resources baseContextRes = (Resources) mResourcesInContextImpl().get(baseContext);
+                if (baseContextRes == preResources) {
+                    mResourcesInContextImpl().set(baseContext, newResources);
+                    mThemeInContentImpl().set(baseContext, null);
+                }
+            } else {
+                //some rom customize ContextImpl for base context of Application
+                try {
+                    Resources baseContextRes = (Resources) HiddenApiReflection.findField(baseContext, "mResources").get(baseContext);
+                    if (baseContextRes == preResources) {
+                        HiddenApiReflection.findField(baseContext, "mResources").set(baseContext, newResources);
+                        HiddenApiReflection.findField(baseContext, "mTheme").set(baseContext, null);
+                    }
+                } catch (NoSuchFieldException e) {
+                    SplitLog.w(TAG, "Can not find mResources in " + baseContext.getClass().getName(), e);
+                }
+                Resources baseContextRes = (Resources) mResourcesInContextImpl().get(baseContext);
+                if (baseContextRes == preResources) {
+                    mResourcesInContextImpl().set(baseContext, newResources);
+                    mThemeInContentImpl().set(baseContext, null);
+                }
+            }
+        }
+
+        @SuppressLint("PrivateApi")
+        private static void installSplitResDirs(Context context, Resources preResources, List<String> splitResPaths) throws Throwable {
+            //create a new Resources.
+            Resources newResources = createResources(context, preResources, splitResPaths);
+            checkOrUpdateResourcesForContext(context, preResources, newResources);
+            Object activityThread = getActivityThread();
+            Map<IBinder, Object> activities = (Map<IBinder, Object>) mActivitiesInActivityThread().get(activityThread);
+            for (Map.Entry<IBinder, Object> entry : activities.entrySet()) {
+                Object activityClientRecord = entry.getValue();
+                Activity activity = (Activity) HiddenApiReflection.findField(activityClientRecord, "activity").get(activityClientRecord);
+                if (activity.getResources() == preResources) {
+                    SplitLog.i(TAG, "pre-resources found in @mActivities");
+                    checkOrUpdateResourcesForContext(activity, preResources, newResources);
+                }
+            }
+
+            Map<Object, WeakReference<Resources>> activeResources;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                activeResources = (Map<Object, WeakReference<Resources>>) mActiveResourcesInActivityThread().get(activityThread);
+            } else {
+                Object resourcesManager = getResourcesManager();
+                activeResources = (Map<Object, WeakReference<Resources>>) mActiveResourcesInResourcesManager().get(resourcesManager);
+            }
+            for (Map.Entry<Object, WeakReference<Resources>> entry : activeResources.entrySet()) {
+                Resources res = entry.getValue().get();
+                if (res == preResources) {
+                    activeResources.put(entry.getKey(), new WeakReference<>(newResources));
+                    SplitLog.i(TAG, "pre-resources found in @mActiveResources");
+                    break;
+                }
+            }
+
+            Map<String, WeakReference<Object>> instance_mPackages =
+                    (Map<String, WeakReference<Object>>) mPackagesInActivityThread().get(activityThread);
+            for (Map.Entry<String, WeakReference<Object>> entry : instance_mPackages.entrySet()) {
+                Object packageInfo = entry.getValue().get();
+                Resources resources = (Resources) mResourcesInLoadedApk().get(packageInfo);
+                if (resources == preResources) {
+                    SplitLog.i(TAG, "pre-resources found in @mPackages");
+                    mResourcesInLoadedApk().set(packageInfo, newResources);
+                }
+            }
+
+            Map<String, WeakReference<Object>> instance_mResourcePackages =
+                    (Map<String, WeakReference<Object>>) mResourcePackagesInActivityThread().get(activityThread);
+            for (Map.Entry<String, WeakReference<Object>> entry : instance_mResourcePackages.entrySet()) {
+                Object packageInfo = entry.getValue().get();
+                Resources resources = (Resources) mResourcesInLoadedApk().get(packageInfo);
+                if (resources == preResources) {
+                    SplitLog.i(TAG, "pre-resources found in @mResourcePackages");
+                    mResourcesInLoadedApk().set(packageInfo, newResources);
+                }
+            }
         }
 
         private static List<String> getAppResDirs(String appResDir, AssetManager asset) throws NoSuchFieldException,
                 IllegalAccessException, NoSuchMethodException, InvocationTargetException {
             List<String> existedAppResDirList;
             AssetManager sysAsset = Resources.getSystem().getAssets();
-            Object[] sysStringBlocks = (Object[]) getmStringBlocksField().get(sysAsset);
-            Object[] appStringBlocks = (Object[]) getmStringBlocksField().get(asset);
+            Object[] sysStringBlocks = (Object[]) mStringBlocksInAssetManager().get(sysAsset);
+            Object[] appStringBlocks = (Object[]) mStringBlocksInAssetManager().get(asset);
             int totalResCount = appStringBlocks.length;
             int sysResCount = sysStringBlocks.length;
             existedAppResDirList = new ArrayList<>(totalResCount - sysResCount);
@@ -217,31 +296,27 @@ public class SplitCompatResourcesLoader {
             return existedAppResDirList;
         }
 
-        /**
-         * Why must I do these?
-         * Resource has mTypedArrayPool field, which just like Message Poll to reduce gc
-         * MiuiResource change TypedArray to MiuiTypedArray, but it getInstance string block from offset instead of assetManager
-         */
-        private static void clearPreloadTypedArrayIssue(Resources resources) {
-            // Perform this trick not only in Miui system since we can't predict if any other
-            // manufacturer would do the same modification to Android.
-            // if (!isMiuiSystem) {
-            //     return;
-            // }
-            SplitLog.w(TAG, "try to clear typedArray cache!");
-            // Clear typedArray cache.
-            try {
-                final Field typedArrayPoolField = getmTypedArrayPoolField();
-                final Object origTypedArrayPool = typedArrayPoolField.get(resources);
-                final Method acquireMethod = HiddenApiReflection.findMethod(origTypedArrayPool, "acquire");
-                while (true) {
-                    if (acquireMethod.invoke(origTypedArrayPool) == null) {
-                        break;
-                    }
+        private static Resources createResources(Context context, Resources oldRes, List<String> splitResPaths) throws NoSuchFieldException,
+                IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
+            String appResDir = context.getPackageResourcePath();
+            AssetManager oldAsset = oldRes.getAssets();
+            List<String> resDirs = getAppResDirs(appResDir, oldAsset);
+            resDirs.addAll(0, splitResPaths);
+            AssetManager newAsset = createAssetManager();
+            for (String recent : resDirs) {
+                int ret = (int) getAddAssetPathMethod().invoke(newAsset, recent);
+                if (ret == 0) {
+                    SplitLog.e(TAG, "Split Apk res path : " + recent);
+                    throw new RuntimeException("invoke addAssetPath failure! apk format maybe incorrect");
                 }
-            } catch (Throwable e) {
-                SplitLog.e(TAG, "clearPreloadTypedArrayIssue failed, ignore error: " + e);
             }
+            return newResources(oldRes, newAsset);
+        }
+
+        private static Resources newResources(Resources originRes, AssetManager asset)
+                throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+            return (Resources) HiddenApiReflection.findConstructor(originRes, AssetManager.class, DisplayMetrics.class, Configuration.class)
+                    .newInstance(asset, originRes.getDisplayMetrics(), originRes.getConfiguration());
         }
 
         private static AssetManager createAssetManager() throws IllegalAccessException, InstantiationException {
@@ -253,13 +328,7 @@ public class SplitCompatResourcesLoader {
 
         private static Field mStringBlocksField;
 
-        private static Field mAssetsField;
-
-        private static Field mTypedArrayPoolField;
-
         private static Method addAssetPathMethod;
-
-        private static Method ensureStringBlocksMethod;
 
         private static Method getCookieNameMethod;
 
@@ -267,25 +336,161 @@ public class SplitCompatResourcesLoader {
 
         private static Method getApkAssetsMethod;
 
-        static Field getmStringBlocksField() throws NoSuchFieldException {
+        private static Field mActivitiesInActivityThread;
+
+        private static Object activityThread;
+
+        private static Class<?> activityThreadClass;
+
+        private static Class<?> contextImplClass;
+
+        private static Field mResourcesInContextImpl;
+
+        private static Field mThemeInContentImpl;
+
+        private static Field mPackagesInActivityThread;
+
+        private static Field mResourcePackagesInActivityThread;
+
+        private static Field mActiveResourcesInActivityThread;
+
+        private static Field mActiveResourcesInResourcesManager;
+
+        private static Class<?> resourcesManagerClass;
+
+        private static Object resourcesManager;
+
+        private static Field mResourcesInContextThemeWrapper;
+
+        private static Field mThemeInContextThemeWrapper;
+
+        private static Class<?> loadedApkClass;
+
+        private static Field mResourcesInLoadedApk;
+
+        @SuppressLint("PrivateApi")
+        static Object getActivityThread() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            if (activityThread == null) {
+                activityThread = HiddenApiReflection.findMethod(getActivityThreadClass(), "currentActivityThread").invoke(null);
+            }
+            return activityThread;
+        }
+
+        @SuppressLint("PrivateApi")
+        static Object getResourcesManager() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            if (resourcesManager == null) {
+                resourcesManager = HiddenApiReflection.findMethod(getResourcesManagerClass(), "getInstance").invoke(null);
+            }
+            return resourcesManager;
+        }
+
+        @SuppressLint("PrivateApi")
+        static Class<?> getActivityThreadClass() throws ClassNotFoundException {
+            if (activityThreadClass == null) {
+                activityThreadClass = Class.forName("android.app.ActivityThread");
+            }
+            return activityThreadClass;
+        }
+
+        @SuppressLint("PrivateApi")
+        static Class<?> getResourcesManagerClass() throws ClassNotFoundException {
+            if (resourcesManagerClass == null) {
+                resourcesManagerClass = Class.forName("android.app.ResourcesManager");
+            }
+            return resourcesManagerClass;
+        }
+
+        @SuppressLint("PrivateApi")
+        static Class<?> getLoadedApkClass() throws ClassNotFoundException {
+            if (loadedApkClass == null) {
+                loadedApkClass = Class.forName("android.app.LoadedApk");
+            }
+            return loadedApkClass;
+        }
+
+        @SuppressLint("PrivateApi")
+        static Class<?> getContextImplClass() throws ClassNotFoundException {
+            if (contextImplClass == null) {
+                contextImplClass = Class.forName("android.app.ContextImpl");
+            }
+            return contextImplClass;
+        }
+
+        static Field mResourcesInLoadedApk() throws ClassNotFoundException, NoSuchFieldException {
+            if (mResourcesInLoadedApk == null) {
+                mResourcesInLoadedApk = HiddenApiReflection.findField(getLoadedApkClass(), "mResources");
+            }
+            return mResourcesInLoadedApk;
+        }
+
+        static Field mResourcesInContextImpl() throws ClassNotFoundException, NoSuchFieldException {
+            if (mResourcesInContextImpl == null) {
+                mResourcesInContextImpl = HiddenApiReflection.findField(getContextImplClass(), "mResources");
+            }
+            return mResourcesInContextImpl;
+        }
+
+        static Field mResourcesInContextThemeWrapper() throws NoSuchFieldException {
+            if (mResourcesInContextThemeWrapper == null) {
+                mResourcesInContextThemeWrapper = HiddenApiReflection.findField(ContextThemeWrapper.class, "mResources");
+            }
+            return mResourcesInContextThemeWrapper;
+        }
+
+        static Field mThemeInContextThemeWrapper() throws NoSuchFieldException {
+            if (mThemeInContextThemeWrapper == null) {
+                mThemeInContextThemeWrapper = HiddenApiReflection.findField(ContextThemeWrapper.class, "mTheme");
+            }
+            return mThemeInContextThemeWrapper;
+        }
+
+        static Field mThemeInContentImpl() throws ClassNotFoundException, NoSuchFieldException {
+            if (mThemeInContentImpl == null) {
+                mThemeInContentImpl = HiddenApiReflection.findField(getContextImplClass(), "mTheme");
+            }
+            return mThemeInContentImpl;
+        }
+
+        static Field mPackagesInActivityThread() throws ClassNotFoundException, NoSuchFieldException {
+            if (mPackagesInActivityThread == null) {
+                mPackagesInActivityThread = HiddenApiReflection.findField(getActivityThreadClass(), "mPackages");
+            }
+            return mPackagesInActivityThread;
+        }
+
+        static Field mActiveResourcesInActivityThread() throws ClassNotFoundException, NoSuchFieldException {
+            if (mActiveResourcesInActivityThread == null) {
+                mActiveResourcesInActivityThread = HiddenApiReflection.findField(getActivityThreadClass(), "mActiveResources");
+            }
+            return mActiveResourcesInActivityThread;
+        }
+
+        static Field mActiveResourcesInResourcesManager() throws ClassNotFoundException, NoSuchFieldException {
+            if (mActiveResourcesInResourcesManager == null) {
+                mActiveResourcesInResourcesManager = HiddenApiReflection.findField(getResourcesManagerClass(), "mActiveResources");
+            }
+            return mActiveResourcesInResourcesManager;
+        }
+
+        static Field mResourcePackagesInActivityThread() throws ClassNotFoundException, NoSuchFieldException {
+            if (mResourcePackagesInActivityThread == null) {
+                mResourcePackagesInActivityThread = HiddenApiReflection.findField(getActivityThreadClass(), "mResourcePackages");
+            }
+            return mResourcePackagesInActivityThread;
+        }
+
+        static Field mActivitiesInActivityThread() throws NoSuchFieldException, ClassNotFoundException {
+            if (mActivitiesInActivityThread == null) {
+                mActivitiesInActivityThread = HiddenApiReflection.findField(getActivityThreadClass(), "mActivities");
+            }
+            return mActivitiesInActivityThread;
+        }
+
+        static Field mStringBlocksInAssetManager() throws NoSuchFieldException {
             if (mStringBlocksField == null) {
                 mStringBlocksField = HiddenApiReflection.findField(AssetManager.class, "mStringBlocks");
             }
             return mStringBlocksField;
-        }
-
-        static Field getmAssetsField() throws NoSuchFieldException {
-            if (mAssetsField == null) {
-                mAssetsField = HiddenApiReflection.findField(Resources.class, "mAssets");
-            }
-            return mAssetsField;
-        }
-
-        static Field getmTypedArrayPoolField() throws NoSuchFieldException {
-            if (mTypedArrayPoolField == null) {
-                mTypedArrayPoolField = HiddenApiReflection.findField(Resources.class, "mTypedArrayPool");
-            }
-            return mTypedArrayPoolField;
         }
 
         static Method getAddAssetPathMethod() throws NoSuchMethodException {
@@ -300,13 +505,6 @@ public class SplitCompatResourcesLoader {
                 getCookieNameMethod = HiddenApiReflection.findMethod(AssetManager.class, "getCookieName", int.class);
             }
             return getCookieNameMethod;
-        }
-
-        static Method getEnsureStringBlocksMethod() throws NoSuchMethodException {
-            if (ensureStringBlocksMethod == null) {
-                ensureStringBlocksMethod = HiddenApiReflection.findMethod(AssetManager.class, "ensureStringBlocks");
-            }
-            return ensureStringBlocksMethod;
         }
 
         @SuppressLint("PrivateApi")

@@ -47,7 +47,7 @@ public class SplitInstallHelper {
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public static void loadResources(Service service) {
         try {
-            SplitCompatResourcesLoader.loadResources(service);
+            SplitCompatResourcesLoader.loadResources(service, service.getBaseContext().getResources());
         } catch (Throwable throwable) {
             throw new RuntimeException("Failed to load service resources", throwable);
         }
@@ -66,7 +66,7 @@ public class SplitInstallHelper {
         if (context.getClass().getSimpleName().equals("ReceiverRestrictedContext")) {
             try {
                 Context base = ((ContextWrapper) context).getBaseContext();
-                SplitCompatResourcesLoader.loadResources(receiver, base, context.getResources());
+                SplitCompatResourcesLoader.loadResources(base, context.getResources());
             } catch (Throwable throwable) {
                 throw new RuntimeException("Failed to load receiver resources", throwable);
             }

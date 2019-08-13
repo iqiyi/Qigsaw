@@ -36,12 +36,15 @@ final class SplitInstallSessionManagerImpl implements SplitInstallSessionManager
 
     private final SparseArray<SplitInstallInternalSessionState> mActiveSessionStates = new SparseArray<>();
 
-    private Context mContext;
+    private final Context mContext;
+
+    private final String mPackageName;
 
     private final Object mLock = new Object();
 
     SplitInstallSessionManagerImpl(Context context) {
         this.mContext = context;
+        this.mPackageName = context.getPackageName();
     }
 
     @Override
@@ -132,6 +135,7 @@ final class SplitInstallSessionManagerImpl implements SplitInstallSessionManager
         Bundle bundle = SplitInstallInternalSessionState.transform2Bundle(sessionState);
         Intent intent = new Intent();
         intent.putExtra("session_state", bundle);
+        intent.setPackage(mPackageName);
         intent.setAction("com.iqiyi.android.play.core.splitinstall.receiver.SplitInstallUpdateIntentService");
         mContext.sendBroadcast(intent);
     }
