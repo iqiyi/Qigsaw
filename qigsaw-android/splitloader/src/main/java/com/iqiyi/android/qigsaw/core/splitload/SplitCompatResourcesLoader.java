@@ -222,7 +222,7 @@ public class SplitCompatResourcesLoader {
             for (Map.Entry<IBinder, Object> entry : activities.entrySet()) {
                 Object activityClientRecord = entry.getValue();
                 Activity activity = (Activity) HiddenApiReflection.findField(activityClientRecord, "activity").get(activityClientRecord);
-                if (activity.getResources() == preResources) {
+                if (context != activity) {
                     SplitLog.i(TAG, "pre-resources found in @mActivities");
                     checkOrUpdateResourcesForContext(activity, preResources, newResources);
                 }
