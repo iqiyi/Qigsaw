@@ -37,6 +37,9 @@ public class FakeActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (getIntent() != null) {
+            setIntent(null);
+        }
         finish();
     }
 }

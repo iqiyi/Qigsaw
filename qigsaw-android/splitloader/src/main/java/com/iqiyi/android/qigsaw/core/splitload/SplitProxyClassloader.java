@@ -31,13 +31,19 @@ import android.util.Pair;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
+
+import dalvik.system.BaseDexClassLoader;
 import dalvik.system.PathClassLoader;
 
 final class SplitProxyClassloader extends PathClassLoader {
 
     private static final String TAG = "SplitDexClassloader";
 
-    private PathClassLoader originClassLoader;
+    private BaseDexClassLoader originClassLoader;
 
     private SplitProxyClassloader(String dexPath, ClassLoader parent) {
         super(dexPath, parent);
@@ -47,7 +53,6 @@ final class SplitProxyClassloader extends PathClassLoader {
     private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
         Object basePackageInfo = HiddenApiReflection.findField(baseContext, "mPackageInfo").get(baseContext);
         HiddenApiReflection.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
-        Thread.currentThread().setContextClassLoader(reflectClassLoader);
     }
 
     static PathClassLoader inject(ClassLoader originalClassloader, Context baseContext) throws Exception {
@@ -84,6 +89,26 @@ final class SplitProxyClassloader extends PathClassLoader {
             }
             throw error;
         }
+    }
+
+    @Override
+    public Enumeration<URL> getResources(String name) throws IOException {
+        return originClassLoader.getResources(name);
+    }
+
+    @Override
+    public URL getResource(String name) {
+        return originClassLoader.getResource(name);
+    }
+
+    @Override
+    public InputStream getResourceAsStream(String name) {
+        return originClassLoader.getResourceAsStream(name);
+    }
+
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException {
+        return findClass(name);
     }
 
     @Override

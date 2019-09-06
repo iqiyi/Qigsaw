@@ -83,15 +83,17 @@ final class SplitInstallerImpl extends SplitInstaller {
                 dexFiles.add(sourceApk);
             }
             optimizedDir = SplitPathManager.require().getSplitOptDir(info);
-            //get all optimized dex files
-            List<File> optDexFiles = getOptimizedDexFiles(dexFiles, optimizedDir);
-            //check if need optimize dex files
-            if (isOptimizeDexNeeded(optDexFiles)) {
-                //delete corrupted optimized dex files if necessary
-                deleteCorruptedFiles(optDexFiles);
-                //optimize dex files
-                List<DexFile> dexes = optimizeDex(dexFiles, optimizedDir);
-                checkOptimizedDexFiles(optDexFiles, dexes);
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+                //get all optimized dex files
+                List<File> optDexFiles = getOptimizedDexFiles(dexFiles, optimizedDir);
+                //check if need optimize dex files
+                if (isOptimizeDexNeeded(optDexFiles)) {
+                    //delete corrupted optimized dex files if necessary
+                    deleteCorruptedFiles(optDexFiles);
+                    //optimize dex files
+                    List<DexFile> dexes = optimizeDex(dexFiles, optimizedDir);
+                    checkOptimizedDexFiles(optDexFiles, dexes);
+                }
             }
         }
         createInstalledMark(info);

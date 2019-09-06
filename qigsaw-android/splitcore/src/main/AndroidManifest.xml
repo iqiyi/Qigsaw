@@ -6,7 +6,7 @@
         <activity
             android:name="com.iqiyi.android.qigsaw.core.DefaultObtainUserConfirmationDialog"
             android:exported="false"
-            android:screenOrientation="portrait"
+            android:screenOrientation="behind"
             android:theme="@style/Theme.ActivityDialogStyle" />
 
     </application>

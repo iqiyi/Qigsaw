@@ -75,7 +75,7 @@ class SignatureValidator {
         try {
             var3 = G.a(var1);
         } catch (Exception var14) {
-            SplitLog.e(TAG, (new StringBuilder(32 + String.valueOf(var1).length())).append("Downloaded split ").append(var1).append(" is not signed.").toString(), var14);
+            SplitLog.e(TAG, "Downloaded split " + var1 + " is not signed.", var14);
             return false;
         }
 
@@ -109,7 +109,7 @@ class SignatureValidator {
                 return false;
             }
         } else {
-            SplitLog.e(TAG, (new StringBuilder(32 + String.valueOf(var1).length())).append("Downloaded split ").append(var1).append(" is not signed.").toString());
+            SplitLog.e(TAG, "Downloaded split " + var1 + " is not signed.");
             return false;
         }
     }
@@ -118,7 +118,7 @@ class SignatureValidator {
     private static Signature[] getAppSignature(Context context) {
         try {
             return context.getPackageManager().getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNATURES).signatures;
-        } catch (PackageManager.NameNotFoundException var1) {
+        } catch (Throwable var1) {
             return null;
         }
     }
