@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.extension;
 
 import android.app.Application;
+import android.content.Context;
 
 interface AABExtensionManager {
 
@@ -39,9 +40,9 @@ interface AABExtensionManager {
     /**
      * Invoke {@link Application#attach(android.content.Context)} method to activate split's application.
      *
-     * @param application application instance of split.
+     * @param splitApplication application instance of split.
      */
-    void activeApplication(Application application) throws AABExtensionException;
+    void activeApplication(Application splitApplication, Context appContext) throws AABExtensionException;
 
     String getSplitNameForActivity(String name);
 

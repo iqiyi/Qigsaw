@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.app.Application;
+import android.content.Context;
 
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.extension.AABExtensionException;
@@ -34,18 +35,21 @@ final class SplitActivator {
 
     private final AABExtension aabExtension;
 
-    SplitActivator(AABExtension aabExtension) {
-        this.aabExtension = aabExtension;
+    private final Context appContext;
+
+    SplitActivator(Context context) {
+        this.appContext = context;
+        this.aabExtension = AABExtension.getInstance();
     }
 
     void activate(String splitName) throws SplitLoadException {
         Application app;
         try {
             app = aabExtension.createApplication(splitName);
+            aabExtension.activeApplication(app, appContext);
         } catch (AABExtensionException e) {
             throw new SplitLoadException(SplitLoadError.ACTIVATE_APPLICATION_FAILED, e);
         }
-
         try {
             aabExtension.activateSplitProviders(splitName);
         } catch (AABExtensionException e) {

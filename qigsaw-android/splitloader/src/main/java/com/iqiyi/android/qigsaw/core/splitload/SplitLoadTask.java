@@ -64,7 +64,7 @@ final class SplitLoadTask implements Runnable {
                   @NonNull List<Intent> splitFileIntents,
                   @Nullable OnSplitLoadListener loadListener) {
         this.loadManager = loadManager;
-        this.splitActivator = new SplitActivator(AABExtension.getInstance());
+        this.splitActivator = new SplitActivator(loadManager.getContext());
         this.splitFileIntents = splitFileIntents;
         this.loadListener = loadListener;
         this.moduleNames = getRequestModuleNames();

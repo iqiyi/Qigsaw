@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core;
 
 import android.app.Application;
+import android.support.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallReporter;
@@ -36,44 +37,39 @@ public class SplitConfiguration {
     /**
      * processes that load all installed splits during application launch time, if null all processes would load.
      */
-    private final String[] workProcesses;
+    final String[] workProcesses;
 
     /**
      * if the package name you declared in app manifest does not match applicationId in app/build.gradle,
      * you have to set it.
      */
-    private final String manifestPackageName;
+    final String manifestPackageName;
 
     /**
      * Report installing status when splits are fully installed.
      */
-    private final SplitInstallReporter installReporter;
+    final SplitInstallReporter installReporter;
 
     /**
      * Report loading status when splits are fully loaded.
      */
-    private final SplitLoadReporter loadReporter;
+    final SplitLoadReporter loadReporter;
 
     /**
      * Report updating status when split info version is fully updated.
      */
-    private final SplitUpdateReporter updateReporter;
-
-    /**
-     * Customized logger for {@link SplitLog}
-     */
-    private final SplitLog.Logger logger;
+    final SplitUpdateReporter updateReporter;
 
     /**
      * Customized dialog for requiring user confirmation whether allowed to download splits while using mobile data
      */
-    private final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
+    final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
     /**
      * Load all installed splits during {@link Application#onCreate()},
      * if {@code true}, this operation maybe affect launch performance of process.
      */
-    private boolean loadInstalledSplitsOnApplicationCreate;
+    final boolean loadInstalledSplitsOnApplicationCreate;
 
     public static SplitConfiguration.Builder newBuilder() {
         return new SplitConfiguration.Builder();
@@ -85,42 +81,8 @@ public class SplitConfiguration {
         this.installReporter = builder.installReporter;
         this.loadReporter = builder.loadReporter;
         this.updateReporter = builder.updateReporter;
-        this.logger = builder.logger;
         this.obtainUserConfirmationDialogClass = builder.obtainUserConfirmationDialogClass;
         this.loadInstalledSplitsOnApplicationCreate = builder.loadInstalledSplitsOnApplicationCreate;
-
-    }
-
-    String[] getWorkProcesses() {
-        return workProcesses;
-    }
-
-    String getManifestPackageName() {
-        return manifestPackageName;
-    }
-
-    SplitInstallReporter getInstallReporter() {
-        return installReporter;
-    }
-
-    SplitLoadReporter getLoadReporter() {
-        return loadReporter;
-    }
-
-    SplitUpdateReporter getUpdateReporter() {
-        return updateReporter;
-    }
-
-    SplitLog.Logger getLogger() {
-        return logger;
-    }
-
-    Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass() {
-        return obtainUserConfirmationDialogClass;
-    }
-
-    boolean loadInstalledSplitsOnApplicationCreate() {
-        return loadInstalledSplitsOnApplicationCreate;
     }
 
     public static class Builder {
@@ -135,47 +97,49 @@ public class SplitConfiguration {
 
         private SplitUpdateReporter updateReporter;
 
-        private SplitLog.Logger logger;
-
         private boolean loadInstalledSplitsOnApplicationCreate;
 
         private Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
         private Builder() {
-
+            this.loadInstalledSplitsOnApplicationCreate = true;
+            this.obtainUserConfirmationDialogClass = DefaultObtainUserConfirmationDialog.class;
         }
 
-        public Builder logger(SplitLog.Logger logger) {
-            this.logger = logger;
+        /**
+         * Customized logger for {@link SplitLog}
+         */
+        public Builder logger(@NonNull SplitLog.Logger logger) {
+            SplitLog.setSplitLogImp(logger);
             return this;
         }
 
-        public Builder workProcesses(String[] workProcesses) {
+        public Builder workProcesses(@NonNull String[] workProcesses) {
             this.workProcesses = workProcesses;
             return this;
         }
 
-        public Builder manifestPackageName(String manifestPackageName) {
+        public Builder manifestPackageName(@NonNull String manifestPackageName) {
             this.manifestPackageName = manifestPackageName;
             return this;
         }
 
-        public Builder installReporter(SplitInstallReporter installReporter) {
+        public Builder installReporter(@NonNull SplitInstallReporter installReporter) {
             this.installReporter = installReporter;
             return this;
         }
 
-        public Builder loadReporter(SplitLoadReporter loadReporter) {
+        public Builder loadReporter(@NonNull SplitLoadReporter loadReporter) {
             this.loadReporter = loadReporter;
             return this;
         }
 
-        public Builder updateReporter(SplitUpdateReporter updateReporter) {
+        public Builder updateReporter(@NonNull SplitUpdateReporter updateReporter) {
             this.updateReporter = updateReporter;
             return this;
         }
 
-        public Builder obtainUserConfirmationDialogClass(Class<? extends ObtainUserConfirmationDialog> clazz) {
+        public Builder obtainUserConfirmationDialogClass(@NonNull Class<? extends ObtainUserConfirmationDialog> clazz) {
             this.obtainUserConfirmationDialogClass = clazz;
             return this;
         }

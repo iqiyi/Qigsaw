@@ -35,12 +35,9 @@ import java.util.List;
 
 final class AABExtensionManagerImpl implements AABExtensionManager {
 
-    private final Context context;
-
     private SplitComponentInfoProvider infoProvider;
 
-    AABExtensionManagerImpl(Context context, SplitComponentInfoProvider infoProvider) {
-        this.context = context;
+    AABExtensionManagerImpl(SplitComponentInfoProvider infoProvider) {
         this.infoProvider = infoProvider;
     }
 
@@ -51,7 +48,7 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
         String applicationName = infoProvider.getSplitApplicationName(splitName);
         if (!TextUtils.isEmpty(applicationName)) {
             try {
-                Class<?> appClass = context.getClassLoader().loadClass(applicationName);
+                Class<?> appClass = AABExtension.class.getClassLoader().loadClass(applicationName);
                 return (Application) appClass.newInstance();
             } catch (ClassNotFoundException e) {
                 error = e;
@@ -68,14 +65,14 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     }
 
     @Override
-    @SuppressLint("PrivateApi")
-    public void activeApplication(Application app) throws AABExtensionException {
+    @SuppressLint("DiscouragedPrivateApi")
+    public void activeApplication(Application app, Context appContext) throws AABExtensionException {
         if (app != null) {
             Throwable error = null;
             try {
                 Method method = Application.class.getDeclaredMethod("attach", Context.class);
                 method.setAccessible(true);
-                method.invoke(app, context);
+                method.invoke(app, appContext);
             } catch (NoSuchMethodException e) {
                 error = e;
             } catch (IllegalAccessException e) {

@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.support.annotation.NonNull;
@@ -54,39 +55,34 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private PathClassLoader mClassloader;
 
-    private final boolean loadInstalledSplitsOnApplicationCreate;
-
-    private final boolean isAAB;
-
     SplitLoadManagerImpl(Context context,
-                         String[] processes,
-                         boolean loadInstalledSplitsOnApplicationCreate,
-                         boolean isAAB) {
+                         String[] processes) {
         super(context, processes);
-        this.loadInstalledSplitsOnApplicationCreate = loadInstalledSplitsOnApplicationCreate;
-        this.isAAB = isAAB;
         SplitInfoManagerService.install(context);
         SplitPathManager.install(context);
     }
 
     @Override
     public void injectPathClassloaderIfNeed(boolean needHookClassLoader) {
-        if (hasWorkProcess()) {
-            for (String process : getWorkProcesses()) {
-                if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
-                    hookPathClassLoaderIfNeed(needHookClassLoader);
+        if (needHookClassLoader) {
+            SplitLog.i(TAG, "AppComponentFactory is not declared in app Manifest, so we need hook PathClassLoader!");
+            if (hasWorkProcess()) {
+                for (String process : getWorkProcesses()) {
+                    if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
+                        injectClassLoader(getContext().getClassLoader());
+                        break;
+                    }
                 }
+            } else {
+                injectClassLoader(getContext().getClassLoader());
             }
         } else {
-            hookPathClassLoaderIfNeed(needHookClassLoader);
+            SplitLog.i(TAG, "SplitAppComponentFactory is declared in app Manifest!");
         }
     }
 
     @Override
-    public void onCreate() {
-        if (isAAB || !loadInstalledSplitsOnApplicationCreate) {
-            return;
-        }
+    public void loadInstalledSplitsIfNeed() {
         if (hasWorkProcess()) {
             for (String process : getWorkProcesses()) {
                 if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
@@ -171,15 +167,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
     }
 
-    private void hookPathClassLoaderIfNeed(boolean needHookClassLoader) {
-        if (needHookClassLoader) {
-            SplitLog.i(TAG, "AppComponentFactory is not declared in app Manifest, so we need hook PathClassLoader!");
-            injectClassLoader(getContext().getClassLoader());
-        } else {
-            SplitLog.i(TAG, "AppComponentFactory is  declared in app Manifest!");
-        }
-    }
-
     private String getCompleteProcessName(@Nullable String process) {
         String packageName = getContext().getPackageName();
         if (TextUtils.isEmpty(process)) {
@@ -258,9 +245,10 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private void injectClassLoader(ClassLoader originalClassloader) {
         try {
-            mClassloader = SplitProxyClassloader.inject(originalClassloader, getContext());
+            mClassloader = SplitProxyClassloader.inject(originalClassloader, getBaseContext());
         } catch (Exception e) {
             SplitLog.printErrStackTrace(TAG, e, "Failed to hook PathClassloader");
         }
     }
+
 }

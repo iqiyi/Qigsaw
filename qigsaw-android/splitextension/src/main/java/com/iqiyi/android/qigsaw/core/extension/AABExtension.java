@@ -61,39 +61,36 @@ public class AABExtension {
 
     private static final AtomicReference<AABExtension> sAABCompatReference = new AtomicReference<>(null);
 
-    private final List<Application> splitApplications = new ArrayList<>();
-
     private final Map<String, List<ContentProviderProxy>> sSplitContentProviderMap = new HashMap<>();
 
     private final AABExtensionManager extensionManager;
 
-    private AABExtension(Context context) {
-        Set<String> splitNames = getSplitNames();
-        this.extensionManager = new AABExtensionManagerImpl(context, new SplitComponentInfoProvider(splitNames));
-    }
+    private final List<Application> splitApplications = new ArrayList<>();
 
-    public static void install(Context context) {
-        sAABCompatReference.compareAndSet(null, new AABExtension(context));
+    private AABExtension() {
+        Set<String> splitNames = getSplitNames();
+        this.extensionManager = new AABExtensionManagerImpl(new SplitComponentInfoProvider(splitNames));
     }
 
     public static AABExtension getInstance() {
         if (sAABCompatReference.get() == null) {
-            throw new RuntimeException("Have you invoke AABCompat#install(Context) method?");
+            sAABCompatReference.set(new AABExtension());
         }
         return sAABCompatReference.get();
     }
 
     /**
-     * Called when base app {@link Application#attachBaseContext(Context)} is invoked.
+     * Called when method "Qigsaw.install(...)" is invoked.
      *
      * @param aabLoadedSplits list of loaded split name for AAB.
      */
-    public void onBaseContextAttached(@NonNull Set<String> aabLoadedSplits) {
+    public void onBaseContextAttached(@NonNull Set<String> aabLoadedSplits, Context appContext) {
         //remove unload split providers
         if (!aabLoadedSplits.isEmpty()) {
             for (String splitName : aabLoadedSplits) {
                 try {
                     Application app = createApplication(splitName);
+                    activeApplication(app, appContext);
                     if (app != null) {
                         splitApplications.add(app);
                     }
@@ -119,9 +116,11 @@ public class AABExtension {
      * @param splitName name of split.
      */
     public Application createApplication(String splitName) throws AABExtensionException {
-        Application app = extensionManager.createApplication(splitName);
-        extensionManager.activeApplication(app);
-        return app;
+        return extensionManager.createApplication(splitName);
+    }
+
+    public void activeApplication(Application splitApplication, Context appContext) throws AABExtensionException {
+        extensionManager.activeApplication(splitApplication, appContext);
     }
 
     void put(String splitName, ContentProviderProxy providerProxy) {

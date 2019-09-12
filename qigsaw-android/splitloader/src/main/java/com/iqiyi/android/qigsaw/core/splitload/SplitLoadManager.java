@@ -26,6 +26,7 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.support.annotation.Nullable;
@@ -69,10 +70,7 @@ public abstract class SplitLoadManager {
      */
     public abstract void injectPathClassloaderIfNeed(boolean needHookClassLoader);
 
-    /**
-     * Called this method in {@link Application#onCreate()}.
-     */
-    public abstract void onCreate();
+    public abstract void loadInstalledSplitsIfNeed();
 
     /**
      * Called this method in {@link Application#getResources()}.
@@ -127,6 +125,14 @@ public abstract class SplitLoadManager {
 
     Context getContext() {
         return context;
+    }
+
+    Context getBaseContext() {
+        Context ctx = context;
+        while (ctx instanceof ContextWrapper) {
+            ctx = ((ContextWrapper) ctx).getBaseContext();
+        }
+        return ctx;
     }
 
     final void putSplits(Collection<Split> splits) {
