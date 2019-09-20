@@ -202,23 +202,25 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         SplitProviderProcessor providerProcessor = new SplitProviderProcessor(project, dynamicFeatureNames, variantName)
                         providerProcessor.process()
                     }
-                    Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
-                    packageTask.doFirst {
-                        if (dexSplitterTask != null) {
-                            println("start to remerge dex files!")
-                            def startTime = new Date()
-                            List<File> dexFiles = new ArrayList<>()
-                            inputs.files.each { file ->
-                                file.listFiles().each { x ->
-                                    if (x.absolutePath.endsWith(".dex")) {
-                                        dexFiles.add(x)
+                    if (versionAGP < VersionNumber.parse("3.5.0")) {
+                        Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
+                        packageTask.doFirst {
+                            if (dexSplitterTask != null) {
+                                println("start to remerge dex files!")
+                                def startTime = new Date()
+                                List<File> dexFiles = new ArrayList<>()
+                                inputs.files.each { file ->
+                                    file.listFiles().each { x ->
+                                        if (x.absolutePath.endsWith(".dex")) {
+                                            dexFiles.add(x)
+                                        }
                                     }
                                 }
+                                DexReMergeHandler handler = new DexReMergeHandler(project, appVariant)
+                                handler.reMerge(dexFiles)
+                                def endTime = new Date()
+                                println endTime.getTime() - startTime.getTime() + "ms"
                             }
-                            DexReMergeHandler handler = new DexReMergeHandler(project, appVariant)
-                            handler.reMerge(dexFiles)
-                            def endTime = new Date()
-                            println endTime.getTime() - startTime.getTime() + "ms"
                         }
                     }
                 }
