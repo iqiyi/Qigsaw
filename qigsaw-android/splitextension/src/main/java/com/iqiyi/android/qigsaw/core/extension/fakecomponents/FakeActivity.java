@@ -36,7 +36,9 @@ public class FakeActivity extends Activity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        int orientation = OrientationCompat.releaseFixedOrientation(this);
         super.onCreate(savedInstanceState);
+        OrientationCompat.fixedOrientation(this, orientation);
         if (getIntent() != null) {
             setIntent(null);
         }
