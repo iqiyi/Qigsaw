@@ -32,26 +32,14 @@ public class SplitLoadError {
     public static final int LOAD_RES_FAILED = -21;
 
     /**
-     * Loading split lib dir failed.
-     */
-    public static final int LOAD_LIB_FAILED = -22;
-
-    /**
-     * Loading split dex file failed.
-     */
-    public static final int LOAD_DEX_FAILED = -23;
-
-    /**
      * Activating split application failed.
      */
-    public static final int ACTIVATE_APPLICATION_FAILED = -24;
+    public static final int ACTIVATE_APPLICATION_FAILED = -22;
 
     /**
      * Activating split providers failed.
      */
-    public static final int ACTIVATE_PROVIDERS_FAILED = -25;
-
-    public static final int INTERRUPTED_ERROR = -26;
+    public static final int ACTIVATE_PROVIDERS_FAILED = -23;
 
     private final String moduleName;
 

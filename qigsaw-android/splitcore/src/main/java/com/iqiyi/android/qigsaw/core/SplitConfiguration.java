@@ -24,7 +24,6 @@
 
 package com.iqiyi.android.qigsaw.core;
 
-import android.app.Application;
 import android.support.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -35,9 +34,9 @@ import com.iqiyi.android.qigsaw.core.splitreport.SplitUpdateReporter;
 public class SplitConfiguration {
 
     /**
-     * processes that load all installed splits during application launch time, if null all processes would load.
+     * processes which are forbidden to load all installed splits during application launch time, if null all processes would load.
      */
-    final String[] workProcesses;
+    final String[] forbiddenWorkProcesses;
 
     /**
      * if the package name you declared in app manifest does not match applicationId in app/build.gradle,
@@ -65,29 +64,22 @@ public class SplitConfiguration {
      */
     final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
-    /**
-     * Load all installed splits during {@link Application#onCreate()},
-     * if {@code true}, this operation maybe affect launch performance of process.
-     */
-    final boolean loadInstalledSplitsOnApplicationCreate;
-
     public static SplitConfiguration.Builder newBuilder() {
         return new SplitConfiguration.Builder();
     }
 
     private SplitConfiguration(Builder builder) {
-        this.workProcesses = builder.workProcesses;
+        this.forbiddenWorkProcesses = builder.forbiddenWorkProcesses;
         this.manifestPackageName = builder.manifestPackageName;
         this.installReporter = builder.installReporter;
         this.loadReporter = builder.loadReporter;
         this.updateReporter = builder.updateReporter;
         this.obtainUserConfirmationDialogClass = builder.obtainUserConfirmationDialogClass;
-        this.loadInstalledSplitsOnApplicationCreate = builder.loadInstalledSplitsOnApplicationCreate;
     }
 
     public static class Builder {
 
-        private String[] workProcesses;
+        private String[] forbiddenWorkProcesses;
 
         private String manifestPackageName;
 
@@ -97,12 +89,9 @@ public class SplitConfiguration {
 
         private SplitUpdateReporter updateReporter;
 
-        private boolean loadInstalledSplitsOnApplicationCreate;
-
         private Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
         private Builder() {
-            this.loadInstalledSplitsOnApplicationCreate = true;
             this.obtainUserConfirmationDialogClass = DefaultObtainUserConfirmationDialog.class;
         }
 
@@ -114,8 +103,8 @@ public class SplitConfiguration {
             return this;
         }
 
-        public Builder workProcesses(@NonNull String[] workProcesses) {
-            this.workProcesses = workProcesses;
+        public Builder forbiddenWorkProcesses(@NonNull String[] forbiddenWorkProcesses) {
+            this.forbiddenWorkProcesses = forbiddenWorkProcesses;
             return this;
         }
 
@@ -141,11 +130,6 @@ public class SplitConfiguration {
 
         public Builder obtainUserConfirmationDialogClass(@NonNull Class<? extends ObtainUserConfirmationDialog> clazz) {
             this.obtainUserConfirmationDialogClass = clazz;
-            return this;
-        }
-
-        public Builder loadInstalledSplitsOnApplicationCreate(boolean value) {
-            this.loadInstalledSplitsOnApplicationCreate = value;
             return this;
         }
 

@@ -1,13 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.iqiyi.android.qigsaw.core">
+package="com.iqiyi.android.qigsaw.core">
 
-    <application>
+<application>
 
-        <activity
-            android:name="com.iqiyi.android.qigsaw.core.DefaultObtainUserConfirmationDialog"
-            android:exported="false"
-            android:screenOrientation="behind"
-            android:theme="@style/Theme.ActivityDialogStyle" />
+    <activity
+        android:name="com.iqiyi.android.qigsaw.core.DefaultObtainUserConfirmationDialog"
+        android:exported="false"
+        android:screenOrientation="behind"
+        android:theme="@style/Theme.ActivityDialogStyle" />
 
-    </application>
+</application>
 </manifest>

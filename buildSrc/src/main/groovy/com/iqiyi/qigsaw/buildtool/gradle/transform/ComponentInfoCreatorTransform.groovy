@@ -212,13 +212,13 @@ class ComponentInfoCreatorTransform extends Transform {
         cw.visit(Opcodes.V1_7,
                 Opcodes.ACC_PUBLIC,
                 providerClassName.replace(".", "/"), null,
-                "com/iqiyi/android/qigsaw/core/SplitContentProvider",
+                "com/iqiyi/android/qigsaw/core/splitload/SplitContentProvider",
                 null)
 
         MethodVisitor mw = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V",
                 null, null)
         mw.visitVarInsn(Opcodes.ALOAD, 0)
-        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "com/iqiyi/android/qigsaw/core/SplitContentProvider", "<init>",
+        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "com/iqiyi/android/qigsaw/core/splitload/SplitContentProvider", "<init>",
                 "()V")
         mw.visitInsn(Opcodes.RETURN)
         mw.visitMaxs(1, 1)

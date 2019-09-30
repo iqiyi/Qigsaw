@@ -3,20 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.iqiyi.qigsaw.sample">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:name=".QigsawApplication"
         android:allowBackup="true"
-        android:appComponentFactory="com.iqiyi.qigsaw.sample.SampleSplitAppComponentFactory"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning"
-        tools:replace="android:name,android:appComponentFactory"
-        tools:targetApi="p">
+        tools:replace="android:name">
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -36,6 +32,8 @@
             android:theme="@style/Theme.ActivityDialogStyle" />
 
     </application>
+
+    <uses-permission android:name="android.permission.INTERNET" />
 
 
 </manifest>

@@ -1,4 +1,4 @@
-package com.iqiyi.android.qigsaw.core;
+package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.support.annotation.RestrictTo;
 

@@ -39,8 +39,6 @@ public class SplitConstants {
 
     public static final String DOT_APK = ".apk";
 
-    public static final String DOT_ODEX = ".odex";
-
     public static final String DOT_DEX = ".dex";
 
     public static final String DOT_ZIP = ".zip";
@@ -55,14 +53,8 @@ public class SplitConstants {
 
     public static final String KET_NAME = "splitName";
 
-    public static final String KET_SPLIT_DIR = "splitDir";
-
     public static final String KEY_APK = "apk";
 
-    public static final String KEY_OPTIMIZED_DIRECTORY = "optimized-directory";
-
-    public static final String KEY_MULTI_DEX = "multi-dex";
-
-    public static final String KEY_NATIVE_LIBRARIES = "native-libraries";
+    public static final String KEY_ADDED_DEX = "added-dex";
 
 }

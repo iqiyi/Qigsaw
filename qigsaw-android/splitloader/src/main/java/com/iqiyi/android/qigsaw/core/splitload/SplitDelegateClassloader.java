@@ -26,39 +26,41 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
-import android.util.Pair;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.Set;
 
 import dalvik.system.BaseDexClassLoader;
 import dalvik.system.PathClassLoader;
 
-final class SplitProxyClassloader extends PathClassLoader {
+final class SplitDelegateClassloader extends PathClassLoader {
 
-    private static final String TAG = "SplitDexClassloader";
+    private static final String TAG = "SplitDelegateClassloader";
 
     private BaseDexClassLoader originClassLoader;
 
-    private SplitProxyClassloader(String dexPath, ClassLoader parent) {
-        super(dexPath, parent);
+    SplitDelegateClassloader(ClassLoader parent) {
+        super("", parent);
         this.originClassLoader = (PathClassLoader) parent;
     }
 
     private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
         Object basePackageInfo = HiddenApiReflection.findField(baseContext, "mPackageInfo").get(baseContext);
-        HiddenApiReflection.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
+        if (basePackageInfo != null) {
+            HiddenApiReflection.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
+        } else {
+            SplitLog.w(TAG, "Failed to get mPackageInfo!");
+        }
     }
 
-    static PathClassLoader inject(ClassLoader originalClassloader, Context baseContext) throws Exception {
-        SplitProxyClassloader classLoader = new SplitProxyClassloader("", originalClassloader);
+    static void inject(ClassLoader originalClassloader, Context baseContext) throws Exception {
+        SplitDelegateClassloader classLoader = new SplitDelegateClassloader(originalClassloader);
         reflectPackageInfoClassloader(baseContext, classLoader);
-        return classLoader;
     }
 
     @Override
@@ -66,29 +68,38 @@ final class SplitProxyClassloader extends PathClassLoader {
         try {
             return originClassLoader.loadClass(name);
         } catch (ClassNotFoundException error) {
-            Pair<String, Class<?>> result = AABExtension.getInstance().getSplitNameForComponent(name);
-            if (result != null) {
-                if (SplitLoadManagerService.hasInstance()) {
-                    SplitLog.w(TAG, "class %s is not found", name);
-                    SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                    loadManager.loadInstalledSplits();
-                    if (loadManager.getLoadedSplitNames().contains(result.first)) {
-                        try {
-                            return originClassLoader.loadClass(name);
-                        } catch (ClassNotFoundException e) {
-                            SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, result.second.getSimpleName());
-                            return result.second;
-                        }
-                    } else {
-                        SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, result.second.getSimpleName());
-                        return result.second;
-                    }
-                } else {
-                    SplitLog.e(TAG, "SplitLoadManagerService has not been created!");
+            Class<?> ret = findClassInSplits(name);
+            if (ret != null) {
+                return ret;
+            }
+            if (SplitLoadManagerService.hasInstance()) {
+                SplitLoadManager manager = SplitLoadManagerService.getInstance();
+                manager.loadInstalledSplits();
+                ret = findClassInSplits(name);
+                if (ret != null) {
+                    return ret;
+                }
+
+                Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
+                if (fakeComponent != null) {
+                    SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, fakeComponent.getSimpleName());
+                    return fakeComponent;
                 }
             }
             throw error;
         }
+    }
+
+    private Class<?> findClassInSplits(String name) {
+        Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+        for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+            try {
+                return classLoader.loadClassItself(name);
+            } catch (ClassNotFoundException e) {
+                SplitLog.w(TAG, "Class %s is not found in %s ClassLoader", name, classLoader.moduleName());
+            }
+        }
+        return null;
     }
 
     @Override
@@ -102,21 +113,12 @@ final class SplitProxyClassloader extends PathClassLoader {
     }
 
     @Override
-    public InputStream getResourceAsStream(String name) {
-        return originClassLoader.getResourceAsStream(name);
-    }
-
-    @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         return findClass(name);
     }
 
     @Override
     public String findLibrary(String name) {
-        String mapLib = originClassLoader.findLibrary(name);
-        if (mapLib == null || mapLib.length() == 0) {
-            return super.findLibrary(name);
-        }
-        return mapLib;
+        return originClassLoader.findLibrary(name);
     }
 }

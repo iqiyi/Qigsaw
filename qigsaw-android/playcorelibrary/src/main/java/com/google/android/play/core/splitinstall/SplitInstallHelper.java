@@ -11,6 +11,7 @@ import android.content.res.Resources;
 import android.support.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.splitload.SplitCompatResourcesLoader;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLibraryLoader;
 
 import java.io.File;
 
@@ -85,6 +86,9 @@ public class SplitInstallHelper {
      */
     @SuppressLint("UnsafeDynamicallyLoadedCode")
     public static void loadLibrary(Context context, String libraryName) {
+        if (SplitLibraryLoader.loadSplitLibrary(context, libraryName)) {
+            return;
+        }
         try {
             System.loadLibrary(libraryName);
         } catch (UnsatisfiedLinkError error) {

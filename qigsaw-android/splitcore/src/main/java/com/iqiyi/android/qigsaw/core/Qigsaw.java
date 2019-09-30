@@ -27,9 +27,7 @@ package com.iqiyi.android.qigsaw.core;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
-import android.os.Build;
 import android.os.Looper;
 import android.os.MessageQueue;
 import android.support.annotation.NonNull;
@@ -38,7 +36,6 @@ import com.google.android.play.core.splitcompat.SplitCompat;
 import com.iqiyi.android.qigsaw.core.common.ProcessUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
-import com.iqiyi.android.qigsaw.core.common.SplitAABInfoProvider;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.splitdownload.Downloader;
 import com.iqiyi.android.qigsaw.core.splitinstall.SplitApkInstaller;
@@ -50,7 +47,6 @@ import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitLoadReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitUpdateReporter;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitUpdateReporterManager;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Qigsaw {
@@ -63,13 +59,10 @@ public class Qigsaw {
 
     private final SplitConfiguration splitConfiguration;
 
-    private final Set<String> aabLoadedSplits;
-
     private Qigsaw(Context context, Downloader downloader, @NonNull SplitConfiguration splitConfiguration) {
         this.context = context;
         this.downloader = downloader;
         this.splitConfiguration = splitConfiguration;
-        this.aabLoadedSplits = new SplitAABInfoProvider(context).getInstalledSplitsForAAB();
     }
 
     private static Qigsaw instance() {
@@ -111,18 +104,14 @@ public class Qigsaw {
         SplitInstallReporterManager.install(splitConfiguration.installReporter == null ? new DefaultSplitInstallReporter(context) : splitConfiguration.installReporter);
         SplitUpdateReporterManager.install(splitConfiguration.updateReporter == null ? new DefaultSplitUpdateReporter(context) : splitConfiguration.updateReporter);
         //init SplitLoadManager and hook PatchCLassLoader.
-        SplitLoadManagerService.install(context, splitConfiguration.workProcesses);
-        SplitLoadManagerService.getInstance().injectPathClassloaderIfNeed(!isSplitAppComponentFactoryExisting(context));
-        AABExtension.getInstance().onBaseContextAttached(aabLoadedSplits, context);
+        SplitLoadManagerService.install(context, splitConfiguration.forbiddenWorkProcesses);
+        SplitLoadManagerService.getInstance().injectPathClassloader();
         SplitCompat.install(context);
     }
 
     private void onCreated() {
-        //get all installed splits for AAB.
-        AABExtension.getInstance().onCreate();
-        if (aabLoadedSplits.isEmpty() && splitConfiguration.loadInstalledSplitsOnApplicationCreate) {
-            SplitLoadManagerService.getInstance().loadInstalledSplitsIfNeed();
-        }
+        boolean aabMode = AABExtension.getInstance().createAndActiveSplitApplication(context);
+        SplitLoadManagerService.getInstance().loadInstalledSplitsInitially(aabMode);
         //only work in main process!
         if (ProcessUtil.isMainProcess(context)) {
             SplitApkInstaller.install(context, downloader, splitConfiguration.obtainUserConfirmationDialogClass);
@@ -186,37 +175,6 @@ public class Qigsaw {
         } catch (Exception e) {
             //ignored
         }
-    }
-
-    private static boolean isSplitAppComponentFactoryExisting(Context context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            return false;
-        }
-        ApplicationInfo appInfo = context.getApplicationInfo();
-        if (appInfo == null
-                || appInfo.appComponentFactory == null) {
-            return false;
-        }
-        if (appInfo.appComponentFactory.equals(SplitAppComponentFactory.class.getName())) {
-            return true;
-        }
-        return isSubclassOfSplitAppComponentFactory(appInfo.appComponentFactory);
-    }
-
-    private static boolean isSubclassOfSplitAppComponentFactory(String className) {
-        boolean ret = false;
-        try {
-            Class<?> originClazz = Class.forName(className);
-            for (Class<?> clazz = originClazz; clazz != null; clazz = clazz.getSuperclass()) {
-                if (clazz.getName().equals(SplitAppComponentFactory.class.getName())) {
-                    ret = true;
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ignored) {
-
-        }
-        return ret;
     }
 
 }

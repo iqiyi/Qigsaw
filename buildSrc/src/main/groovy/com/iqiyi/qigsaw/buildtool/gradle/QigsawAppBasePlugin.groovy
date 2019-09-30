@@ -176,7 +176,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                 //set task dependency
                 if (hasQigsawTask(project)) {
-
+                    generator.injectFields("ASSEMBLE_MODE", "qigsaw")
                     featureProjects.each {
                         Project dynamicFeatureProject = it
                         try {

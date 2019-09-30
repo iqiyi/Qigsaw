@@ -32,10 +32,11 @@ interface AABExtensionManager {
     /**
      * Create {@link Application} instance for split.
      *
-     * @param splitName name of split
+     * @param classLoader used to load class
+     * @param splitName   name of split
      * @return {@link Application}
      */
-    Application createApplication(String splitName) throws AABExtensionException;
+    Application createApplication(ClassLoader classLoader, String splitName) throws AABExtensionException;
 
     /**
      * Invoke {@link Application#attach(android.content.Context)} method to activate split's application.
@@ -44,10 +45,10 @@ interface AABExtensionManager {
      */
     void activeApplication(Application splitApplication, Context appContext) throws AABExtensionException;
 
-    String getSplitNameForActivity(String name);
+    boolean isSplitActivity(String name);
 
-    String getSplitNameForService(String name);
+    boolean isSplitService(String name);
 
-    String getSplitNameForReceiver(String name);
+    boolean isSplitReceiver(String name);
 
 }

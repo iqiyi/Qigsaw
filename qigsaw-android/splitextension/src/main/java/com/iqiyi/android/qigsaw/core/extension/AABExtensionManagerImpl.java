@@ -37,18 +37,24 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
 
     private SplitComponentInfoProvider infoProvider;
 
+    private List<String> splitActivities;
+
+    private List<String> splitServices;
+
+    private List<String> splitReceivers;
+
     AABExtensionManagerImpl(SplitComponentInfoProvider infoProvider) {
         this.infoProvider = infoProvider;
     }
 
     @Override
     @SuppressLint("PrivateApi")
-    public Application createApplication(String splitName) throws AABExtensionException {
+    public Application createApplication(ClassLoader classLoader, String splitName) throws AABExtensionException {
         Throwable error = null;
         String applicationName = infoProvider.getSplitApplicationName(splitName);
         if (!TextUtils.isEmpty(applicationName)) {
             try {
-                Class<?> appClass = AABExtension.class.getClassLoader().loadClass(applicationName);
+                Class<?> appClass = classLoader.loadClass(applicationName);
                 return (Application) appClass.newInstance();
             } catch (ClassNotFoundException e) {
                 error = e;
@@ -87,17 +93,26 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     }
 
     @Override
-    public String getSplitNameForActivity(String name) {
-        return infoProvider.getSplitNameForActivity(name);
+    public boolean isSplitActivity(String name) {
+        if (splitActivities == null) {
+            splitActivities = infoProvider.getSplitActivities();
+        }
+        return splitActivities.contains(name);
     }
 
     @Override
-    public String getSplitNameForService(String name) {
-        return infoProvider.getSplitNameForService(name);
+    public boolean isSplitService(String name) {
+        if (splitServices == null) {
+            splitServices = infoProvider.getSplitServices();
+        }
+        return splitServices.contains(name);
     }
 
     @Override
-    public String getSplitNameForReceiver(String name) {
-        return infoProvider.getSplitNameForReceiver(name);
+    public boolean isSplitReceiver(String name) {
+        if (splitReceivers == null) {
+            splitReceivers = infoProvider.getSplitReceivers();
+        }
+        return splitReceivers.contains(name);
     }
 }

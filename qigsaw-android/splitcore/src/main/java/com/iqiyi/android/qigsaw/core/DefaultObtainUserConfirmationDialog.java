@@ -28,12 +28,16 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
 
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+
+@RestrictTo(LIBRARY_GROUP)
 public class DefaultObtainUserConfirmationDialog extends ObtainUserConfirmationDialog {
 
     private boolean fromUserClick;

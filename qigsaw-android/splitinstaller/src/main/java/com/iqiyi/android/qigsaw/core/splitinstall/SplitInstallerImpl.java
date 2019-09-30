@@ -25,14 +25,16 @@
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import android.content.Context;
-import android.os.Build;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitload.SplitApplicationLoaders;
+import com.iqiyi.android.qigsaw.core.splitload.SplitDexClassLoader;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
@@ -43,19 +45,19 @@ import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import dalvik.system.DexFile;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 final class SplitInstallerImpl extends SplitInstaller {
 
-    private static final boolean IS_VM_MULTIDEX_CAPABLE = SplitInstallerInternals.isVMMultiDexCapable(System.getProperty("java.vm.version"));
+    private static final boolean IS_VM_MULTIDEX_CAPABLE = isVMMultiDexCapable(System.getProperty("java.vm.version"));
 
     private static final String TAG = "Split:SplitInstallerImpl";
 
-    private final Context mContext;
+    private final Context appContext;
 
     SplitInstallerImpl(Context context) {
-        this.mContext = context;
+        this.appContext = context;
     }
 
     @Override
@@ -63,48 +65,41 @@ final class SplitInstallerImpl extends SplitInstaller {
         File splitDir = SplitPathManager.require().getSplitDir(info);
         File sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
         validateSignature(sourceApk);
-        File libDir = null;
+        File splitLibDir = null;
         if (isLibExtractNeeded(info)) {
-            libDir = extractLib(info, sourceApk);
+            extractLib(info, sourceApk);
+            splitLibDir = SplitPathManager.require().getSplitLibDir(info);
         }
-        List<File> multiDexFiles = null;
-        File optimizedDir = null;
+        List<String> addedDexPaths = null;
         if (info.hasDex()) {
+            addedDexPaths = new ArrayList<>();
+            addedDexPaths.add(sourceApk.getAbsolutePath());
             if (!isVMMultiDexCapable()) {
                 if (isMultiDexExtractNeeded(info)) {
-                    multiDexFiles = extractMultiDex(info, sourceApk);
-                }
-            }
-            List<File> dexFiles;
-            if (multiDexFiles == null || multiDexFiles.isEmpty()) {
-                dexFiles = Collections.singletonList(sourceApk);
-            } else {
-                dexFiles = new ArrayList<>(multiDexFiles);
-                dexFiles.add(sourceApk);
-            }
-            optimizedDir = SplitPathManager.require().getSplitOptDir(info);
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                //get all optimized dex files
-                List<File> optDexFiles = getOptimizedDexFiles(dexFiles, optimizedDir);
-                //check if need optimize dex files
-                if (isOptimizeDexNeeded(optDexFiles)) {
-                    //delete corrupted optimized dex files if necessary
-                    deleteCorruptedFiles(optDexFiles);
-                    //optimize dex files
-                    List<DexFile> dexes = optimizeDex(dexFiles, optimizedDir);
-                    checkOptimizedDexFiles(optDexFiles, dexes);
+                    addedDexPaths.addAll(extractMultiDex(info, sourceApk));
                 }
             }
         }
+        SplitDexClassLoader dexClassLoader = SplitDexClassLoader.create(
+                appContext, info.getSplitName(),
+                addedDexPaths,
+                SplitPathManager.require().getSplitOptDir(info),
+                splitLibDir
+        );
+        SplitApplicationLoaders.getInstance().addClassLoader(dexClassLoader);
         createInstalledMark(info);
-        return new InstallResult(info.getSplitName(), splitDir, sourceApk, optimizedDir, libDir, multiDexFiles, checkDependenciesInstalledStatus(info));
+        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, checkDependenciesInstalledStatus(info));
     }
 
     private boolean checkDependenciesInstalledStatus(SplitInfo info) {
+        SplitInfoManager manager = SplitInfoManagerService.getInstance();
+        if (manager == null) {
+            return false;
+        }
         List<String> dependencies = info.getDependencies();
         if (dependencies != null) {
             for (String dependency : dependencies) {
-                SplitInfo dependencySplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getApplicationContext(), dependency);
+                SplitInfo dependencySplitInfo = manager.getSplitInfo(appContext, dependency);
                 File dependencySplitDir = SplitPathManager.require().getSplitDir(dependencySplitInfo);
                 File dependencyMarkFile = new File(dependencySplitDir, dependencySplitInfo.getMd5());
                 if (!dependencyMarkFile.exists()) {
@@ -124,7 +119,7 @@ final class SplitInstallerImpl extends SplitInstaller {
                     new FileNotFoundException("Split apk " + splitApk.getAbsolutePath() + " is illegal!")
             );
         }
-        if (!SignatureValidator.validateSplit(mContext, splitApk)) {
+        if (!SignatureValidator.validateSplit(appContext, splitApk)) {
             deleteCorruptedFiles(Collections.singletonList(splitApk));
             throw new InstallException(
                     SplitInstallError.SIGNATURE_MISMATCH,
@@ -134,7 +129,7 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected List<File> extractMultiDex(SplitInfo info, File splitApk) throws InstallException {
+    protected List<String> extractMultiDex(SplitInfo info, File splitApk) throws InstallException {
         SplitLog.w(TAG,
                 "VM do not support multi-dex, but split %s has multi dex files, so we need creteSplitInstallService other dex files manually",
                 splitApk.getName());
@@ -143,9 +138,13 @@ final class SplitInstallerImpl extends SplitInstaller {
         try {
             SplitMultiDexExtractor extractor = new SplitMultiDexExtractor(splitApk, codeCacheDir);
             try {
-                List dexFiles = extractor.load(mContext, prefsKeyPrefix, false);
+                List<? extends File> dexFiles = extractor.load(appContext, prefsKeyPrefix, false);
+                List<String> dexPaths = new ArrayList<>(dexFiles.size());
+                for (File dexFile : dexFiles) {
+                    dexPaths.add(dexFile.getAbsolutePath());
+                }
                 SplitLog.w(TAG, "Succeed to load or extract dex files", dexFiles.toString());
-                return dexFiles;
+                return dexPaths;
             } catch (IOException e) {
                 SplitLog.w(TAG, "Failed to load or extract dex files", e);
                 throw new InstallException(SplitInstallError.DEX_EXTRACT_FAILED, e);
@@ -158,14 +157,13 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected File extractLib(SplitInfo info, File sourceApk) throws InstallException {
+    protected void extractLib(SplitInfo info, File sourceApk) throws InstallException {
         try {
             File splitLibDir = SplitPathManager.require().getSplitLibDir(info);
             SplitLibExtractor extractor = new SplitLibExtractor(sourceApk, splitLibDir);
             try {
                 List<File> libFiles = extractor.load(info, false);
                 SplitLog.i(TAG, "Succeed to extract libs:  %s", libFiles.toString());
-                return splitLibDir;
             } catch (IOException e) {
                 SplitLog.w(TAG, "Failed to load or extract lib files", e);
                 throw new InstallException(SplitInstallError.LIB_EXTRACT_FAILED, e);
@@ -174,33 +172,6 @@ final class SplitInstallerImpl extends SplitInstaller {
             }
         } catch (IOException ioError) {
             throw new InstallException(SplitInstallError.LIB_EXTRACT_FAILED, ioError);
-        }
-    }
-
-    @Override
-    protected List<DexFile> optimizeDex(List<File> dexFiles, File optimizedDir) throws InstallException {
-        List<DexFile> dexes = new ArrayList<>(dexFiles.size());
-        for (File dexFile : dexFiles) {
-            DexOptimizer optimizer = new DexOptimizer(dexFile, optimizedDir);
-            try {
-                DexFile dex = optimizer.optimize();
-                dexes.add(dex);
-            } catch (IOException e) {
-                throw new InstallException(SplitInstallError.DEX_OPT_FAILED, e);
-            }
-        }
-        return dexes;
-    }
-
-    @Override
-    protected void checkOptimizedDexFiles(List<File> optFiles, List<DexFile> dexFiles) throws InstallException {
-        if (!waitForDexOptimize(optFiles)) {
-            deleteCorruptedFiles(optFiles);
-            closeDexFileQuietly(dexFiles);
-            throw new InstallException(
-                    SplitInstallError.OPT_CHECK_FAILED,
-                    new IOException("Failed to check opt files " + dexFiles.toString())
-            );
         }
     }
 
@@ -231,82 +202,6 @@ final class SplitInstallerImpl extends SplitInstaller {
         }
     }
 
-    @Override
-    protected Context getApplicationContext() {
-        return mContext;
-    }
-
-    /**
-     * Some phones like vivo and oppo will optimize dex files asynchronously, so we need to wait until optimization is finished.
-     *
-     * @param optFiles a list of optimized dex files
-     * @return {@code true} if succeed to optimize dex files, otherwise {@code false}
-     */
-    private boolean waitForDexOptimize(List<File> optFiles) {
-        int size = optFiles.size() * 30;
-        if (size > MAX_WAIT_COUNT) {
-            size = MAX_WAIT_COUNT;
-        }
-        for (int i = 0; i < size; i++) {
-            if (!checkAllDexOptFileExisting(optFiles, i)) {
-                try {
-                    Thread.sleep(WAIT_ASYNC_OAT_TIME);
-                } catch (InterruptedException e) {
-                    SplitLog.e(TAG, "thread sleep InterruptedException", e);
-                }
-            }
-        }
-        return checkOptimizedDexFilesValid(optFiles);
-    }
-
-    private boolean checkOptimizedDexFilesValid(List<File> optFiles) {
-        List<File> failedOptFiles = new ArrayList<>();
-        //check legality
-        for (File file : optFiles) {
-            if (!FileUtil.isLegalFile(file)
-                    && !SplitInstallerInternals.shouldAcceptEvenIfOptFileIllegal(file)) {
-                SplitLog.e(TAG, "final parallel dex optimizer file %s is not exist, return false", file.getName());
-                failedOptFiles.add(file);
-            }
-        }
-        if (!failedOptFiles.isEmpty()) {
-            return false;
-        }
-        if (Build.VERSION.SDK_INT >= 21) {
-            Throwable lastThrowable = null;
-            for (File file : optFiles) {
-                if (SplitInstallerInternals.shouldAcceptEvenIfOptFileIllegal(file)) {
-                    continue;
-                }
-                int retType;
-                try {
-                    retType = SplitElfFile.getFileTypeByMagic(file);
-                } catch (IOException e) {
-                    continue;
-                }
-                if (retType == SplitElfFile.FILE_TYPE_ELF) {
-                    SplitElfFile elfFile = null;
-                    try {
-                        elfFile = new SplitElfFile(file);
-                        SplitLog.i(TAG, "Succeed to check oat file format!");
-                    } catch (Throwable e) {
-                        SplitLog.e(TAG, "final parallel dex optimizer file %s is not elf format", file.getName());
-                        failedOptFiles.add(file);
-                        lastThrowable = e;
-                    } finally {
-                        FileUtil.closeQuietly(elfFile);
-                    }
-                }
-            }
-            if (!failedOptFiles.isEmpty()) {
-                SplitLog.e(TAG, "Failed to opt dex file " + optFiles.toString(), lastThrowable);
-                deleteCorruptedFiles(failedOptFiles);
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
      * Estimate whether current platform supports multi dex.
      *
@@ -335,35 +230,6 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     /**
-     * Gets files of optimized Dex.
-     *
-     * @param dexFiles     a list of dex files.
-     * @param optimizedDir a dir to store optimized dex files.
-     */
-    private List<File> getOptimizedDexFiles(List<File> dexFiles, File optimizedDir) {
-        List<File> optFiles = new ArrayList<>();
-        for (File dexFile : dexFiles) {
-            String optimizedPath = SplitInstallerInternals.optimizedPathFor(dexFile, optimizedDir);
-            optFiles.add(new File(optimizedPath));
-        }
-        return optFiles;
-    }
-
-    /**
-     * Check if existing optimized dex files are all legal.
-     *
-     * @param optFiles a list of existed optimized dex files
-     */
-    private boolean isOptimizeDexNeeded(List<File> optFiles) {
-        for (File optFile : optFiles) {
-            if (!optFile.exists()) {
-                return true;
-            }
-        }
-        return !checkOptimizedDexFilesValid(optFiles);
-    }
-
-    /**
      * Delete corrupted files if split apk installing failed.
      *
      * @param files list of corrupted files
@@ -374,28 +240,21 @@ final class SplitInstallerImpl extends SplitInstaller {
         }
     }
 
-    private boolean checkAllDexOptFileExisting(List<File> files, int count) {
-        for (File file : files) {
-            if (!FileUtil.isLegalFile(file)) {
-                if (SplitInstallerInternals.shouldAcceptEvenIfOptFileIllegal(file)) {
-                    continue;
-                }
-                SplitLog.e(TAG, "parallel dex optimizer file %s is not exist, just wait %d times", file.getName(), count);
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private void closeDexFileQuietly(List<DexFile> dexFiles) {
-        for (DexFile dex : dexFiles) {
-            if (dex != null) {
+    private static boolean isVMMultiDexCapable(String versionString) {
+        boolean isMultiDexCapable = false;
+        if (versionString != null) {
+            Matcher matcher = Pattern.compile("(\\d+)\\.(\\d+)(\\.\\d+)?").matcher(versionString);
+            if (matcher.matches()) {
                 try {
-                    dex.close();
-                } catch (Exception e) {
-                    //
+                    int major = Integer.parseInt(matcher.group(1));
+                    int minor = Integer.parseInt(matcher.group(2));
+                    isMultiDexCapable = major > 2 || major == 2 && minor >= 1;
+                } catch (NumberFormatException var5) {
+                    //ignored
                 }
             }
         }
+        SplitLog.i("Split:MultiDex", "VM with version " + versionString + (isMultiDexCapable ? " has multidex support" : " does not have multidex support"));
+        return isMultiDexCapable;
     }
 }

@@ -30,6 +30,7 @@ import android.content.Intent;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -38,7 +39,7 @@ import java.util.List;
  */
 abstract class SplitLoader {
 
-    static final String TAG = "SplitLoader";
+    private static final String TAG = "SplitLoader";
 
     /**
      * private field in {@link android.app.LoadedApk}
@@ -62,12 +63,13 @@ abstract class SplitLoader {
     }
 
     /**
-     * load installed split, include .dex, .so and resources in split apk.
-     *
-     * @param classLoader     {@link dalvik.system.PathClassLoader}
-     * @param splitFileIntent installed split details.
+     * load installed split's code.
      */
-    abstract void load(ClassLoader classLoader, Intent splitFileIntent) throws SplitLoadException;
+    abstract SplitDexClassLoader loadCode(String moduleName,
+                                          String splitApk,
+                                          List<String> dexPaths,
+                                          File optimizedDirectory,
+                                          File librarySearchPath);
 
     /**
      * load resources of installed split.
@@ -75,23 +77,6 @@ abstract class SplitLoader {
      * @param splitResDir local file path of split apk.
      */
     protected abstract void loadResources(String splitResDir) throws SplitLoadException;
-
-    /**
-     * load native library of installed split.
-     *
-     * @param classLoader {@link dalvik.system.PathClassLoader}
-     * @param libPath     local file dir of native libraries.
-     */
-    protected abstract void loadNativePath(ClassLoader classLoader, String libPath) throws SplitLoadException;
-
-    /**
-     * load dex of installed split.
-     *
-     * @param classLoader {@link dalvik.system.PathClassLoader}
-     * @param optDir      local file dir of dex optimized, if null indicates split apk has no dex.
-     * @param dexPaths    a list of dex file path.
-     */
-    protected abstract void loadDex(ClassLoader classLoader, String optDir, List<String> dexPaths) throws SplitLoadException;
 
     private Field getFieldSplitResDirsInPackageInfo(Object packageInfo) {
         try {

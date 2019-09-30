@@ -85,7 +85,11 @@ public abstract class ContentProviderProxy extends ContentProvider {
     }
 
     private ContentProvider createRealContentProvider() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        ContentProvider realContentProvider = (ContentProvider) Class.forName(realContentProviderClassName).newInstance();
+        if (getContext() == null) {
+            SplitLog.w(TAG, "Cause of null context, we can't create real provider " + realContentProviderClassName);
+            return null;
+        }
+        ContentProvider realContentProvider = (ContentProvider) getContext().getClassLoader().loadClass(realContentProviderClassName).newInstance();
         realContentProvider.attachInfo(getContext(), providerInfo);
         SplitLog.d(TAG, "Success to create provider " + realContentProviderClassName);
         return realContentProvider;

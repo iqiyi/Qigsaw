@@ -4,18 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.iqiyi.qigsaw.sample.java">
 
-    <dist:module
-        dist:onDemand="true"
-        dist:title="@string/module_java">
-        <dist:fusing dist:include="true" />
-    </dist:module>
-
     <application
         android:name=".JavaSampleApplication"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity
-            android:name=".JavaSampleActivity"
-            android:process=":qigsaw" />
+
+        <activity android:name=".JavaSampleActivity" />
 
         <provider
             android:name=".JavaContentProvider"
@@ -24,5 +17,11 @@
             android:exported="false" />
 
     </application>
+
+    <dist:module
+        dist:onDemand="true"
+        dist:title="@string/module_java">
+        <dist:fusing dist:include="true" />
+    </dist:module>
 
 </manifest>

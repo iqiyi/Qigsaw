@@ -15,22 +15,20 @@ import com.iqiyi.qigsaw.sample.reporter.SampleSplitUpdateReporter;
 
 public class QigsawApplication extends Application {
 
-    private static final String[] workProcesses = {"", ":qigsaw"};
+    private static final String[] forbiddenWorkProcesses = {":qigsaw"};
 
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         MultiDex.install(base);
         SplitConfiguration configuration = SplitConfiguration.newBuilder()
-                //qigsaw splits will only in main and qigsaw processes.
-                .workProcesses(workProcesses)
+                .forbiddenWorkProcesses(forbiddenWorkProcesses)
                 .logger(new SampleLogger())
                 .loadReporter(new SampleSplitLoadReporter(this))
                 .manifestPackageName(base.getPackageName())
                 .installReporter(new SampleSplitInstallReporter(this))
                 .updateReporter(new SampleSplitUpdateReporter(this))
                 .obtainUserConfirmationDialogClass(SampleObtainUserConfirmationDialog.class)
-                .loadInstalledSplitsOnApplicationCreate(true)
                 .build();
         Qigsaw.install(this, new SampleDownloader(), configuration);
     }

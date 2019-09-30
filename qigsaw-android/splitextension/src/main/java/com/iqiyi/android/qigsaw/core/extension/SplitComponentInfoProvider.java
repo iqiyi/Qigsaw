@@ -25,21 +25,15 @@
 package com.iqiyi.android.qigsaw.core.extension;
 
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 final class SplitComponentInfoProvider {
 
     private final Set<String> splitNames;
-
-    private final Map<String, List<String>> splitComponentNameMap = new HashMap<>();
 
     SplitComponentInfoProvider(@NonNull Set<String> splitNames) {
         this.splitNames = splitNames;
@@ -56,76 +50,40 @@ final class SplitComponentInfoProvider {
         return ComponentInfoManager.getSplitApplication(splitName);
     }
 
-    @Nullable
-    String getSplitNameForActivity(String className) {
-        String targetSplitName = null;
+    @NonNull
+    List<String> getSplitActivities() {
+        List<String> activities = new ArrayList<>();
         for (String splitName : splitNames) {
-            String key = splitName + "_activity";
-            List<String> result = splitComponentNameMap.get(key);
-            if (result == null) {
-                String[] activities = ComponentInfoManager.getSplitActivities(splitName);
-                if (activities != null && activities.length > 0) {
-                    result = Arrays.asList(activities);
-                    splitComponentNameMap.put(key, result);
-                } else {
-                    splitComponentNameMap.put(key, Collections.<String>emptyList());
-                }
-            }
-            if (result != null && !result.isEmpty()) {
-                if (result.contains(className)) {
-                    targetSplitName = splitName;
-                }
+            String[] result = ComponentInfoManager.getSplitActivities(splitName);
+            if (result != null && result.length > 0) {
+                activities.addAll(Arrays.asList(result));
             }
         }
-        return targetSplitName;
+        return activities;
     }
 
-    @Nullable
-    String getSplitNameForService(String className) {
-        String targetSplitName = null;
+    @NonNull
+    List<String> getSplitServices() {
+        List<String> services = new ArrayList<>();
         for (String splitName : splitNames) {
-            String key = splitName + "_service";
-            List<String> result = splitComponentNameMap.get(key);
-            if (result == null) {
-                String[] services = ComponentInfoManager.getSplitServices(splitName);
-                if (services != null && services.length > 0) {
-                    result = Arrays.asList(services);
-                    splitComponentNameMap.put(key, result);
-                } else {
-                    splitComponentNameMap.put(key, Collections.<String>emptyList());
-                }
-            }
-            if (result != null && !result.isEmpty()) {
-                if (result.contains(className)) {
-                    targetSplitName = splitName;
-                }
+            String[] result = ComponentInfoManager.getSplitServices(splitName);
+            if (result != null && result.length > 0) {
+                services.addAll(Arrays.asList(result));
             }
         }
-        return targetSplitName;
+        return services;
     }
 
-    @Nullable
-    String getSplitNameForReceiver(String className) {
-        String targetSplitName = null;
+    @NonNull
+    List<String> getSplitReceivers() {
+        List<String> receivers = new ArrayList<>();
         for (String splitName : splitNames) {
-            String key = splitName + "_receiver";
-            List<String> result = splitComponentNameMap.get(key);
-            if (result == null) {
-                String[] receivers = ComponentInfoManager.getSplitReceivers(splitName);
-                if (receivers != null && receivers.length > 0) {
-                    result = Arrays.asList(receivers);
-                    splitComponentNameMap.put(key, result);
-                } else {
-                    splitComponentNameMap.put(key, Collections.<String>emptyList());
-                }
+            String[] result = ComponentInfoManager.getSplitReceivers(splitName);
+            if (result != null && result.length > 0) {
+                receivers.addAll(Arrays.asList(result));
             }
-            if (result != null && !result.isEmpty()) {
-                if (result.contains(className)) {
-                    targetSplitName = splitName;
-                }
-            }
-
         }
-        return targetSplitName;
+        return receivers;
     }
+
 }

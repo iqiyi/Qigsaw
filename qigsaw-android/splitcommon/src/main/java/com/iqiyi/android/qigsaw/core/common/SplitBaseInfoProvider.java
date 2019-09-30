@@ -45,6 +45,8 @@ public class SplitBaseInfoProvider {
 
     private static final String QIGSAW_ID = "QIGSAW_ID";
 
+    private static final String ASSEMBLE_MODE = "ASSEMBLE_MODE";
+
     private static final String DEFAULT_VALUE = "unknown";
 
     private static final String DEFAULT_SPLIT_INFO_VERSION_VALUE = "1.0.0";
@@ -57,6 +59,22 @@ public class SplitBaseInfoProvider {
 
     private static Class getCommonInfoClass() throws ClassNotFoundException {
         return Class.forName(sPackageName + CLASS_BuildConfig);
+    }
+
+    public static boolean isQigsawAssembleMode() {
+        try {
+            Field field = getCommonInfoClass().getField(ASSEMBLE_MODE);
+            field.setAccessible(true);
+            field.get(null);
+            return true;
+        } catch (NoSuchFieldException e) {
+            //
+        } catch (IllegalAccessException e) {
+            //
+        } catch (ClassNotFoundException e) {
+            //
+        }
+        return false;
     }
 
     @NonNull

@@ -32,6 +32,7 @@ import android.content.res.Resources;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.v4.util.ArraySet;
+import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.ProcessUtil;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
@@ -39,8 +40,6 @@ import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import dalvik.system.PathClassLoader;
 
 import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -53,24 +52,24 @@ public abstract class SplitLoadManager {
 
     private final Set<String> loadedSplitNames = new ArraySet<>();
 
-    private final String currentProcessName;
+    final String currentProcessName;
 
     private final Set<String> loadedSplitApkPaths = new ArraySet<>();
 
-    private final String[] processes;
+    private final String[] forbiddenWorkProcesses;
 
     SplitLoadManager(Context context, String[] processes) {
         this.context = context;
         this.currentProcessName = ProcessUtil.getProcessName(context);
-        this.processes = processes;
+        this.forbiddenWorkProcesses = processes;
     }
 
     /**
      * Hook PathClassloader if need
      */
-    public abstract void injectPathClassloaderIfNeed(boolean needHookClassLoader);
+    public abstract void injectPathClassloader();
 
-    public abstract void loadInstalledSplitsIfNeed();
+    public abstract void loadInstalledSplitsInitially(boolean aabMode);
 
     /**
      * Called this method in {@link Application#getResources()}.
@@ -107,21 +106,22 @@ public abstract class SplitLoadManager {
         return loadedSplitApkPaths;
     }
 
+    boolean isProcessAllowedToWork() {
+        if (context.getPackageName().equals(currentProcessName)) {
+            return true;
+        }
+        if (forbiddenWorkProcesses == null || forbiddenWorkProcesses.length == 0) {
+            return true;
+        }
+        for (String process : forbiddenWorkProcesses) {
+            if (getFullProcessName(process).equals(currentProcessName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public abstract void loadInstalledSplits();
-
-    abstract PathClassLoader getInjectedClassloader();
-
-    String getCurrentProcessName() {
-        return currentProcessName;
-    }
-
-    boolean hasWorkProcess() {
-        return processes != null && processes.length > 0;
-    }
-
-    String[] getWorkProcesses() {
-        return processes;
-    }
 
     Context getContext() {
         return context;
@@ -145,6 +145,17 @@ public abstract class SplitLoadManager {
 
     final Set<Split> getLoadedSplits() {
         return loadedSplits;
+    }
+
+    private String getFullProcessName(@Nullable String process) {
+        String packageName = getContext().getPackageName();
+        if (TextUtils.isEmpty(process)) {
+            return packageName;
+        }
+        if (process.startsWith(packageName)) {
+            return process;
+        }
+        return packageName + process;
     }
 
 

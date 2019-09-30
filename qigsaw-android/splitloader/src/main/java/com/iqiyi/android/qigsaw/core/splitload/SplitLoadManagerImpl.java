@@ -25,14 +25,17 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.os.Build;
+import android.os.Looper;
+import android.os.MessageQueue;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.ProcessUtil;
+import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
@@ -47,13 +50,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import dalvik.system.PathClassLoader;
-
 final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private static final String TAG = "SplitLoadManagerImpl";
-
-    private PathClassLoader mClassloader;
 
     SplitLoadManagerImpl(Context context,
                          String[] processes) {
@@ -63,34 +62,21 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public void injectPathClassloaderIfNeed(boolean needHookClassLoader) {
-        if (needHookClassLoader) {
-            SplitLog.i(TAG, "AppComponentFactory is not declared in app Manifest, so we need hook PathClassLoader!");
-            if (hasWorkProcess()) {
-                for (String process : getWorkProcesses()) {
-                    if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
-                        injectClassLoader(getContext().getClassLoader());
-                        break;
-                    }
-                }
-            } else {
+    public void injectPathClassloader() {
+        if (isInjectPathClassloaderNeeded()) {
+            if (isProcessAllowedToWork()) {
                 injectClassLoader(getContext().getClassLoader());
             }
-        } else {
-            SplitLog.i(TAG, "SplitAppComponentFactory is declared in app Manifest!");
         }
     }
 
     @Override
-    public void loadInstalledSplitsIfNeed() {
-        if (hasWorkProcess()) {
-            for (String process : getWorkProcesses()) {
-                if (getCompleteProcessName(process).equals(getCurrentProcessName())) {
-                    loadInstalledSplits();
-                }
-            }
-        } else {
-            loadInstalledSplits();
+    public void loadInstalledSplitsInitially(boolean aabMode) {
+        if (aabMode) {
+            return;
+        }
+        if (isProcessAllowedToWork()) {
+            deferredLoadInstalledSplits();
         }
     }
 
@@ -103,10 +89,19 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
     }
 
-
     @Override
     public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {
         return new SplitLoadTask(this, splitFileIntents, loadListener);
+    }
+
+    private boolean isInjectPathClassloaderNeeded() {
+        boolean qigsawAssembleMode = SplitBaseInfoProvider.isQigsawAssembleMode();
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return qigsawAssembleMode;
+        } else {
+            boolean exist = (getContext().getClassLoader() instanceof SplitDelegateClassloader);
+            return !exist && qigsawAssembleMode;
+        }
     }
 
     private List<Intent> createInstalledSplitFileIntents(@NonNull Collection<SplitInfo> splitInfoList) {
@@ -114,13 +109,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         for (SplitInfo splitInfo : splitInfoList) {
             if (canBeWorkedInThisProcessForSplit(splitInfo)) {
                 if (getLoadedSplitNames().contains(splitInfo.getSplitName())) {
-                    SplitLog.i(TAG, "Split %s has been load! 'createInstalledSplitFileIntents'", splitInfo.getSplitName());
+                    SplitLog.i(TAG, "Split %s has been load, ignore it!", splitInfo.getSplitName());
                     continue;
                 }
-                SplitLog.i(TAG, "Split %s will work in this process", splitInfo.getSplitName());
+                SplitLog.i(TAG, "Split %s will work in this process!", splitInfo.getSplitName());
                 Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo);
                 if (splitFileIntent != null) {
-                    SplitLog.i(TAG, "Split %s has been installed! 'createInstalledSplitFileIntents'", splitInfo.getSplitName());
+                    SplitLog.i(TAG, "Split %s has been installed, pack it!", splitInfo.getSplitName());
                     splitFileIntents.add(splitFileIntent);
                 }
             } else {
@@ -142,9 +137,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         return true;
     }
 
-    @Override
-    PathClassLoader getInjectedClassloader() {
-        return (PathClassLoader) (mClassloader == null ? getContext().getClassLoader() : mClassloader.getParent());
+    private void deferredLoadInstalledSplits() {
+        Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+            @Override
+            public boolean queueIdle() {
+                loadInstalledSplits();
+                return false;
+            }
+        });
     }
 
     @Override
@@ -167,16 +167,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
     }
 
-    private String getCompleteProcessName(@Nullable String process) {
-        String packageName = getContext().getPackageName();
-        if (TextUtils.isEmpty(process)) {
-            return packageName;
-        }
-        if (process.startsWith(packageName)) {
-            return process;
-        }
-        return packageName + process;
-    }
 
     /**
      * fast check operation
@@ -201,14 +191,10 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     }
                 }
             }
-            File libDir = null;
-            if (splitInfo.hasLibs()) {
-                libDir = SplitPathManager.require().getSplitLibDir(splitInfo);
-            }
-            ArrayList<String> multiDexFiles = null;
-            File optDir = null;
+            ArrayList<String> addedDexPaths = null;
             if (splitInfo.hasDex()) {
-                optDir = SplitPathManager.require().getSplitOptDir(splitInfo);
+                addedDexPaths = new ArrayList<>();
+                addedDexPaths.add(splitApk.getAbsolutePath());
                 File[] results = SplitPathManager.require().getSplitCodeCacheDir(splitInfo).listFiles(new FilenameFilter() {
                     @Override
                     public boolean accept(File dir, String name) {
@@ -216,36 +202,27 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     }
                 });
                 if (results != null && results.length > 0) {
-                    multiDexFiles = new ArrayList<>(results.length);
                     for (File result : results) {
-                        multiDexFiles.add(result.getAbsolutePath());
+                        addedDexPaths.add(result.getAbsolutePath());
                     }
                 }
             }
             Intent splitFileIntent = new Intent();
             splitFileIntent.putExtra(SplitConstants.KET_NAME, splitName);
             splitFileIntent.putExtra(SplitConstants.KEY_APK, splitApk.getAbsolutePath());
-            splitFileIntent.putExtra(SplitConstants.KET_SPLIT_DIR, splitDir.getAbsolutePath());
-            if (optDir != null) {
-                splitFileIntent.putExtra(SplitConstants.KEY_OPTIMIZED_DIRECTORY, optDir.getAbsolutePath());
+            if (addedDexPaths != null) {
+                splitFileIntent.putStringArrayListExtra(SplitConstants.KEY_ADDED_DEX, addedDexPaths);
             }
-            if (libDir != null) {
-                splitFileIntent.putExtra(SplitConstants.KEY_NATIVE_LIBRARIES, libDir.getAbsolutePath());
-            }
-            if (multiDexFiles != null) {
-                splitFileIntent.putStringArrayListExtra(SplitConstants.KEY_MULTI_DEX, multiDexFiles);
-            }
-            SplitLog.i(TAG, "Split %s has been installed, so we can load it!", splitName);
+            SplitLog.i(TAG, "Split %s has been installed, we can load it!", splitName);
             return splitFileIntent;
         }
         SplitLog.i(TAG, "Split %s mark file is not existed!", splitName);
-        SplitLog.i(TAG, "Split %s apk file is existed? " + splitApk.exists(), splitName);
         return null;
     }
 
     private void injectClassLoader(ClassLoader originalClassloader) {
         try {
-            mClassloader = SplitProxyClassloader.inject(originalClassloader, getBaseContext());
+            SplitDelegateClassloader.inject(originalClassloader, getBaseContext());
         } catch (Exception e) {
             SplitLog.printErrStackTrace(TAG, e, "Failed to hook PathClassloader");
         }
