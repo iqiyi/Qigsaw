@@ -58,9 +58,9 @@ public abstract class SplitLoadManager {
 
     private final String[] forbiddenWorkProcesses;
 
-    SplitLoadManager(Context context, String[] processes) {
+    SplitLoadManager(Context context, String currentProcessName, String[] processes) {
         this.context = context;
-        this.currentProcessName = ProcessUtil.getProcessName(context);
+        this.currentProcessName = currentProcessName;
         this.forbiddenWorkProcesses = processes;
     }
 

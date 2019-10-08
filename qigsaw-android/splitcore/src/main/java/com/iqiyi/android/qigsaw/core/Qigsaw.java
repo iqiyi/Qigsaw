@@ -57,12 +57,15 @@ public class Qigsaw {
 
     private final Downloader downloader;
 
+    private final String currentProcessName;
+
     private final SplitConfiguration splitConfiguration;
 
     private Qigsaw(Context context, Downloader downloader, @NonNull SplitConfiguration splitConfiguration) {
         this.context = context;
         this.downloader = downloader;
         this.splitConfiguration = splitConfiguration;
+        this.currentProcessName = ProcessUtil.getProcessName(context);
     }
 
     private static Qigsaw instance() {
@@ -104,7 +107,7 @@ public class Qigsaw {
         SplitInstallReporterManager.install(splitConfiguration.installReporter == null ? new DefaultSplitInstallReporter(context) : splitConfiguration.installReporter);
         SplitUpdateReporterManager.install(splitConfiguration.updateReporter == null ? new DefaultSplitUpdateReporter(context) : splitConfiguration.updateReporter);
         //init SplitLoadManager and hook PatchCLassLoader.
-        SplitLoadManagerService.install(context, splitConfiguration.forbiddenWorkProcesses);
+        SplitLoadManagerService.install(context, currentProcessName, splitConfiguration.forbiddenWorkProcesses);
         SplitLoadManagerService.getInstance().injectPathClassloader();
         SplitCompat.install(context);
     }
@@ -113,7 +116,7 @@ public class Qigsaw {
         boolean aabMode = AABExtension.getInstance().createAndActiveSplitApplication(context);
         SplitLoadManagerService.getInstance().loadInstalledSplitsInitially(aabMode);
         //only work in main process!
-        if (ProcessUtil.isMainProcess(context)) {
+        if (context.getPackageName().equals(currentProcessName)) {
             SplitApkInstaller.install(context, downloader, splitConfiguration.obtainUserConfirmationDialogClass);
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
 

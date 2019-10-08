@@ -34,7 +34,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import com.iqiyi.android.qigsaw.core.common.ProcessUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -55,9 +54,10 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     private static final String TAG = "SplitLoadManagerImpl";
 
     SplitLoadManagerImpl(Context context,
+                         String currentProcessName,
                          String[] processes) {
-        super(context, processes);
-        SplitInfoManagerService.install(context);
+        super(context, currentProcessName, processes);
+        SplitInfoManagerService.install(context, currentProcessName);
         SplitPathManager.install(context);
     }
 
@@ -128,7 +128,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     private boolean canBeWorkedInThisProcessForSplit(SplitInfo splitInfo) {
         List<String> workProcesses = splitInfo.getWorkProcesses();
         if (workProcesses != null && !workProcesses.isEmpty()) {
-            String currentProcessName = ProcessUtil.getProcessName(getContext());
             String packageName = getContext().getPackageName();
             String simpleProcessName = currentProcessName.replace(packageName, "");
             SplitLog.i(TAG, "Current process simple name: " + (TextUtils.isEmpty(simpleProcessName) ? "null" : simpleProcessName));

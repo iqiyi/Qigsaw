@@ -40,9 +40,10 @@ public class SplitLoadManagerService {
     private static final AtomicReference<SplitLoadManager> sReference = new AtomicReference<>();
 
     public static void install(Context context,
+                               String currentProcessName,
                                String[] processes) {
         if (sReference.get() == null) {
-            sReference.set(create(context, processes));
+            sReference.set(create(context, currentProcessName, processes));
         }
     }
 
@@ -58,7 +59,8 @@ public class SplitLoadManagerService {
     }
 
     private static SplitLoadManager create(Context context,
+                                           String currentProcessName,
                                            String[] processes) {
-        return new SplitLoadManagerImpl(context, processes);
+        return new SplitLoadManagerImpl(context, currentProcessName, processes);
     }
 }

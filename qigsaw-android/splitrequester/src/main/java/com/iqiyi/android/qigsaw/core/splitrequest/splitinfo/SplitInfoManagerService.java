@@ -37,8 +37,8 @@ public class SplitInfoManagerService {
 
     private static final AtomicReference<SplitInfoManager> sReference = new AtomicReference<>();
 
-    public static void install(Context context) {
-        sReference.compareAndSet(null, createSplitInfoManager(context));
+    public static void install(Context context, String currentProcessName) {
+        sReference.compareAndSet(null, createSplitInfoManager(context, currentProcessName));
     }
 
     @Nullable
@@ -46,8 +46,8 @@ public class SplitInfoManagerService {
         return sReference.get();
     }
 
-    private static SplitInfoManagerImpl createSplitInfoManager(Context context) {
-        SplitInfoVersionManager versionManager = SplitInfoVersionManagerImpl.createSplitInfoVersionManager(context);
+    private static SplitInfoManagerImpl createSplitInfoManager(Context context, String currentProcessName) {
+        SplitInfoVersionManager versionManager = SplitInfoVersionManagerImpl.createSplitInfoVersionManager(context, currentProcessName);
         SplitInfoManagerImpl infoManager = new SplitInfoManagerImpl();
         infoManager.attach(versionManager);
         return infoManager;

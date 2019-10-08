@@ -48,25 +48,29 @@ final class SplitInfoVersionManagerImpl implements SplitInfoVersionManager {
 
     private String currentVersion;
 
-    static SplitInfoVersionManager createSplitInfoVersionManager(Context context) {
+    private boolean isMainProcess;
+
+    static SplitInfoVersionManager createSplitInfoVersionManager(Context context, String currentProcessName) {
         String defaultVersion = SplitBaseInfoProvider.getDefaultSplitInfoVersion();
         String qigsawId = SplitBaseInfoProvider.getQigsawId();
-        return new SplitInfoVersionManagerImpl(context, defaultVersion, qigsawId);
+        return new SplitInfoVersionManagerImpl(context, currentProcessName, defaultVersion, qigsawId);
     }
 
     private SplitInfoVersionManagerImpl(
             Context context,
+            String currentProcessName,
             String defaultVersion,
             String qigsawId) {
         this.defaultVersion = defaultVersion;
+        this.isMainProcess = context.getPackageName().equals(currentProcessName);
         File baseRootDir = new File(context.getDir(SplitConstants.QIGSAW, Context.MODE_PRIVATE), qigsawId);
         this.rootDir = new File(baseRootDir, SPLIT_ROOT_DIR_NAME);
         processVersionData(context);
-        reportNewSplitInfoVersionLoaded(context);
+        reportNewSplitInfoVersionLoaded();
     }
 
-    private void reportNewSplitInfoVersionLoaded(Context context) {
-        if (ProcessUtil.isMainProcess(context)) {
+    private void reportNewSplitInfoVersionLoaded() {
+        if (isMainProcess) {
             if (!TextUtils.equals(currentVersion, defaultVersion)) {
                 SplitUpdateReporter updateReporter = SplitUpdateReporterManager.getUpdateReporter();
                 if (updateReporter != null) {
@@ -88,7 +92,7 @@ final class SplitInfoVersionManagerImpl implements SplitInfoVersionManager {
                 SplitLog.i(TAG, "Splits have been updated, so we use new split info version %s.", newVersion);
                 currentVersion = newVersion;
             } else {
-                if (ProcessUtil.isMainProcess(context)) {
+                if (isMainProcess) {
                     if (updateVersionData(new SplitInfoVersionData(newVersion, newVersion))) {
                         currentVersion = newVersion;
                         ProcessUtil.killAllOtherProcess(context);

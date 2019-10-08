@@ -35,10 +35,6 @@ public class ProcessUtil {
         }
     }
 
-    public static boolean isMainProcess(Context context) {
-        return context.getPackageName().equals(getProcessName(context));
-    }
-
     public static String getProcessName(Context context) {
         String processName = null;
         try {
