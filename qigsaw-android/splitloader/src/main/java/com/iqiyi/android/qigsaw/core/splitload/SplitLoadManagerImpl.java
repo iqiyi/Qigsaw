@@ -108,7 +108,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         for (SplitInfo splitInfo : splitInfoList) {
             if (canBeWorkedInThisProcessForSplit(splitInfo)) {
                 if (getLoadedSplitNames().contains(splitInfo.getSplitName())) {
-                    SplitLog.i(TAG, "Split %s has been load, ignore it!", splitInfo.getSplitName());
+                    SplitLog.i(TAG, "Split %s has been loaded, ignore it!", splitInfo.getSplitName());
                     continue;
                 }
                 SplitLog.i(TAG, "Split %s will work in this process!", splitInfo.getSplitName());

@@ -74,14 +74,13 @@ final class SplitDelegateClassloader extends PathClassLoader {
             }
             if (SplitLoadManagerService.hasInstance()) {
                 SplitLoadManager manager = SplitLoadManagerService.getInstance();
-                manager.loadInstalledSplits();
-                ret = findClassInSplits(name);
-                if (ret != null) {
-                    return ret;
-                }
-
                 Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
                 if (fakeComponent != null) {
+                    manager.loadInstalledSplits();
+                    ret = findClassInSplits(name);
+                    if (ret != null) {
+                        return ret;
+                    }
                     SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, fakeComponent.getSimpleName());
                     return fakeComponent;
                 }
