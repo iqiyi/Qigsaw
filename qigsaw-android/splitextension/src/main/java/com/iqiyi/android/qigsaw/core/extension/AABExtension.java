@@ -63,6 +63,8 @@ public class AABExtension {
 
     private final AABExtensionManager extensionManager;
 
+    private final List<Application> aabApplications = new ArrayList<>();
+
     private AABExtension() {
         Set<String> splitNames = getSplitNames();
         this.extensionManager = new AABExtensionManagerImpl(new SplitComponentInfoProvider(splitNames));
@@ -75,23 +77,32 @@ public class AABExtension {
         return sAABCompatReference.get();
     }
 
-    public boolean createAndActiveSplitApplication(Context appContext) {
+    public void createAndActiveSplitApplication(Context appContext, boolean qigsawMode) {
+        if (qigsawMode) {
+            return;
+        }
         final Set<String> aabLoadedSplits = new SplitAABInfoProvider(appContext).getInstalledSplitsForAAB();
         if (!aabLoadedSplits.isEmpty()) {
             for (String splitName : aabLoadedSplits) {
                 try {
                     Application app = createApplication(AABExtension.class.getClassLoader(), splitName);
-                    activeApplication(app, appContext);
                     if (app != null) {
-                        app.onCreate();
+                        activeApplication(app, appContext);
+                        aabApplications.add(app);
                     }
                 } catch (AABExtensionException e) {
                     SplitLog.w(TAG, "Failed to create " + splitName + " application", e);
                 }
             }
-            return true;
         }
-        return false;
+    }
+
+    public void onApplicationCreate() {
+        if (!aabApplications.isEmpty()) {
+            for (Application application : aabApplications) {
+                application.onCreate();
+            }
+        }
     }
 
     /**
@@ -117,11 +128,11 @@ public class AABExtension {
         providerProxies.add(providerProxy);
     }
 
-    public void activateSplitProviders(String splitName) throws AABExtensionException {
+    public void activateSplitProviders(ClassLoader classLoader, String splitName) throws AABExtensionException {
         List<ContentProviderProxy> providerProxies = sSplitContentProviderMap.get(splitName);
         if (providerProxies != null) {
             for (ContentProviderProxy providerProxy : providerProxies) {
-                providerProxy.activateRealContentProvider();
+                providerProxy.activateRealContentProvider(classLoader);
             }
         }
     }

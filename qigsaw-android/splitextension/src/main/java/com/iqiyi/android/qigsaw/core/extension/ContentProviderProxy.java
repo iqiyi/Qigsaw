@@ -68,10 +68,10 @@ public abstract class ContentProviderProxy extends ContentProvider {
         return realContentProvider;
     }
 
-    void activateRealContentProvider() throws AABExtensionException {
+    void activateRealContentProvider(ClassLoader classLoader) throws AABExtensionException {
         Throwable error = null;
         try {
-            realContentProvider = createRealContentProvider();
+            realContentProvider = createRealContentProvider(classLoader);
         } catch (ClassNotFoundException e) {
             error = e;
         } catch (IllegalAccessException e) {
@@ -84,12 +84,12 @@ public abstract class ContentProviderProxy extends ContentProvider {
         }
     }
 
-    private ContentProvider createRealContentProvider() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    private ContentProvider createRealContentProvider(ClassLoader classLoader) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         if (getContext() == null) {
             SplitLog.w(TAG, "Cause of null context, we can't create real provider " + realContentProviderClassName);
             return null;
         }
-        ContentProvider realContentProvider = (ContentProvider) getContext().getClassLoader().loadClass(realContentProviderClassName).newInstance();
+        ContentProvider realContentProvider = (ContentProvider) classLoader.loadClass(realContentProviderClassName).newInstance();
         realContentProvider.attachInfo(getContext(), providerInfo);
         SplitLog.d(TAG, "Success to create provider " + realContentProviderClassName);
         return realContentProvider;

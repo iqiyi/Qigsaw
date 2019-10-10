@@ -80,8 +80,13 @@ public class SplitCompatResourcesLoader {
         }
     }
 
-    private static void checkOrUpdateResources(Context context, Resources resources) throws Throwable {
-        List<String> loadedResDirsInAsset = getLoadedResourcesDirs(resources.getAssets());
+    private static void checkOrUpdateResources(Context context, Resources resources) throws SplitCompatResourcesException {
+        List<String> loadedResDirsInAsset;
+        try {
+            loadedResDirsInAsset = getLoadedResourcesDirs(resources.getAssets());
+        } catch (Throwable e) {
+            throw new SplitCompatResourcesException("Failed to get all loaded split resources for " + context.getClass().getName(), e);
+        }
         Collection<String> loadedSplitPaths = getLoadedSplitPaths();
         if (loadedSplitPaths != null && !loadedSplitPaths.isEmpty()) {
             if (!loadedResDirsInAsset.containsAll(loadedSplitPaths)) {
@@ -91,7 +96,11 @@ public class SplitCompatResourcesLoader {
                         unloadedSplitPaths.add(splitPath);
                     }
                 }
-                installSplitResDirs(context, resources, unloadedSplitPaths);
+                try {
+                    installSplitResDirs(context, resources, unloadedSplitPaths);
+                } catch (Throwable e) {
+                    throw new SplitCompatResourcesException("Failed to install resources " + unloadedSplitPaths.toString() + " for " + context.getClass().getName(), e);
+                }
             }
         }
     }

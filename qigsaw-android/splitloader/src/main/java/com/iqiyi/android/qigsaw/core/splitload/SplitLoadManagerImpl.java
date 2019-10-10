@@ -34,7 +34,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
@@ -55,8 +54,9 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     SplitLoadManagerImpl(Context context,
                          String currentProcessName,
-                         String[] processes) {
-        super(context, currentProcessName, processes);
+                         boolean qigsawMode,
+                         String[] forbiddenWorkProcesses) {
+        super(context, currentProcessName, qigsawMode, forbiddenWorkProcesses);
         SplitInfoManagerService.install(context, currentProcessName);
         SplitPathManager.install(context);
     }
@@ -71,8 +71,8 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public void loadInstalledSplitsInitially(boolean aabMode) {
-        if (aabMode) {
+    public void loadInstalledSplitsInitially() {
+        if (!qigsawMode) {
             return;
         }
         if (isProcessAllowedToWork()) {
@@ -95,12 +95,11 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     private boolean isInjectPathClassloaderNeeded() {
-        boolean qigsawAssembleMode = SplitBaseInfoProvider.isQigsawAssembleMode();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            return qigsawAssembleMode;
+            return qigsawMode;
         } else {
             boolean exist = (getContext().getClassLoader() instanceof SplitDelegateClassloader);
-            return !exist && qigsawAssembleMode;
+            return !exist && qigsawMode;
         }
     }
 

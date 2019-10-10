@@ -58,10 +58,16 @@ public abstract class SplitLoadManager {
 
     private final String[] forbiddenWorkProcesses;
 
-    SplitLoadManager(Context context, String currentProcessName, String[] processes) {
+    final boolean qigsawMode;
+
+    SplitLoadManager(Context context,
+                     String currentProcessName,
+                     boolean qigsawMode,
+                     String[] forbiddenWorkProcesses) {
         this.context = context;
         this.currentProcessName = currentProcessName;
-        this.forbiddenWorkProcesses = processes;
+        this.qigsawMode = qigsawMode;
+        this.forbiddenWorkProcesses = forbiddenWorkProcesses;
     }
 
     /**
@@ -69,7 +75,7 @@ public abstract class SplitLoadManager {
      */
     public abstract void injectPathClassloader();
 
-    public abstract void loadInstalledSplitsInitially(boolean aabMode);
+    public abstract void loadInstalledSplitsInitially();
 
     /**
      * Called this method in {@link Application#getResources()}.
