@@ -18,10 +18,14 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 public class SplitLibraryLoader {
 
     public static boolean loadSplitLibrary(Context context, String libraryName) {
-        SplitInfoManager manager = SplitInfoManagerService.getInstance();
-        if (manager == null) {
+        if (!SplitLoadManagerService.hasInstance()) {
             return false;
         }
+        if (SplitLoadManagerService.getInstance().splitLoadMode() != SplitLoad.MULTIPLE_CLASSLOADER) {
+            return false;
+        }
+        SplitInfoManager manager = SplitInfoManagerService.getInstance();
+        assert manager != null;
         Collection<SplitInfo> splits = manager.getAllSplitInfo(context);
         if (splits == null) {
             return false;

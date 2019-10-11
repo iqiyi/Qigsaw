@@ -27,8 +27,10 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
+import android.support.annotation.Nullable;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -54,29 +56,43 @@ abstract class SplitLoader {
         this.context = context;
     }
 
-    Context getBaseContext() {
-        Context ctx = context;
-        while (ctx instanceof ContextWrapper) {
-            ctx = ((ContextWrapper) ctx).getBaseContext();
-        }
-        return ctx;
+    /**
+     * Load split' code for multiple class loader mode.
+     */
+    SplitDexClassLoader loadCode(String moduleNames,
+                                 @Nullable List<String> dexPaths,
+                                 File optimizedDirectory,
+                                 @Nullable File librarySearchPath) {
+        return null;
     }
 
     /**
-     * load installed split's code.
+     * Load split' code for single class loader mode.
      */
-    abstract SplitDexClassLoader loadCode(String moduleName,
-                                          String splitApk,
-                                          List<String> dexPaths,
-                                          File optimizedDirectory,
-                                          File librarySearchPath);
+    void loadCode2(@Nullable List<String> dexPaths,
+                   File optimizedDirectory,
+                   @Nullable File librarySearchPath) throws SplitLoadException {
+
+    }
 
     /**
      * load resources of installed split.
      *
      * @param splitResDir local file path of split apk.
      */
-    protected abstract void loadResources(String splitResDir) throws SplitLoadException;
+    final void loadResources(String splitResDir) throws SplitLoadException {
+        try {
+            SplitCompatResourcesLoader.loadResources(context, context.getResources(), splitResDir);
+            Context base = getBaseContext();
+            try {
+                installSplitResourceDir(base, splitResDir);
+            } catch (Throwable ignored) {
+
+            }
+        } catch (Throwable throwable) {
+            throw new SplitLoadException(SplitLoadError.LOAD_RES_FAILED, throwable);
+        }
+    }
 
     private Field getFieldSplitResDirsInPackageInfo(Object packageInfo) {
         try {
@@ -87,7 +103,15 @@ abstract class SplitLoader {
         return mSplitResDirsField;
     }
 
-    void installSplitResourceDir(Context baseContext, String splitResDir) throws Throwable {
+    private Context getBaseContext() {
+        Context ctx = context;
+        while (ctx instanceof ContextWrapper) {
+            ctx = ((ContextWrapper) ctx).getBaseContext();
+        }
+        return ctx;
+    }
+
+    private void installSplitResourceDir(Context baseContext, String splitResDir) throws Throwable {
         Object packageInfo = getPackageInfo(baseContext);
         if (packageInfo != null) {
             Field mSplitResDirsField = getFieldSplitResDirsInPackageInfo(packageInfo);

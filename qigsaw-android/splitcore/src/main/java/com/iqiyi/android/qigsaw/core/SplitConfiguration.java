@@ -27,11 +27,17 @@ package com.iqiyi.android.qigsaw.core;
 import android.support.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitUpdateReporter;
 
 public class SplitConfiguration {
+
+    /**
+     * You can decide to use single or multiple class loader mode to load splits, see {@link SplitLoad} to know more details.
+     */
+    final int splitLoadMode;
 
     /**
      * processes which are forbidden to load all installed splits during application launch time, if null all processes would load.
@@ -69,6 +75,7 @@ public class SplitConfiguration {
     }
 
     private SplitConfiguration(Builder builder) {
+        this.splitLoadMode = builder.splitLoadMode;
         this.forbiddenWorkProcesses = builder.forbiddenWorkProcesses;
         this.manifestPackageName = builder.manifestPackageName;
         this.installReporter = builder.installReporter;
@@ -78,6 +85,8 @@ public class SplitConfiguration {
     }
 
     public static class Builder {
+
+        private int splitLoadMode = SplitLoad.MULTIPLE_CLASSLOADER;
 
         private String[] forbiddenWorkProcesses;
 
@@ -100,6 +109,11 @@ public class SplitConfiguration {
          */
         public Builder logger(@NonNull SplitLog.Logger logger) {
             SplitLog.setSplitLogImp(logger);
+            return this;
+        }
+
+        public Builder splitLoadMode(@SplitLoad.SplitLoadMode int splitLoadMode) {
+            this.splitLoadMode = splitLoadMode;
             return this;
         }
 

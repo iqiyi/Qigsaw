@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Build;
@@ -52,11 +53,18 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private static final String TAG = "SplitLoadManagerImpl";
 
+    private final boolean qigsawMode;
+
+    private final String[] forbiddenWorkProcesses;
+
     SplitLoadManagerImpl(Context context,
                          String currentProcessName,
+                         int splitLoadMode,
                          boolean qigsawMode,
                          String[] forbiddenWorkProcesses) {
-        super(context, currentProcessName, qigsawMode, forbiddenWorkProcesses);
+        super(context, currentProcessName, splitLoadMode);
+        this.qigsawMode = qigsawMode;
+        this.forbiddenWorkProcesses = forbiddenWorkProcesses;
         SplitInfoManagerService.install(context, currentProcessName);
         SplitPathManager.install(context);
     }
@@ -68,10 +76,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                 injectClassLoader(getContext().getClassLoader());
             }
         }
+        ClassLoader curCl = getContext().getClassLoader();
+        if (curCl instanceof SplitDelegateClassloader) {
+            ((SplitDelegateClassloader) curCl).setSplitLoadMode(splitLoadMode);
+        }
     }
 
     @Override
-    public void loadInstalledSplitsInitially() {
+    public void loadInstalledSplitsWhenAppLaunches() {
         if (!qigsawMode) {
             return;
         }
@@ -84,14 +96,38 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     public void getResources(Resources resources) {
         try {
             SplitCompatResourcesLoader.loadResources(getContext(), resources);
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
+        } catch (Throwable error) {
+            error.printStackTrace();
         }
     }
 
     @Override
     public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {
-        return new SplitLoadTask(this, splitFileIntents, loadListener);
+        if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
+            return new SplitLoadTaskImpl(this, splitFileIntents, loadListener);
+        } else {
+            return new SplitLoadTaskImpl2(this, splitFileIntents, loadListener);
+        }
+    }
+
+    @Override
+    public void loadInstalledSplits() {
+        SplitInfoManager manager = SplitInfoManagerService.getInstance();
+        if (manager != null) {
+            Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
+            if (splitInfoList != null) {
+                List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList);
+                if (!splitFileIntents.isEmpty()) {
+                    createSplitLoadTask(splitFileIntents, null).run();
+                } else {
+                    SplitLog.w(TAG, "There are no installed splits!");
+                }
+            } else {
+                SplitLog.w(TAG, "Failed to get Split-Info list!");
+            }
+        } else {
+            SplitLog.w(TAG, "Failed to get SplitInfoManager instance!");
+        }
     }
 
     private boolean isInjectPathClassloaderNeeded() {
@@ -136,35 +172,18 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     private void deferredLoadInstalledSplits() {
-        Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-            @Override
-            public boolean queueIdle() {
-                loadInstalledSplits();
-                return false;
-            }
-        });
-    }
-
-    @Override
-    public void loadInstalledSplits() {
-        SplitInfoManager manager = SplitInfoManagerService.getInstance();
-        if (manager != null) {
-            Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
-            if (splitInfoList != null) {
-                List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList);
-                if (!splitFileIntents.isEmpty()) {
-                    createSplitLoadTask(splitFileIntents, null).run();
-                } else {
-                    SplitLog.w(TAG, "There are no installed splits!");
+        if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
+            Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+                @Override
+                public boolean queueIdle() {
+                    loadInstalledSplits();
+                    return false;
                 }
-            } else {
-                SplitLog.w(TAG, "Failed to get Split-Info list!");
-            }
+            });
         } else {
-            SplitLog.w(TAG, "Failed to get SplitInfoManager instance!");
+            loadInstalledSplits();
         }
     }
-
 
     /**
      * fast check operation
@@ -224,6 +243,40 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         } catch (Exception e) {
             SplitLog.printErrStackTrace(TAG, e, "Failed to hook PathClassloader");
         }
+    }
+
+    private Context getBaseContext() {
+        Context ctx = getContext();
+        while (ctx instanceof ContextWrapper) {
+            ctx = ((ContextWrapper) ctx).getBaseContext();
+        }
+        return ctx;
+    }
+
+    private boolean isProcessAllowedToWork() {
+        if (getContext().getPackageName().equals(currentProcessName)) {
+            return true;
+        }
+        if (forbiddenWorkProcesses == null || forbiddenWorkProcesses.length == 0) {
+            return true;
+        }
+        for (String process : forbiddenWorkProcesses) {
+            if (getCompleteProcessName(process).equals(currentProcessName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String getCompleteProcessName(@Nullable String process) {
+        String packageName = getContext().getPackageName();
+        if (TextUtils.isEmpty(process)) {
+            return packageName;
+        }
+        if (process.startsWith(packageName)) {
+            return process;
+        }
+        return packageName + process;
     }
 
 }

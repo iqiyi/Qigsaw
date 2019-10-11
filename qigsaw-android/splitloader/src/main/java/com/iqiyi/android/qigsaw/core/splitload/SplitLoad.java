@@ -24,9 +24,31 @@
 
 package com.iqiyi.android.qigsaw.core.splitload;
 
-final class SplitCompatResourcesException extends Throwable {
+import android.support.annotation.IntDef;
+import android.support.annotation.RestrictTo;
 
-    SplitCompatResourcesException(String message, Throwable cause) {
-        super(message, cause);
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+
+public final class SplitLoad {
+
+    @IntDef({MULTIPLE_CLASSLOADER, SINGLE_CLASSLOADER})
+    @Retention(RetentionPolicy.SOURCE)
+    @RestrictTo(LIBRARY_GROUP)
+    public @interface SplitLoadMode {
+
     }
+
+    /**
+     * Each split is loaded by a single class loader.
+     */
+    public static final int MULTIPLE_CLASSLOADER = 1;
+
+    /**
+     * all split are loaded by a {@link dalvik.system.PathClassLoader}.
+     */
+    public static final int SINGLE_CLASSLOADER = 2;
+
 }

@@ -1,4 +1,3 @@
-
 /*
  * MIT License
  *
@@ -42,7 +41,9 @@ final class SplitDelegateClassloader extends PathClassLoader {
 
     private static final String TAG = "SplitDelegateClassloader";
 
-    private BaseDexClassLoader originClassLoader;
+    private final BaseDexClassLoader originClassLoader;
+
+    private int splitLoadMode;
 
     SplitDelegateClassloader(ClassLoader parent) {
         super("", parent);
@@ -50,11 +51,9 @@ final class SplitDelegateClassloader extends PathClassLoader {
     }
 
     private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
-        Object basePackageInfo = HiddenApiReflection.findField(baseContext, "mPackageInfo").get(baseContext);
-        if (basePackageInfo != null) {
-            HiddenApiReflection.findField(basePackageInfo, "mClassLoader").set(basePackageInfo, reflectClassLoader);
-        } else {
-            SplitLog.w(TAG, "Failed to get mPackageInfo!");
+        Object packageInfo = HiddenApiReflection.findField(baseContext, "mPackageInfo").get(baseContext);
+        if (packageInfo != null) {
+            HiddenApiReflection.findField(packageInfo, "mClassLoader").set(packageInfo, reflectClassLoader);
         }
     }
 
@@ -63,30 +62,63 @@ final class SplitDelegateClassloader extends PathClassLoader {
         reflectPackageInfoClassloader(baseContext, classLoader);
     }
 
+    void setSplitLoadMode(int splitLoadMode) {
+        this.splitLoadMode = splitLoadMode;
+        SplitLog.i(TAG, "Split load mode is : " + splitLoadMode);
+    }
+
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         try {
             return originClassLoader.loadClass(name);
         } catch (ClassNotFoundException error) {
-            Class<?> ret = findClassInSplits(name);
-            if (ret != null) {
-                return ret;
-            }
             if (SplitLoadManagerService.hasInstance()) {
-                SplitLoadManager manager = SplitLoadManagerService.getInstance();
-                Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
-                if (fakeComponent != null) {
-                    manager.loadInstalledSplits();
-                    ret = findClassInSplits(name);
-                    if (ret != null) {
-                        return ret;
+                if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
+                    Class<?> result = onClassNotFound(name);
+                    if (result != null) {
+                        return result;
                     }
-                    SplitLog.w(TAG, "Split component %s not found, return a %s to avoid crash", name, fakeComponent.getSimpleName());
-                    return fakeComponent;
+                } else if (splitLoadMode == SplitLoad.SINGLE_CLASSLOADER) {
+                    Class<?> result = onClassNotFound2(name);
+                    if (result != null) {
+                        return result;
+                    }
                 }
             }
             throw error;
         }
+    }
+
+    private Class<?> onClassNotFound(String name) {
+        Class<?> ret = findClassInSplits(name);
+        if (ret != null) {
+            return ret;
+        }
+        Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
+        if (fakeComponent != null) {
+            SplitLoadManagerService.getInstance().loadInstalledSplits();
+            ret = findClassInSplits(name);
+            if (ret != null) {
+                return ret;
+            }
+            SplitLog.w(TAG, "Split component %s is still not found after installing all installed splits, return a %s to avoid crash", name, fakeComponent.getSimpleName());
+            return fakeComponent;
+        }
+        return null;
+    }
+
+    private Class<?> onClassNotFound2(String name) {
+        Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
+        if (fakeComponent != null) {
+            SplitLoadManagerService.getInstance().loadInstalledSplits();
+            try {
+                return originClassLoader.loadClass(name);
+            } catch (ClassNotFoundException e) {
+                SplitLog.w(TAG, "Split component %s is still not found after installing all installed splits,return a %s to avoid crash", name, fakeComponent.getSimpleName());
+                return fakeComponent;
+            }
+        }
+        return null;
     }
 
     private Class<?> findClassInSplits(String name) {

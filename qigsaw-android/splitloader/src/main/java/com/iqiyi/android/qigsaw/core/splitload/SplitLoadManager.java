@@ -52,22 +52,18 @@ public abstract class SplitLoadManager {
 
     private final Set<String> loadedSplitNames = new ArraySet<>();
 
-    final String currentProcessName;
-
     private final Set<String> loadedSplitApkPaths = new ArraySet<>();
 
-    private final String[] forbiddenWorkProcesses;
+    final String currentProcessName;
 
-    final boolean qigsawMode;
+    final int splitLoadMode;
 
     SplitLoadManager(Context context,
                      String currentProcessName,
-                     boolean qigsawMode,
-                     String[] forbiddenWorkProcesses) {
+                     int splitLoadMode) {
         this.context = context;
         this.currentProcessName = currentProcessName;
-        this.qigsawMode = qigsawMode;
-        this.forbiddenWorkProcesses = forbiddenWorkProcesses;
+        this.splitLoadMode = splitLoadMode;
     }
 
     /**
@@ -75,7 +71,10 @@ public abstract class SplitLoadManager {
      */
     public abstract void injectPathClassloader();
 
-    public abstract void loadInstalledSplitsInitially();
+    /**
+     * Load all installed splits when application launches.
+     */
+    public abstract void loadInstalledSplitsWhenAppLaunches();
 
     /**
      * Called this method in {@link Application#getResources()}.
@@ -95,12 +94,23 @@ public abstract class SplitLoadManager {
     public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener);
 
     /**
+     * Using to load all installed splits.
+     */
+    public abstract void loadInstalledSplits();
+
+    /**
      * Get names of loaded splits
      *
      * @return a list of loaded split names.
      */
     public Set<String> getLoadedSplitNames() {
-        return loadedSplitNames;
+        synchronized (this) {
+            return loadedSplitNames;
+        }
+    }
+
+    public int splitLoadMode() {
+        return splitLoadMode;
     }
 
     /**
@@ -109,60 +119,29 @@ public abstract class SplitLoadManager {
      * @return a list of loaded split apk file path.
      */
     Set<String> getLoadedSplitApkPaths() {
-        return loadedSplitApkPaths;
+        synchronized (this) {
+            return loadedSplitApkPaths;
+        }
     }
-
-    boolean isProcessAllowedToWork() {
-        if (context.getPackageName().equals(currentProcessName)) {
-            return true;
-        }
-        if (forbiddenWorkProcesses == null || forbiddenWorkProcesses.length == 0) {
-            return true;
-        }
-        for (String process : forbiddenWorkProcesses) {
-            if (getFullProcessName(process).equals(currentProcessName)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public abstract void loadInstalledSplits();
 
     Context getContext() {
         return context;
     }
 
-    Context getBaseContext() {
-        Context ctx = context;
-        while (ctx instanceof ContextWrapper) {
-            ctx = ((ContextWrapper) ctx).getBaseContext();
-        }
-        return ctx;
-    }
-
     final void putSplits(Collection<Split> splits) {
-        loadedSplits.addAll(splits);
-        for (Split split : splits) {
-            loadedSplitNames.add(split.splitName);
-            loadedSplitApkPaths.add(split.splitApkPath);
+        synchronized (this) {
+            loadedSplits.addAll(splits);
+            for (Split split : splits) {
+                loadedSplitNames.add(split.splitName);
+                loadedSplitApkPaths.add(split.splitApkPath);
+            }
         }
     }
 
     final Set<Split> getLoadedSplits() {
-        return loadedSplits;
-    }
-
-    private String getFullProcessName(@Nullable String process) {
-        String packageName = getContext().getPackageName();
-        if (TextUtils.isEmpty(process)) {
-            return packageName;
+        synchronized (this) {
+            return loadedSplits;
         }
-        if (process.startsWith(packageName)) {
-            return process;
-        }
-        return packageName + process;
     }
-
 
 }

@@ -7,6 +7,7 @@ import android.support.multidex.MultiDex;
 
 import com.iqiyi.android.qigsaw.core.SplitConfiguration;
 import com.iqiyi.android.qigsaw.core.Qigsaw;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
 import com.iqiyi.qigsaw.sample.downloader.SampleDownloader;
 import com.iqiyi.qigsaw.sample.reporter.SampleLogger;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitInstallReporter;
@@ -22,6 +23,7 @@ public class QigsawApplication extends Application {
         super.attachBaseContext(base);
         MultiDex.install(base);
         SplitConfiguration configuration = SplitConfiguration.newBuilder()
+                .splitLoadMode(SplitLoad.MULTIPLE_CLASSLOADER)
                 .forbiddenWorkProcesses(forbiddenWorkProcesses)
                 .logger(new SampleLogger())
                 .loadReporter(new SampleSplitLoadReporter(this))

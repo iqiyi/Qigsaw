@@ -24,23 +24,48 @@
 
 package com.iqiyi.android.qigsaw.core.splitload;
 
-import android.content.Context;
+
+import android.content.Intent;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
+import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
 
 import java.io.File;
 import java.util.List;
 
-final class SplitLoaderImpl extends SplitLoader {
+/**
+ * Loading split for single class loader mode.
+ */
+final class SplitLoadTaskImpl2 extends SplitLoadTask {
 
-    SplitLoaderImpl(Context context) {
-        super(context);
+    SplitLoadTaskImpl2(@NonNull SplitLoadManager loadManager,
+                       @NonNull List<Intent> splitFileIntents,
+                       @Nullable OnSplitLoadListener loadListener) {
+        super(loadManager, splitFileIntents, loadListener);
     }
 
     @Override
-    SplitDexClassLoader loadCode(String moduleNames,
-                                 @Nullable List<String> dexPaths,
-                                 File optimizedDirectory,
-                                 @Nullable File librarySearchPath) {
-        return SplitDexClassLoader.create(context, moduleNames, dexPaths, optimizedDirectory, librarySearchPath);
+    SplitLoader createSplitLoader() {
+        return new SplitLoaderImpl2(appContext);
+    }
+
+    @Override
+    ClassLoader loadCode(SplitLoader loader,
+                         String splitName,
+                         List<String> addedDexPaths,
+                         File optimizedDirectory,
+                         File librarySearchPath) throws SplitLoadException {
+        loader.loadCode2(addedDexPaths, optimizedDirectory, librarySearchPath);
+        return SplitLoadTask.class.getClassLoader();
+    }
+
+    @Override
+    void onSplitActivateFailed(ClassLoader classLoader) {
+        try {
+            SplitCompatDexLoader.unLoad(classLoader);
+        } catch (Throwable throwable) {
+            //
+        }
     }
 }

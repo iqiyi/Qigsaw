@@ -32,6 +32,8 @@ import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.SplitApplicationLoaders;
 import com.iqiyi.android.qigsaw.core.splitload.SplitDexClassLoader;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
@@ -86,7 +88,9 @@ final class SplitInstallerImpl extends SplitInstaller {
                 SplitPathManager.require().getSplitOptDir(info),
                 splitLibDir
         );
-        SplitApplicationLoaders.getInstance().addClassLoader(dexClassLoader);
+        if (SplitLoadManagerService.getInstance().splitLoadMode() == SplitLoad.MULTIPLE_CLASSLOADER) {
+            SplitApplicationLoaders.getInstance().addClassLoader(dexClassLoader);
+        }
         createInstalledMark(info);
         return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, checkDependenciesInstalledStatus(info));
     }

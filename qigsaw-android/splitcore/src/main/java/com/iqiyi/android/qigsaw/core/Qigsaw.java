@@ -110,7 +110,7 @@ public class Qigsaw {
         SplitUpdateReporterManager.install(splitConfiguration.updateReporter == null ? new DefaultSplitUpdateReporter(context) : splitConfiguration.updateReporter);
         //init SplitLoadManager and hook PatchCLassLoader.
         boolean qigsawMode = SplitBaseInfoProvider.isQigsawAssembleMode();
-        SplitLoadManagerService.install(context, currentProcessName, qigsawMode, splitConfiguration.forbiddenWorkProcesses);
+        SplitLoadManagerService.install(context, currentProcessName, splitConfiguration.splitLoadMode, qigsawMode, splitConfiguration.forbiddenWorkProcesses);
         SplitLoadManagerService.getInstance().injectPathClassloader();
         AABExtension.getInstance().createAndActiveSplitApplication(context, qigsawMode);
         SplitCompat.install(context);
@@ -118,7 +118,7 @@ public class Qigsaw {
 
     private void onCreated() {
         AABExtension.getInstance().onApplicationCreate();
-        SplitLoadManagerService.getInstance().loadInstalledSplitsInitially();
+        SplitLoadManagerService.getInstance().loadInstalledSplitsWhenAppLaunches();
         //only work in main process!
         if (context.getPackageName().equals(currentProcessName)) {
             SplitApkInstaller.install(context, downloader, splitConfiguration.obtainUserConfirmationDialogClass);

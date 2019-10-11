@@ -34,7 +34,7 @@ public final class SplitDexClassLoader extends BaseDexClassLoader {
                                              List<String> dexPaths,
                                              File optimizedDirectory,
                                              File librarySearchFile) {
-        String dexPath = (dexPaths == null || dexPaths.isEmpty()) ? "" : TextUtils.join(File.pathSeparator, dexPaths);
+        String dexPath = (dexPaths == null) ? "" : TextUtils.join(File.pathSeparator, dexPaths);
         return new SplitDexClassLoader(
                 context,
                 moduleName,

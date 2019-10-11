@@ -41,10 +41,11 @@ public class SplitLoadManagerService {
 
     public static void install(Context context,
                                String currentProcessName,
+                               int splitLoadMode,
                                boolean qigsawMode,
                                String[] forbiddenWorkProcesses) {
         if (sReference.get() == null) {
-            sReference.set(create(context, currentProcessName, qigsawMode, forbiddenWorkProcesses));
+            sReference.set(create(context, currentProcessName, splitLoadMode, qigsawMode, forbiddenWorkProcesses));
         }
     }
 
@@ -61,8 +62,9 @@ public class SplitLoadManagerService {
 
     private static SplitLoadManager create(Context context,
                                            String currentProcessName,
+                                           int splitLoadMode,
                                            boolean qigsawMode,
                                            String[] forbiddenWorkProcesses) {
-        return new SplitLoadManagerImpl(context, currentProcessName, qigsawMode, forbiddenWorkProcesses);
+        return new SplitLoadManagerImpl(context, currentProcessName, splitLoadMode, qigsawMode, forbiddenWorkProcesses);
     }
 }
