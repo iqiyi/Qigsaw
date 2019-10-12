@@ -26,7 +26,7 @@ allprojects {
 
 ext {
     versions = [
-            'compileSdk': 28,
+            'compileSdk': 29,
             'minSdk'    : 14,
             'targetSdk' : 28,
             'support'   : '27.1.1'
