@@ -27,7 +27,8 @@ package com.iqiyi.qigsaw.buildtool.gradle
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
-import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitComponentTransform
+import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitLibraryLoaderTransform
+import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitResourcesLoaderTransform
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -40,10 +41,12 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
             throw new GradleException("generateQigsawApk: Dynamic-feature plugin required")
         }
         AppExtension android = project.extensions.getByType(AppExtension)
-        SplitComponentTransform transform
+        SplitResourcesLoaderTransform resourcesLoaderTransform
         if (hasQigsawTask(project)) {
-            transform = new SplitComponentTransform(project)
-            android.registerTransform(transform)
+            resourcesLoaderTransform = new SplitResourcesLoaderTransform(project)
+            SplitLibraryLoaderTransform libraryLoaderTransform = new SplitLibraryLoaderTransform(project)
+            android.registerTransform(resourcesLoaderTransform)
+            android.registerTransform(libraryLoaderTransform)
         }
         project.afterEvaluate {
             android.applicationVariants.all { variant ->
@@ -53,8 +56,8 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
                 Task splitComponentTransformTask = getSplitComponentTransformTask(project, appVariant.name.capitalize())
                 if (splitComponentTransformTask != null) {
                     splitComponentTransformTask.doFirst {
-                        if (transform != null) {
-                            transform.setManifest(manifestFile)
+                        if (resourcesLoaderTransform != null) {
+                            resourcesLoaderTransform.setManifest(manifestFile)
                         }
                     }
                 }
@@ -63,6 +66,6 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
     }
 
     static Task getSplitComponentTransformTask(Project project, String variantName) {
-        return project.tasks.findByName("transformClassesWithSplitComponentTransformFor${variantName}")
+        return project.tasks.findByName("transformClassesWith${SplitResourcesLoaderTransform.NAME.capitalize()}For${variantName}")
     }
 }

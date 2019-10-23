@@ -24,6 +24,7 @@
 
 package com.iqiyi.android.qigsaw.core.splitload;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 
@@ -38,7 +39,7 @@ public class SplitLoadReporterManager {
 
     private static final AtomicReference<SplitLoadReporter> sLoadReporterRef = new AtomicReference<>();
 
-    public static void install(@Nullable SplitLoadReporter installReporter) {
+    public static void install(@NonNull SplitLoadReporter installReporter) {
         sLoadReporterRef.compareAndSet(null, installReporter);
     }
 

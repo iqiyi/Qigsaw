@@ -24,6 +24,7 @@
 
 package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 
@@ -38,7 +39,7 @@ public class SplitUpdateReporterManager {
 
     private static final AtomicReference<SplitUpdateReporter> sUpdateReporterRef = new AtomicReference<>();
 
-    public static void install(@Nullable SplitUpdateReporter installReporter) {
+    public static void install(@NonNull SplitUpdateReporter installReporter) {
         sUpdateReporterRef.compareAndSet(null, installReporter);
     }
 

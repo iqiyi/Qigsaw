@@ -41,6 +41,6 @@ final class SplitLoaderImpl extends SplitLoader {
                                  @Nullable List<String> dexPaths,
                                  File optimizedDirectory,
                                  @Nullable File librarySearchPath) {
-        return SplitDexClassLoader.create(context, moduleNames, dexPaths, optimizedDirectory, librarySearchPath);
+        return SplitDexClassLoader.create(moduleNames, dexPaths, optimizedDirectory, librarySearchPath);
     }
 }

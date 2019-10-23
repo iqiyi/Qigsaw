@@ -2,6 +2,7 @@ package com.google.android.play.core.splitinstall;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Application;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -11,7 +12,7 @@ import android.content.res.Resources;
 import android.support.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.splitload.SplitCompatResourcesLoader;
-import com.iqiyi.android.qigsaw.core.splitload.SplitLibraryLoader;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLibraryLoaderHelper;
 
 import java.io.File;
 
@@ -83,10 +84,13 @@ public class SplitInstallHelper {
 
     /**
      * Loads native library using classloader or full path if library is not available in the class path.
+     *
+     * @param context Under {@link com.iqiyi.android.qigsaw.core.splitload.SplitLoad#MULTIPLE_CLASSLOADER} mode,
+     *                if context is {@link Application}, load split's library for base apk, otherwise for split apk.
      */
     @SuppressLint("UnsafeDynamicallyLoadedCode")
     public static void loadLibrary(Context context, String libraryName) {
-        if (SplitLibraryLoader.loadSplitLibrary(context, libraryName)) {
+        if (SplitLibraryLoaderHelper.loadSplitLibrary(context, libraryName)) {
             return;
         }
         try {

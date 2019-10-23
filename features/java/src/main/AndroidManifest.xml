@@ -8,7 +8,9 @@
         android:name=".JavaSampleApplication"
         tools:ignore="GoogleAppIndexingWarning">
 
-        <activity android:name=".JavaSampleActivity" />
+        <activity
+            android:name=".JavaSampleActivity"
+            android:process=":qigsaw" />
 
         <provider
             android:name=".JavaContentProvider"

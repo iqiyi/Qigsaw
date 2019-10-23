@@ -46,20 +46,21 @@ import java.util.regex.Matcher
 
 import org.apache.commons.io.FileUtils
 
-class SplitComponentTransform extends Transform {
+class SplitResourcesLoaderTransform extends Transform {
+
+    final static String NAME = "splitResourcesLoader"
 
     Project project
 
     File manifest
 
-    SplitComponentTransform(Project project) {
+    SplitResourcesLoaderTransform(Project project) {
         this.project = project
     }
 
-
     @Override
     String getName() {
-        return "splitComponentTransform"
+        return NAME
     }
 
     @Override
@@ -84,7 +85,6 @@ class SplitComponentTransform extends Transform {
     @Override
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
         super.transform(transformInvocation)
-        transformInvocation.getOutputProvider().deleteAll()
         if (manifest == null) {
             return
         }

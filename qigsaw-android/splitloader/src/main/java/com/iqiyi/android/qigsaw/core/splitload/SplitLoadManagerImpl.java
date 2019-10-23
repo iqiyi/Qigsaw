@@ -57,13 +57,17 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     private final String[] forbiddenWorkProcesses;
 
+    private final String[] workProcesses;
+
     SplitLoadManagerImpl(Context context,
                          String currentProcessName,
                          int splitLoadMode,
                          boolean qigsawMode,
+                         String[] workProcesses,
                          String[] forbiddenWorkProcesses) {
         super(context, currentProcessName, splitLoadMode);
         this.qigsawMode = qigsawMode;
+        this.workProcesses = workProcesses;
         this.forbiddenWorkProcesses = forbiddenWorkProcesses;
         SplitInfoManagerService.install(context, currentProcessName);
         SplitPathManager.install(context);
@@ -254,15 +258,24 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     private boolean isProcessAllowedToWork() {
+        if (workProcesses == null && forbiddenWorkProcesses == null) {
+            return true;
+        }
         if (getContext().getPackageName().equals(currentProcessName)) {
             return true;
         }
-        if (forbiddenWorkProcesses == null || forbiddenWorkProcesses.length == 0) {
-            return true;
+        if (forbiddenWorkProcesses != null) {
+            for (String process : forbiddenWorkProcesses) {
+                if (getCompleteProcessName(process).equals(currentProcessName)) {
+                    return false;
+                }
+            }
         }
-        for (String process : forbiddenWorkProcesses) {
-            if (getCompleteProcessName(process).equals(currentProcessName)) {
-                return false;
+        if (workProcesses != null) {
+            for (String process : workProcesses) {
+                if (getCompleteProcessName(process).equals(currentProcessName)) {
+                    return true;
+                }
             }
         }
         return true;

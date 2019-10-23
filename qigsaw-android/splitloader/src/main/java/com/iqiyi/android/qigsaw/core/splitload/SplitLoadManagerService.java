@@ -43,9 +43,10 @@ public class SplitLoadManagerService {
                                String currentProcessName,
                                int splitLoadMode,
                                boolean qigsawMode,
+                               String[] workProcesses,
                                String[] forbiddenWorkProcesses) {
         if (sReference.get() == null) {
-            sReference.set(create(context, currentProcessName, splitLoadMode, qigsawMode, forbiddenWorkProcesses));
+            sReference.set(create(context, currentProcessName, splitLoadMode, qigsawMode, workProcesses, forbiddenWorkProcesses));
         }
     }
 
@@ -64,7 +65,8 @@ public class SplitLoadManagerService {
                                            String currentProcessName,
                                            int splitLoadMode,
                                            boolean qigsawMode,
+                                           String[] workProcesses,
                                            String[] forbiddenWorkProcesses) {
-        return new SplitLoadManagerImpl(context, currentProcessName, splitLoadMode, qigsawMode, forbiddenWorkProcesses);
+        return new SplitLoadManagerImpl(context, currentProcessName, splitLoadMode, qigsawMode, workProcesses, forbiddenWorkProcesses);
     }
 }

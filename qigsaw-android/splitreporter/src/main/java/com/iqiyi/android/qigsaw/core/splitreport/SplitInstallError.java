@@ -34,39 +34,34 @@ public class SplitInstallError {
     public static final int APK_FILE_ILLEGAL = -11;
 
     /**
-     * Split signature does not match that of base app.
+     * Split signature does not match with base app.
      */
     public static final int SIGNATURE_MISMATCH = -12;
 
     /**
+     * Split MD5 is not correct.
+     */
+    public static final int MD5_ERROR = -13;
+
+    /**
      * Split dex files failed to be extracted.
      */
-    public static final int DEX_EXTRACT_FAILED = -13;
+    public static final int DEX_EXTRACT_FAILED = -14;
 
     /**
      * Split lib files failed to be extracted.
      */
-    public static final int LIB_EXTRACT_FAILED = -14;
-
-    /**
-     * Split dex files failed to be optimized.
-     */
-    public static final int DEX_OPT_FAILED = -15;
-
-    /**
-     * Split opt files are stale.
-     */
-    public static final int OPT_CHECK_FAILED = -16;
+    public static final int LIB_EXTRACT_FAILED = -15;
 
     /**
      * Failed to mark a file that indicates split is installed.
      */
-    public static final int MARK_CREATE_FAILED = -17;
+    public static final int MARK_CREATE_FAILED = -16;
 
     /**
      * split's dependencies are not installed.
      */
-    public static final int DEPENDENCIES_NOT_INSTALLED = -18;
+    public static final int DEPENDENCIES_NOT_INSTALLED = -17;
 
     private final String moduleName;
 

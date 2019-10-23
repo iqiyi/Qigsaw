@@ -32,11 +32,16 @@ import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.extension.AABExtensionException;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 
+import java.util.ArrayList;
+import java.util.List;
+
 final class SplitActivator {
 
     private final AABExtension aabExtension;
 
     private final Context appContext;
+
+    private static final List<Application> splitApplications = new ArrayList<>();
 
     SplitActivator(Context context) {
         this.appContext = context;
@@ -62,7 +67,15 @@ final class SplitActivator {
             throw new SplitLoadException(SplitLoadError.ACTIVATE_PROVIDERS_FAILED, e);
         }
         if (app != null) {
-            app.onCreate();
+            try {
+                app.onCreate();
+                splitApplications.add(app);
+            } catch (Throwable e) {
+                if (debuggable()) {
+                    throw new RuntimeException(e);
+                }
+                throw new SplitLoadException(SplitLoadError.ACTIVATE_APPLICATION_FAILED, e);
+            }
         }
     }
 

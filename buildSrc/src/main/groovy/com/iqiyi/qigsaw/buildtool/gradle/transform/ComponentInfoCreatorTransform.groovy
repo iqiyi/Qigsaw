@@ -33,16 +33,12 @@ import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
-import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
-import java.security.MessageDigest
-
-class ComponentInfoCreatorTransform extends Transform {
+class ComponentInfoCreatorTransform extends SimpleClassCreatorTransform {
 
     Project project
 
@@ -52,7 +48,7 @@ class ComponentInfoCreatorTransform extends Transform {
 
     @Override
     String getName() {
-        return "CreateComponentInfoTransform"
+        return "createComponentInfo"
     }
 
     @Override
@@ -103,7 +99,6 @@ class ComponentInfoCreatorTransform extends Transform {
                 List<String> services = new ArrayList<>()
                 List<String> receivers = new ArrayList<>()
                 List<String> providers = new ArrayList<>()
-
                 List<String> applications = new ArrayList<>()
 
                 String applicationName = manifestReader.readApplicationName().name
@@ -134,36 +129,18 @@ class ComponentInfoCreatorTransform extends Transform {
             }
         }
 
-        transformInvocation.inputs.each { TransformInput input ->
-            input.jarInputs.each { JarInput jarInput ->
-                def jarName = jarInput.name
-                def md5 = getStringMD5(jarInput.file.getAbsolutePath())
-                File dest = transformInvocation.outputProvider.getContentLocation(jarName + md5,
-                        jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                FileUtils.copyFile(jarInput.file, dest)
-            }
-            input.directoryInputs.each { DirectoryInput directoryInput ->
-                File dest = transformInvocation.outputProvider.getContentLocation(directoryInput.name,
-                        directoryInput.contentTypes, directoryInput.scopes,
-                        Format.DIRECTORY)
-                FileUtils.copyDirectory(directoryInput.file, dest)
-            }
-        }
+        def dest = prepareToCreateClass(transformInvocation)
+        createSimpleClass(dest, "com.iqiyi.android.qigsaw.core.extension.ComponentInfo", "java.lang.Object", new SimpleClassCreatorTransform.OnVisitListener() {
 
-        def dest = transformInvocation.outputProvider.getContentLocation("main",
-                getOutputTypes(), getScopes(),
-                Format.DIRECTORY)
-        weave(addFieldMap, dest)
+            @Override
+            void onVisit(ClassWriter cw) {
+                injectCommonInfo(dest, cw, addFieldMap)
+            }
+        })
+
     }
 
-    static String getStringMD5(String str) {
-        return MessageDigest.getInstance("MD5").digest(str.bytes).encodeHex().toString()
-    }
-
-
-    static void weave(Map<String, List> addFieldMap, File dest) {
-        ClassWriter cw = new ClassWriter(0)
-        cw.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC, "com/iqiyi/android/qigsaw/core/extension/ComponentInfo", null, "java/lang/Object", null)
+    static void injectCommonInfo(def dest, ClassWriter cw, Map<String, List> addFieldMap) {
         addFieldMap.each { entry ->
             List value = entry.value
             if (value.size() <= 0) {
@@ -175,7 +152,9 @@ class ComponentInfoCreatorTransform extends Transform {
                         name, "Ljava/lang/String;", null, value.get(0)).visitEnd()
             } else if (name.endsWith("PROVIDERS")) {
                 for (String providerName : value) {
-                    createSplitProviderClassFile(dest, name, providerName)
+                    String splitName = name.split("_")[0]
+                    String providerClassName = providerName + "_Decorated_" + splitName
+                    createSimpleClass(dest, providerClassName, "com.iqiyi.android.qigsaw.core.splitload.SplitContentProvider", null)
                 }
             } else {
                 cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
@@ -183,51 +162,5 @@ class ComponentInfoCreatorTransform extends Transform {
                         (value as String[]).join(",")).visitEnd()
             }
         }
-
-        File folder = new File(dest.absolutePath + File.separator + "com" +
-                File.separator + "iqiyi" +
-                File.separator + "android" +
-                File.separator + "qigsaw" +
-                File.separator + "core" +
-                File.separator + "extension")
-        if (!folder.exists()) {
-            folder.mkdirs()
-        }
-        new File(folder.absolutePath + File.separator + "ComponentInfo.class")
-                .withOutputStream { os ->
-            os.write(cw.toByteArray())
-        }
-    }
-
-    static void createSplitProviderClassFile(File dest, String name, String providerClassName) {
-        String splitName = name.split("_")[0]
-        providerClassName = providerClassName + "_Decorated_" + splitName
-        ClassWriter cw = new ClassWriter(0)
-        String folderName = providerClassName.replace(".", File.separator)
-        File providerClassFile = new File(dest.absolutePath + File.separator + folderName + ".class")
-        if (!providerClassFile.getParentFile().exists()) {
-            providerClassFile.getParentFile().mkdirs()
-        }
-
-        cw.visit(Opcodes.V1_7,
-                Opcodes.ACC_PUBLIC,
-                providerClassName.replace(".", "/"), null,
-                "com/iqiyi/android/qigsaw/core/splitload/SplitContentProvider",
-                null)
-
-        MethodVisitor mw = cw.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V",
-                null, null)
-        mw.visitVarInsn(Opcodes.ALOAD, 0)
-        mw.visitMethodInsn(Opcodes.INVOKESPECIAL, "com/iqiyi/android/qigsaw/core/splitload/SplitContentProvider", "<init>",
-                "()V")
-        mw.visitInsn(Opcodes.RETURN)
-        mw.visitMaxs(1, 1)
-        mw.visitEnd()
-
-        providerClassFile
-                .withOutputStream { os ->
-            os.write(cw.toByteArray())
-        }
-
     }
 }

@@ -34,40 +34,20 @@ import com.iqiyi.android.qigsaw.core.splitreport.SplitUpdateReporter;
 
 public class SplitConfiguration {
 
-    /**
-     * You can decide to use single or multiple class loader mode to load splits, see {@link SplitLoad} to know more details.
-     */
     final int splitLoadMode;
 
-    /**
-     * processes which are forbidden to load all installed splits during application launch time, if null all processes would load.
-     */
+    final String[] workProcesses;
+
     final String[] forbiddenWorkProcesses;
 
-    /**
-     * if the package name you declared in app manifest does not match applicationId in app/build.gradle,
-     * you have to set it.
-     */
     final String manifestPackageName;
 
-    /**
-     * Report installing status when splits are fully installed.
-     */
     final SplitInstallReporter installReporter;
 
-    /**
-     * Report loading status when splits are fully loaded.
-     */
     final SplitLoadReporter loadReporter;
 
-    /**
-     * Report updating status when split info version is fully updated.
-     */
     final SplitUpdateReporter updateReporter;
 
-    /**
-     * Customized dialog for requiring user confirmation whether allowed to download splits while using mobile data
-     */
     final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
     public static SplitConfiguration.Builder newBuilder() {
@@ -75,6 +55,9 @@ public class SplitConfiguration {
     }
 
     private SplitConfiguration(Builder builder) {
+        if (builder.forbiddenWorkProcesses != null && builder.workProcesses != null) {
+            throw new RuntimeException("forbiddenWorkProcesses and workProcesses can't be set at the same time, you should choose one of them.");
+        }
         this.splitLoadMode = builder.splitLoadMode;
         this.forbiddenWorkProcesses = builder.forbiddenWorkProcesses;
         this.manifestPackageName = builder.manifestPackageName;
@@ -82,11 +65,14 @@ public class SplitConfiguration {
         this.loadReporter = builder.loadReporter;
         this.updateReporter = builder.updateReporter;
         this.obtainUserConfirmationDialogClass = builder.obtainUserConfirmationDialogClass;
+        this.workProcesses = builder.workProcesses;
     }
 
     public static class Builder {
 
         private int splitLoadMode = SplitLoad.MULTIPLE_CLASSLOADER;
+
+        private String[] workProcesses;
 
         private String[] forbiddenWorkProcesses;
 
@@ -112,36 +98,72 @@ public class SplitConfiguration {
             return this;
         }
 
+        /**
+         * You can decide to use single or multiple class loader mode to load splits, see {@link SplitLoad} to know more details.
+         */
         public Builder splitLoadMode(@SplitLoad.SplitLoadMode int splitLoadMode) {
             this.splitLoadMode = splitLoadMode;
             return this;
         }
 
-        public Builder forbiddenWorkProcesses(@NonNull String[] forbiddenWorkProcesses) {
-            this.forbiddenWorkProcesses = forbiddenWorkProcesses;
+        /**
+         * Processes(main process always work) which are permitted to load all installed splits during application launch time.
+         * This is method can't be invoked with {@link Builder#forbiddenWorkProcesses(String[])} together.
+         */
+        public Builder workProcesses(@NonNull String[] workProcesses) {
+            if (workProcesses.length > 0) {
+                this.workProcesses = workProcesses;
+            }
             return this;
         }
 
+        /**
+         * Processes which are forbidden to load all installed splits during application launch time.
+         * This is method can't be invoked with {@link Builder#workProcesses(String[])} together.
+         */
+        public Builder forbiddenWorkProcesses(@NonNull String[] forbiddenWorkProcesses) {
+            if (forbiddenWorkProcesses.length > 0) {
+                this.forbiddenWorkProcesses = forbiddenWorkProcesses;
+            }
+            return this;
+        }
+
+        /**
+         * If the package name you declared in app manifest does not match applicationId in app/build.gradle,
+         * you have to set it.
+         */
         public Builder manifestPackageName(@NonNull String manifestPackageName) {
             this.manifestPackageName = manifestPackageName;
             return this;
         }
 
+        /**
+         * Report installing status when splits are fully installed.
+         */
         public Builder installReporter(@NonNull SplitInstallReporter installReporter) {
             this.installReporter = installReporter;
             return this;
         }
 
+        /**
+         * Report loading status when splits are fully loaded.
+         */
         public Builder loadReporter(@NonNull SplitLoadReporter loadReporter) {
             this.loadReporter = loadReporter;
             return this;
         }
 
+        /**
+         * Report updating status when split info version is fully updated.
+         */
         public Builder updateReporter(@NonNull SplitUpdateReporter updateReporter) {
             this.updateReporter = updateReporter;
             return this;
         }
 
+        /**
+         * Customized dialog for requiring user confirmation whether allowed to download splits while using mobile data
+         */
         public Builder obtainUserConfirmationDialogClass(@NonNull Class<? extends ObtainUserConfirmationDialog> clazz) {
             this.obtainUserConfirmationDialogClass = clazz;
             return this;

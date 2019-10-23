@@ -56,7 +56,9 @@ class QigsawProguardConfigTask extends DefaultTask {
             "-keep class com.iqiyi.android.qigsaw.core.splitdownload.Downloader{\n *;\n }\n" +
             "-keep class * implements com.iqiyi.android.qigsaw.core.splitdownload.Downloader{\n *;\n }\n" +
             "-keep class com.iqiyi.android.qigsaw.core.Qigsaw{\n public <methods>;\n }\n" +
-            "-keep class com.iqiyi.android.qigsaw.core.extension.ComponentInfo{\n *;\n }\n"
+            "-keep class com.iqiyi.android.qigsaw.core.extension.ComponentInfo{\n *;\n }\n" +
+            "-keep class com.iqiyi.android.qigsaw.core.splitlib.**{\n *;\n }\n"
+
 
     def applicationVariant
 

@@ -16,7 +16,9 @@ import com.iqiyi.qigsaw.sample.reporter.SampleSplitUpdateReporter;
 
 public class QigsawApplication extends Application {
 
-    private static final String[] forbiddenWorkProcesses = {":qigsaw"};
+//    private static final String[] forbiddenWorkProcesses = {":qigsaw"};
+
+    private static final String[] workProcesses = {":qigsaw"};
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -24,7 +26,8 @@ public class QigsawApplication extends Application {
         MultiDex.install(base);
         SplitConfiguration configuration = SplitConfiguration.newBuilder()
                 .splitLoadMode(SplitLoad.MULTIPLE_CLASSLOADER)
-                .forbiddenWorkProcesses(forbiddenWorkProcesses)
+                .workProcesses(workProcesses)
+//                .forbiddenWorkProcesses(forbiddenWorkProcesses)
                 .logger(new SampleLogger())
                 .loadReporter(new SampleSplitLoadReporter(this))
                 .manifestPackageName(base.getPackageName())

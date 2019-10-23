@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
+import android.support.annotation.Nullable;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
@@ -41,13 +42,17 @@ final class SplitDelegateClassloader extends PathClassLoader {
 
     private static final String TAG = "SplitDelegateClassloader";
 
-    private final BaseDexClassLoader originClassLoader;
+    private static BaseDexClassLoader originClassLoader;
 
     private int splitLoadMode;
 
+    @Nullable
+    static SplitDelegateClassloader sInstance;
+
     SplitDelegateClassloader(ClassLoader parent) {
         super("", parent);
-        this.originClassLoader = (PathClassLoader) parent;
+        originClassLoader = (PathClassLoader) parent;
+        sInstance = this;
     }
 
     private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
@@ -58,8 +63,8 @@ final class SplitDelegateClassloader extends PathClassLoader {
     }
 
     static void inject(ClassLoader originalClassloader, Context baseContext) throws Exception {
-        SplitDelegateClassloader classLoader = new SplitDelegateClassloader(originalClassloader);
-        reflectPackageInfoClassloader(baseContext, classLoader);
+        SplitDelegateClassloader classloader = new SplitDelegateClassloader(originalClassloader);
+        reflectPackageInfoClassloader(baseContext, classloader);
     }
 
     void setSplitLoadMode(int splitLoadMode) {
@@ -90,14 +95,14 @@ final class SplitDelegateClassloader extends PathClassLoader {
     }
 
     private Class<?> onClassNotFound(String name) {
-        Class<?> ret = findClassInSplits(name);
+        Class<?> ret = findClassInSplits(name, null);
         if (ret != null) {
             return ret;
         }
         Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
         if (fakeComponent != null) {
             SplitLoadManagerService.getInstance().loadInstalledSplits();
-            ret = findClassInSplits(name);
+            ret = findClassInSplits(name, null);
             if (ret != null) {
                 return ret;
             }
@@ -121,9 +126,12 @@ final class SplitDelegateClassloader extends PathClassLoader {
         return null;
     }
 
-    private Class<?> findClassInSplits(String name) {
+    Class<?> findClassInSplits(String name, @Nullable SplitDexClassLoader skipToFindCl) {
         Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
         for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+            if (classLoader == skipToFindCl) {
+                continue;
+            }
             try {
                 return classLoader.loadClassItself(name);
             } catch (ClassNotFoundException e) {

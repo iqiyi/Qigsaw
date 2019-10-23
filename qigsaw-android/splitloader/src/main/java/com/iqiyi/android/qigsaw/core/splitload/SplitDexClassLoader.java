@@ -1,8 +1,9 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
-import android.content.Context;
 import android.support.annotation.RestrictTo;
 import android.text.TextUtils;
+
+import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
 import java.io.File;
 import java.util.List;
@@ -14,35 +15,34 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 @RestrictTo(LIBRARY_GROUP)
 public final class SplitDexClassLoader extends BaseDexClassLoader {
 
-    private final Context appContext;
+    private static final String TAG = "SplitDexClassLoader";
 
     private final String moduleName;
 
-    private SplitDexClassLoader(Context context,
-                                String moduleName,
+    private SplitDexClassLoader(String moduleName,
                                 String dexPath,
                                 File optimizedDirectory,
                                 String librarySearchPath,
                                 ClassLoader parent) {
         super(dexPath, optimizedDirectory, librarySearchPath, parent);
         this.moduleName = moduleName;
-        this.appContext = context;
     }
 
-    public static SplitDexClassLoader create(Context context,
-                                             String moduleName,
+    public static SplitDexClassLoader create(String moduleName,
                                              List<String> dexPaths,
                                              File optimizedDirectory,
                                              File librarySearchFile) {
         String dexPath = (dexPaths == null) ? "" : TextUtils.join(File.pathSeparator, dexPaths);
-        return new SplitDexClassLoader(
-                context,
+        long time = System.currentTimeMillis();
+        SplitDexClassLoader cl = new SplitDexClassLoader(
                 moduleName,
                 dexPath,
                 optimizedDirectory,
                 librarySearchFile == null ? null : librarySearchFile.getAbsolutePath(),
                 SplitDexClassLoader.class.getClassLoader()
         );
+        SplitLog.d(TAG, "Cost %d ms to load %s code", System.currentTimeMillis() - time, moduleName);
+        return cl;
     }
 
     @Override
@@ -50,7 +50,10 @@ public final class SplitDexClassLoader extends BaseDexClassLoader {
         try {
             return super.findClass(name);
         } catch (ClassNotFoundException error) {
-            return appContext.getClassLoader().loadClass(name);
+            if (SplitDelegateClassloader.sInstance != null) {
+                return SplitDelegateClassloader.sInstance.findClassInSplits(name, this);
+            }
+            throw error;
         }
     }
 
