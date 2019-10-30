@@ -47,7 +47,13 @@ android {
             signingConfig signingConfigs.debug
         }
     }
-    dynamicFeatures = [':java', ':assets', ":native"]
+
+    compileOptions {
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
+
+    dynamicFeatures = [':java', ':assets', ':native']
 }
 
 def qigsawPath = file("qigsaw/")

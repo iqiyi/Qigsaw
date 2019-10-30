@@ -11,7 +11,9 @@
 
     <application>
         <activity android:name=".NativeSampleActivity">
-
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+            </intent-filter>
         </activity>
     </application>
 

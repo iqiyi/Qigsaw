@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Qigsaw</string>
-    <string name="module_java">Module Title</string>
-    <string name="module_assets">Module Title</string>
-    <string name="module_native">Module Title</string>
+    <string name="module_java">java</string>
+    <string name="module_assets">assets</string>
+    <string name="module_native">native</string>
     <string name="load_feature_kotlin">Start Kotlin Feature</string>
     <string name="load_feature_java">Start Java Feature</string>
     <string name="load_native_code">Start Native Feature</string>
