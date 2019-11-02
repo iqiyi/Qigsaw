@@ -51,7 +51,8 @@ final class SplitLoadTaskImpl extends SplitLoadTask {
                          String splitName,
                          List<String> addedDexPaths,
                          File optimizedDirectory,
-                         File librarySearchPath) {
+                         File librarySearchPath) throws SplitLoadException {
+
         SplitDexClassLoader classLoader = SplitApplicationLoaders.getInstance().getClassLoader(splitName);
         if (classLoader == null) {
             classLoader = loader.loadCode(splitName, addedDexPaths, optimizedDirectory, librarySearchPath);

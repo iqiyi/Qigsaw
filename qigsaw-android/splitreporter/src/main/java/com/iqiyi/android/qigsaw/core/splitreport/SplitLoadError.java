@@ -53,6 +53,11 @@ public class SplitLoadError {
 
     public static final int INTERRUPTED_ERROR = -26;
 
+    /**
+     * Failed to create SplitDexClassLoader in Multiple-ClassLoader mode.
+     */
+    public static final int CREATE_CLASSLOADER_FAILED = -27;
+
     private final String moduleName;
 
     private final int errorCode;

@@ -100,7 +100,11 @@ public final class SplitPathManager {
         File splitDir = getSplitDir(info);
         File optDir = new File(splitDir, "oat");
         if (!optDir.exists()) {
-            optDir.mkdirs();
+            if (optDir.mkdirs()) {
+                //individual user report exception for "java.lang.IllegalArgumentException: optimizedDirectory not readable/writable:......"
+                optDir.setWritable(true);
+                optDir.setReadable(true);
+            }
         }
         return optDir;
     }

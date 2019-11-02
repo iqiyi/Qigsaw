@@ -37,11 +37,14 @@ public final class DownloadRequest implements Parcelable {
 
     private final String moduleName;
 
+    private final String fileMD5;
+
     private DownloadRequest(Parcel in) {
         url = in.readString();
         fileDir = in.readString();
         fileName = in.readString();
         moduleName = in.readString();
+        fileMD5 = in.readString();
     }
 
     public static final Creator<DownloadRequest> CREATOR = new Creator<DownloadRequest>() {
@@ -65,6 +68,7 @@ public final class DownloadRequest implements Parcelable {
         this.url = builder.url;
         this.fileName = builder.fileName;
         this.moduleName = builder.moduleName;
+        this.fileMD5 = builder.fileMD5;
     }
 
     public String getUrl() {
@@ -81,6 +85,10 @@ public final class DownloadRequest implements Parcelable {
 
     public String getModuleName() {
         return moduleName;
+    }
+
+    public String getFileMD5() {
+        return fileMD5;
     }
 
     @Override
@@ -106,6 +114,8 @@ public final class DownloadRequest implements Parcelable {
 
         private String moduleName;
 
+        private String fileMD5;
+
         public Builder url(String url) {
             this.url = url;
             return this;
@@ -118,6 +128,11 @@ public final class DownloadRequest implements Parcelable {
 
         public Builder fileName(String fileName) {
             this.fileName = fileName;
+            return this;
+        }
+
+        public Builder fileMD5(String fileMD5) {
+            this.fileMD5 = fileMD5;
             return this;
         }
 

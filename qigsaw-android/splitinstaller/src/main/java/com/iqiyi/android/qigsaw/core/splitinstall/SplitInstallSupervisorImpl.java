@@ -462,6 +462,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
                     .url(splitInfo.getUrl())
                     .fileDir(splitDir.getAbsolutePath())
                     .fileName(fileName)
+                    .fileMD5(splitInfo.getMd5())
                     .moduleName(splitInfo.getSplitName())
                     .build();
             requests.add(request);

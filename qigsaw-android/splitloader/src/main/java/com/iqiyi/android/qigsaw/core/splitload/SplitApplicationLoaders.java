@@ -26,16 +26,12 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.RestrictTo;
 import android.support.v4.util.ArraySet;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
-
-@RestrictTo(LIBRARY_GROUP)
-public final class SplitApplicationLoaders {
+final class SplitApplicationLoaders {
 
     private final Set<SplitDexClassLoader> splitDexClassLoaders = new ArraySet<>();
 
@@ -50,7 +46,7 @@ public final class SplitApplicationLoaders {
         return sInstance.get();
     }
 
-    public void addClassLoader(@NonNull SplitDexClassLoader classLoader) {
+    void addClassLoader(@NonNull SplitDexClassLoader classLoader) {
         synchronized (sLock) {
             splitDexClassLoaders.add(classLoader);
         }

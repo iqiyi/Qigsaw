@@ -32,8 +32,8 @@ import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.extension.AABExtensionException;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 final class SplitActivator {
 
@@ -41,7 +41,7 @@ final class SplitActivator {
 
     private final Context appContext;
 
-    private static final List<Application> splitApplications = new ArrayList<>();
+    private static final Map<String, Application> sSplitApplicationMap = new HashMap<>();
 
     SplitActivator(Context context) {
         this.appContext = context;
@@ -52,6 +52,9 @@ final class SplitActivator {
         Application app;
         try {
             app = aabExtension.createApplication(classLoader, splitName);
+            if (app != null) {
+                sSplitApplicationMap.put(splitName, app);
+            }
             aabExtension.activeApplication(app, appContext);
         } catch (Throwable e) {
             if (debuggable()) {
@@ -69,7 +72,6 @@ final class SplitActivator {
         if (app != null) {
             try {
                 app.onCreate();
-                splitApplications.add(app);
             } catch (Throwable e) {
                 if (debuggable()) {
                     throw new RuntimeException(e);

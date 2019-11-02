@@ -25,15 +25,12 @@
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
-import com.iqiyi.android.qigsaw.core.splitload.SplitApplicationLoaders;
-import com.iqiyi.android.qigsaw.core.splitload.SplitDexClassLoader;
-import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
-import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
@@ -49,6 +46,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import dalvik.system.DexClassLoader;
 
 final class SplitInstallerImpl extends SplitInstaller {
 
@@ -82,14 +81,16 @@ final class SplitInstallerImpl extends SplitInstaller {
                 }
             }
         }
-        SplitDexClassLoader dexClassLoader = SplitDexClassLoader.create(
-                info.getSplitName(),
-                addedDexPaths,
-                SplitPathManager.require().getSplitOptDir(info),
-                splitLibDir
-        );
-        if (SplitLoadManagerService.getInstance().splitLoadMode() == SplitLoad.MULTIPLE_CLASSLOADER) {
-            SplitApplicationLoaders.getInstance().addClassLoader(dexClassLoader);
+        try {
+            if (addedDexPaths != null) {
+                String dexPath = TextUtils.join(File.pathSeparator, addedDexPaths);
+                File optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
+                String librarySearchPath = splitLibDir == null ? null : splitLibDir.getAbsolutePath();
+                //trigger oat if need
+                new DexClassLoader(dexPath, optimizedDirectory.getAbsolutePath(), librarySearchPath, SplitInstallerImpl.class.getClassLoader());
+            }
+        } catch (Throwable ignored) {
+
         }
         createInstalledMark(info);
         return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, checkDependenciesInstalledStatus(info));

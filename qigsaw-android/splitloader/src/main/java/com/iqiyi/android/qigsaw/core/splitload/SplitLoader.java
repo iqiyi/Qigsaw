@@ -62,7 +62,7 @@ abstract class SplitLoader {
     SplitDexClassLoader loadCode(String moduleNames,
                                  @Nullable List<String> dexPaths,
                                  File optimizedDirectory,
-                                 @Nullable File librarySearchPath) {
+                                 @Nullable File librarySearchPath) throws SplitLoadException {
         return null;
     }
 
