@@ -237,7 +237,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             SplitLog.i(TAG, "Split %s has been installed, we can load it!", splitName);
             return splitFileIntent;
         }
-        SplitLog.i(TAG, "Split %s mark file is not existed!", splitName);
         return null;
     }
 

@@ -62,7 +62,7 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    public InstallResult install(SplitInfo info) throws InstallException {
+    public InstallResult install(boolean startInstall, SplitInfo info) throws InstallException {
         File splitDir = SplitPathManager.require().getSplitDir(info);
         File sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
         validateSignature(sourceApk, info.getMd5());
@@ -93,6 +93,12 @@ final class SplitInstallerImpl extends SplitInstaller {
 
         }
         createInstalledMark(info);
+        if (startInstall) {
+            if (!checkDependenciesInstalledStatus(info)) {
+                IOException exception = new IOException("Split " + info.getSplitName() + "'s dependencies are not installed!");
+                throw new InstallException(SplitInstallError.DEPENDENCIES_NOT_INSTALLED, new Exception(exception));
+            }
+        }
         return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, checkDependenciesInstalledStatus(info));
     }
 

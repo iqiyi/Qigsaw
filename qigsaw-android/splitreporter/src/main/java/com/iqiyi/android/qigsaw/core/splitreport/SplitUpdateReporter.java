@@ -35,18 +35,20 @@ public interface SplitUpdateReporter {
      * When split-info version is updated, this method would be invoked.
      * You can kill main process in this method.
      *
+     * @param oldSplitInfoVersion last version of split info file.
      * @param newSplitInfoVersion new version of split info file.
      * @param updateSplits        splits need be updated
      */
-    void onUpdateOK(String newSplitInfoVersion, List<String> updateSplits);
+    void onUpdateOK(String oldSplitInfoVersion, String newSplitInfoVersion, List<String> updateSplits);
 
     /**
      * Called when updating failed
      *
+     * @param oldSplitInfoVersion last version of split info file.
      * @param newSplitInfoVersion new version of split info file.
      * @param errorCode           {@link SplitUpdateErrorCode}
      */
-    void onUpdateFailed(String newSplitInfoVersion, int errorCode);
+    void onUpdateFailed(String oldSplitInfoVersion, String newSplitInfoVersion, int errorCode);
 
     /**
      * Called when new split info version loaded.

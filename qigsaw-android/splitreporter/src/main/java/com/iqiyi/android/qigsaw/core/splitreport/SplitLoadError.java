@@ -24,7 +24,9 @@
 
 package com.iqiyi.android.qigsaw.core.splitreport;
 
-public class SplitLoadError {
+import android.support.annotation.NonNull;
+
+public class SplitLoadError extends SplitBriefInfo {
 
     /**
      * Loading split res failed.
@@ -58,50 +60,35 @@ public class SplitLoadError {
      */
     public static final int CREATE_CLASSLOADER_FAILED = -27;
 
-    private final String moduleName;
+    /**
+     * error code of this exception.
+     */
+    public final int errorCode;
 
-    private final int errorCode;
+    /**
+     * cause of exception.
+     */
+    public final Throwable cause;
 
-    private final Throwable cause;
-
-    public SplitLoadError(String moduleName,
+    public SplitLoadError(SplitBriefInfo briefInfo,
                           int errorCode,
                           Throwable cause) {
-        this.moduleName = moduleName;
+        super(briefInfo.splitName, briefInfo.version, briefInfo.builtIn);
         this.errorCode = errorCode;
         this.cause = cause;
     }
 
-    /**
-     * module in which load exception occurs.
-     *
-     * @return name of module.
-     */
-    public String getModuleName() {
-        return moduleName;
-    }
-
-    /**
-     * @return error code of this exception.
-     */
-    public int getErrorCode() {
-        return errorCode;
-    }
-
-    /**
-     * @return cause of exception.
-     */
-    public Throwable getCause() {
-        return cause;
-    }
-
+    @NonNull
     @Override
     public String toString() {
-        return "SplitLoadError{"
-                + " moduleName=" + moduleName
-                + " errorCode=" + errorCode
-                + " message=" + cause.toString()
-                + "}";
+        return "{\"splitName\":"
+                + "\"" + splitName + "\","
+                + "\"version\":"
+                + "\"" + version + "\","
+                + "\"builtIn\":" + builtIn
+                + "\",errorCode\":" + errorCode
+                + "\",errorMsg\":"
+                + "\"" + cause.getMessage() + "\"" +
+                "}";
     }
-
 }

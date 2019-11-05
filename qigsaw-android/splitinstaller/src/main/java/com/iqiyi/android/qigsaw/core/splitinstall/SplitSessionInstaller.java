@@ -33,5 +33,5 @@ import java.util.List;
  */
 interface SplitSessionInstaller {
 
-    void install(int sessionId, List<String> moduleNames, List<SplitInfo> splitInfoList);
+    void install(int sessionId, List<SplitInfo> splitInfoList);
 }

@@ -35,6 +35,7 @@ import android.support.v4.util.ArraySet;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
+import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadReporter;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
@@ -55,8 +56,6 @@ abstract class SplitLoadTask implements Runnable {
     final Context appContext;
 
     private final Handler mainHandler;
-
-    private final List<String> moduleNames;
 
     private final SplitActivator activator;
 
@@ -80,7 +79,6 @@ abstract class SplitLoadTask implements Runnable {
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.infoManager = SplitInfoManagerService.getInstance();
         this.activator = new SplitActivator(loadManager.getContext());
-        this.moduleNames = extractModuleNames();
     }
 
     abstract SplitLoader createSplitLoader();
@@ -96,7 +94,7 @@ abstract class SplitLoadTask implements Runnable {
     @Override
     public final void run() {
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-            loadSplitOnUIThread();
+            loadSplitInternal();
         } else {
             synchronized (mLock) {
                 mainHandler.post(new Runnable() {
@@ -104,7 +102,7 @@ abstract class SplitLoadTask implements Runnable {
                     @Override
                     public void run() {
                         synchronized (mLock) {
-                            loadSplitOnUIThread();
+                            loadSplitInternal();
                             mLock.notifyAll();
                         }
                     }
@@ -112,26 +110,34 @@ abstract class SplitLoadTask implements Runnable {
                 try {
                     mLock.wait();
                 } catch (InterruptedException e) {
-                    List<SplitLoadError> errors = Collections.singletonList(new SplitLoadError(moduleNames.get(0), SplitLoadError.INTERRUPTED_ERROR, e));
-                    reportLoadResult(errors, 0);
+                    List<SplitLoadError> errors = new ArrayList<>(1);
+                    List<SplitBriefInfo> splitBriefInfoList = new ArrayList<>(splitFileIntents.size());
+                    for (Intent splitFileIntent : splitFileIntents) {
+                        String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
+                        SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
+                        SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
+                        if (errors.isEmpty()) {
+                            errors = Collections.singletonList(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERRUPTED_ERROR, e));
+                        }
+                        splitBriefInfoList.add(splitBriefInfo);
+                    }
+                    reportLoadResult(splitBriefInfoList, errors, 0);
                 }
             }
         }
     }
 
-    private void loadSplitOnUIThread() {
+    private void loadSplitInternal() {
         long time = System.currentTimeMillis();
-        List<SplitLoadError> errors = loadSplitInternal();
-        long cost = System.currentTimeMillis() - time;
-        reportLoadResult(errors, cost);
-    }
-
-    private List<SplitLoadError> loadSplitInternal() {
         SplitLoader loader = createSplitLoader();
         Set<Split> splits = new ArraySet<>();
         List<SplitLoadError> loadErrors = new ArrayList<>(0);
+        List<SplitBriefInfo> splitBriefInfoList = new ArrayList<>(splitFileIntents.size());
         for (Intent splitFileIntent : splitFileIntents) {
             String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
+            SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
+            SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
+            splitBriefInfoList.add(splitBriefInfo);
             //if if split has been loaded, just skip.
             if (checkSplitLoaded(splitName)) {
                 SplitLog.i(TAG, "Split %s has been loaded!", splitName);
@@ -143,11 +149,10 @@ abstract class SplitLoadTask implements Runnable {
                 loader.loadResources(splitApkPath);
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s resources!", splitName);
-                loadErrors.add(new SplitLoadError(splitName, e.getErrorCode(), e.getCause()));
+                loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 continue;
             }
             List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
-            SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
             File optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
             File librarySearchPath = null;
             if (info.hasLibs()) {
@@ -159,7 +164,7 @@ abstract class SplitLoadTask implements Runnable {
                 classLoader = loadCode(loader, splitName, addedDexPaths, optimizedDirectory, librarySearchPath);
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s code!", splitName);
-                loadErrors.add(new SplitLoadError(splitName, e.getErrorCode(), e.getCause()));
+                loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 continue;
             }
             //activate split, include application and provider.
@@ -167,7 +172,7 @@ abstract class SplitLoadTask implements Runnable {
                 activator.activate(classLoader, splitName);
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to activate " + splitName);
-                loadErrors.add(new SplitLoadError(splitName, e.getErrorCode(), e.getCause()));
+                loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 onSplitActivateFailed(classLoader);
                 continue;
             }
@@ -177,35 +182,27 @@ abstract class SplitLoadTask implements Runnable {
             }
         }
         loadManager.putSplits(splits);
-        return loadErrors;
+        reportLoadResult(splitBriefInfoList, loadErrors, System.currentTimeMillis() - time);
     }
 
-    private void reportLoadResult(List<SplitLoadError> errors, long cost) {
+    private void reportLoadResult(List<SplitBriefInfo> splitBriefInfoList, List<SplitLoadError> errors, long cost) {
         SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
         if (!errors.isEmpty()) {
             if (loadListener != null) {
-                int lastErrorCode = errors.get(errors.size() - 1).getErrorCode();
+                int lastErrorCode = errors.get(errors.size() - 1).errorCode;
                 loadListener.onFailed(lastErrorCode);
             }
             if (loadReporter != null) {
-                loadReporter.onLoadFailed(moduleNames, loadManager.currentProcessName, errors, cost);
+                loadReporter.onLoadFailed(loadManager.currentProcessName, splitBriefInfoList, errors, cost);
             }
         } else {
             if (loadListener != null) {
                 loadListener.onCompleted();
             }
             if (loadReporter != null) {
-                loadReporter.onLoadOK(moduleNames, loadManager.currentProcessName, cost);
+                loadReporter.onLoadOK(loadManager.currentProcessName, splitBriefInfoList, cost);
             }
         }
-    }
-
-    private List<String> extractModuleNames() {
-        List<String> requestModuleNames = new ArrayList<>(splitFileIntents.size());
-        for (Intent intent : splitFileIntents) {
-            requestModuleNames.add(intent.getStringExtra(SplitConstants.KET_NAME));
-        }
-        return requestModuleNames;
     }
 
     private boolean checkSplitLoaded(String splitName) {

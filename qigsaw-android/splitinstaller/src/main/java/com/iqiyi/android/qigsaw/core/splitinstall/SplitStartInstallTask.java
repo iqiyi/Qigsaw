@@ -30,7 +30,6 @@ import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,16 +42,15 @@ final class SplitStartInstallTask extends SplitInstallTask {
     SplitStartInstallTask(int sessionId,
                           SplitInstaller installer,
                           SplitInstallSessionManager sessionManager,
-                          List<String> moduleNames,
                           List<SplitInfo> splitInfoList) {
-        super(installer, moduleNames, splitInfoList);
+        super(installer, splitInfoList);
         this.mSessionState = sessionManager.getSessionState(sessionId);
         this.mSessionManager = sessionManager;
     }
 
     @Override
-    boolean continueInstallIgnoreError() {
-        return false;
+    boolean isStartInstallOperation() {
+        return true;
     }
 
     @Override
@@ -64,17 +62,6 @@ final class SplitStartInstallTask extends SplitInstallTask {
 
     @Override
     protected void onInstallCompleted(List<SplitInstaller.InstallResult> installResults, long cost) {
-        List<SplitInstallError> installErrors = new ArrayList<>(0);
-        for (SplitInstaller.InstallResult installResult : installResults) {
-            if (!installResult.dependenciesInstalled) {
-                IOException exception = new IOException("Split " + installResult.splitName + "' dependencies are not installed!");
-                installErrors.add(new SplitInstallError(installResult.splitName, SplitInstallError.DEPENDENCIES_NOT_INSTALLED, exception));
-            }
-        }
-        if (!installErrors.isEmpty()) {
-            onInstallFailed(installErrors, cost);
-            return;
-        }
         List<Intent> splitFileIntents = new ArrayList<>(installResults.size());
         for (SplitInstaller.InstallResult installResult : installResults) {
             Intent splitFileIntent = new Intent();
@@ -89,17 +76,17 @@ final class SplitStartInstallTask extends SplitInstallTask {
         mSessionManager.changeSessionState(mSessionState.sessionId(), SplitInstallInternalSessionStatus.POST_INSTALLED);
         emitSessionStatus();
         if (SplitInstallReporterManager.getInstallReporter() != null) {
-            SplitInstallReporterManager.getInstallReporter().onStartInstallOK(moduleNames, cost);
+            SplitInstallReporterManager.getInstallReporter().onStartInstallOK(splitBriefInfoList, cost);
         }
     }
 
     @Override
     protected void onInstallFailed(List<SplitInstallError> errors, long cost) {
-        mSessionState.setErrorCode(errors.get(0).getErrorCode());
+        mSessionState.setErrorCode(errors.get(0).errorCode);
         mSessionManager.changeSessionState(mSessionState.sessionId(), SplitInstallInternalSessionStatus.FAILED);
         emitSessionStatus();
         if (SplitInstallReporterManager.getInstallReporter() != null) {
-            SplitInstallReporterManager.getInstallReporter().onStartInstallFailed(moduleNames, errors.get(0), cost);
+            SplitInstallReporterManager.getInstallReporter().onStartInstallFailed(splitBriefInfoList, errors.get(0), cost);
         }
     }
 

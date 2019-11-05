@@ -34,20 +34,20 @@ public interface SplitLoadReporter {
     /**
      * When all modules are loaded successfully, this method would be invoked.
      *
-     * @param requestModuleNames modules need to be loaded.
-     * @param processName        current process name.
-     * @param cost               time in ms.
+     * @param processName   current process name.
+     * @param requestSplits modules need to be loaded.
+     * @param cost          time in ms.
      */
-    void onLoadOK(List<String> requestModuleNames, String processName, long cost);
+    void onLoadOK(String processName, List<SplitBriefInfo> requestSplits, long cost);
 
     /**
      * When all modules are loaded completely, and at least one module failed, this method will be invoked.
      *
-     * @param requestModuleNames modules need to be loaded.
-     * @param processName        current process name.
-     * @param errors             a list of {@link SplitLoadError}
-     * @param cost               time in ms.
+     * @param processName   current process name.
+     * @param requestSplits modules need to be loaded.
+     * @param errors        a list of {@link SplitLoadError}
+     * @param cost          time in ms.
      */
-    void onLoadFailed(List<String> requestModuleNames, String processName, List<SplitLoadError> errors, long cost);
+    void onLoadFailed(String processName, List<SplitBriefInfo> requestSplits, List<SplitLoadError> errors, long cost);
 
 }

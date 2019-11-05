@@ -38,31 +38,31 @@ public interface SplitInstallReporter {
      * When all modules are installed successfully,
      * this method will be invoked.
      *
-     * @param requestModuleNames module names that you request to install.
-     * @param cost               time in ms.
+     * @param requestSplits modules that you request to install.
+     * @param cost          time in ms.
      */
-    void onStartInstallOK(List<String> requestModuleNames, long cost);
+    void onStartInstallOK(List<SplitBriefInfo> requestSplits, long cost);
 
     /**
      * Using {@code startInstall} to install modules,
      * When one module is installed failed,
      * installation would be cancelled and this method will be invoked.
      *
-     * @param requestModuleNames module names that you request to install.
-     * @param error              {@link SplitInstallError}
-     * @param cost               time in ms.
+     * @param requestSplits modules that you request to install.
+     * @param error         {@link SplitInstallError}
+     * @param cost          time in ms.
      */
-    void onStartInstallFailed(List<String> requestModuleNames, @NonNull SplitInstallError error, long cost);
+    void onStartInstallFailed(List<SplitBriefInfo> requestSplits, @NonNull SplitInstallError error, long cost);
 
     /**
      * Using {@code deferredInstall} to install modules.
      * When all modules are installed successfully,
      * this method will be invoked.
      *
-     * @param requestModuleNames module names that you request to install.
-     * @param cost               time in ms.
+     * @param requestSplits modules that you request to install.
+     * @param cost          time in ms.
      */
-    void onDeferredInstallOK(List<String> requestModuleNames, long cost);
+    void onDeferredInstallOK(List<SplitBriefInfo> requestSplits, long cost);
 
     /**
      * Using {@code deferredInstall} to install modules.
@@ -70,10 +70,10 @@ public interface SplitInstallReporter {
      * and at least one module failed,
      * this method will be invoked.
      *
-     * @param requestModuleNames module names that you request to install.
-     * @param errors             a list of {@link SplitInstallError}
-     * @param cost               time in ms.
+     * @param requestSplits modules that you request to install.
+     * @param errors        a list of {@link SplitInstallError}
+     * @param cost          time in ms.
      */
-    void onDeferredInstallFailed(List<String> requestModuleNames, @NonNull List<SplitInstallError> errors, long cost);
+    void onDeferredInstallFailed(List<SplitBriefInfo> requestSplits, @NonNull List<SplitInstallError> errors, long cost);
 
 }

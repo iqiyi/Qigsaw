@@ -37,12 +37,8 @@ final class DeferredDownloadCallback implements DownloadCallback {
 
     private final List<SplitInfo> splitInfoList;
 
-    private final List<String> moduleNames;
-
     DeferredDownloadCallback(Context context,
-                             List<String> moduleNames,
                              List<SplitInfo> splitInfoList) {
-        this.moduleNames = moduleNames;
         this.splitInfoList = splitInfoList;
         this.installer = new SplitInstallerImpl(context);
     }
@@ -69,7 +65,7 @@ final class DeferredDownloadCallback implements DownloadCallback {
 
     @Override
     public void onCompleted() {
-        SplitBackgroundExecutor.getExecutor().execute(new SplitDeferredInstallTask(installer, moduleNames, splitInfoList));
+        SplitBackgroundExecutor.getExecutor().execute(new SplitDeferredInstallTask(installer, splitInfoList));
     }
 
     @Override

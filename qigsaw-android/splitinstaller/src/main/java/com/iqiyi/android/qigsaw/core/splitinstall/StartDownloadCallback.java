@@ -40,8 +40,6 @@ final class StartDownloadCallback implements DownloadCallback {
 
     private final SplitInstallSessionManager sessionManager;
 
-    private final List<String> moduleNames;
-
     private final List<SplitInfo> splitInfoList;
 
     private final SplitSessionInstaller installer;
@@ -49,12 +47,10 @@ final class StartDownloadCallback implements DownloadCallback {
     StartDownloadCallback(Context context,
                           int sessionId,
                           SplitInstallSessionManager sessionManager,
-                          List<String> moduleNames,
                           List<SplitInfo> splitInfoList) {
         this.sessionId = sessionId;
         this.sessionManager = sessionManager;
         this.installer = new SplitSessionInstallerImpl(context, sessionManager, SplitBackgroundExecutor.getExecutor());
-        this.moduleNames = moduleNames;
         this.splitInfoList = splitInfoList;
         this.sessionState = sessionManager.getSessionState(sessionId);
     }
@@ -99,7 +95,7 @@ final class StartDownloadCallback implements DownloadCallback {
     }
 
     private void onInstall() {
-        installer.install(sessionId, moduleNames, splitInfoList);
+        installer.install(sessionId, splitInfoList);
     }
 
     private void broadcastSessionStatusChange() {

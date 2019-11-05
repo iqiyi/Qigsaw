@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 
@@ -40,17 +41,24 @@ abstract class SplitInstallTask implements Runnable {
 
     private final Collection<SplitInfo> needUpdateSplits;
 
-    final List<String> moduleNames;
+    final List<SplitBriefInfo> splitBriefInfoList;
 
     SplitInstallTask(SplitInstaller installer,
-                     List<String> moduleNames,
                      Collection<SplitInfo> needUpdateSplits) {
         this.installer = installer;
-        this.moduleNames = moduleNames;
         this.needUpdateSplits = needUpdateSplits;
+        splitBriefInfoList = createSplitBriefInfoList(needUpdateSplits);
     }
 
-    abstract boolean continueInstallIgnoreError();
+    private List<SplitBriefInfo> createSplitBriefInfoList(Collection<SplitInfo> needUpdateSplits) {
+        List<SplitBriefInfo> splitBriefInfoList = new ArrayList<>(needUpdateSplits.size());
+        for (SplitInfo info : needUpdateSplits) {
+            splitBriefInfoList.add(new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn()));
+        }
+        return splitBriefInfoList;
+    }
+
+    abstract boolean isStartInstallOperation();
 
     @Override
     public final void run() {
@@ -59,15 +67,16 @@ abstract class SplitInstallTask implements Runnable {
         List<SplitInstaller.InstallResult> installResults = new ArrayList<>();
         List<SplitInstallError> installErrors = new ArrayList<>(0);
         boolean installCompleted = true;
+        boolean isStartInstall = isStartInstallOperation();
         for (SplitInfo info : needUpdateSplits) {
             try {
-                SplitInstaller.InstallResult installResult = installer.install(info);
+                SplitInstaller.InstallResult installResult = installer.install(isStartInstall, info);
                 installResults.add(installResult);
             } catch (SplitInstaller.InstallException error) {
                 SplitLog.printErrStackTrace(TAG, error, "Failed to install split " + info.getSplitName());
                 installCompleted = false;
-                installErrors.add(new SplitInstallError(info.getSplitName(), error.getErrorCode(), error.getCause()));
-                if (!continueInstallIgnoreError()) {
+                installErrors.add(new SplitInstallError(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn(), error.getErrorCode(), error.getCause()));
+                if (isStartInstall) {
                     break;
                 }
             }

@@ -143,7 +143,7 @@ final class SplitInstallManagerImpl implements SplitInstallManager {
             Log.w(TAG, "App is not found in PackageManager");
             return fusedModules;
         }
-        if (appInfo != null && appInfo.metaData != null) {
+        if (appInfo.metaData != null) {
             String fusedName;
             if ((fusedName = appInfo.metaData.getString("shadow.bundletool.com.android.dynamic.apk.fused.modules")) != null && !fusedName.isEmpty()) {
                 Collections.addAll(fusedModules, fusedName.split(",", -1));

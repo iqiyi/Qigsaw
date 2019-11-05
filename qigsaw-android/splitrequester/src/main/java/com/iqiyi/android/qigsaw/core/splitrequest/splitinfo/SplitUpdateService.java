@@ -79,67 +79,68 @@ public class SplitUpdateService extends IntentService {
         String newSplitInfoVersion = intent.getStringExtra(SplitConstants.NEW_SPLIT_INFO_VERSION);
         //parse split-info file path.
         String newSplitInfoPath = intent.getStringExtra(SplitConstants.NEW_SPLIT_INFO_PATH);
+        String oldSplitInfoVersion = manager.getCurrentSplitInfoVersion();
         //parse registered class name of receiver.
         if (TextUtils.isEmpty(newSplitInfoVersion)) {
             SplitLog.w(TAG, "New split-info version null");
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_VERSION_NULL);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_VERSION_NULL);
             return;
         }
 
         if (TextUtils.isEmpty(newSplitInfoPath)) {
             SplitLog.w(TAG, "New split-info path null");
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_PATH_NULL);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_PATH_NULL);
             return;
         }
         File newSplitInfoFile = new File(newSplitInfoPath);
         if (!newSplitInfoFile.exists() || !newSplitInfoFile.canWrite()) {
             SplitLog.w(TAG, "New split-info file %s is invalid", newSplitInfoPath);
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_FILE_INVALID);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_FILE_INVALID);
             return;
         }
 
         if (newSplitInfoVersion.equals(manager.getCurrentSplitInfoVersion())) {
             SplitLog.w(TAG, "New split-info version %s is equals to current version!", newSplitInfoVersion);
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_VERSION_EXISTED);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_VERSION_EXISTED);
             return;
         }
         SplitDetails splitDetails = manager.createSplitDetailsForJsonFile(newSplitInfoPath);
         if (splitDetails == null || !splitDetails.verifySplitInfoListing()) {
             SplitLog.w(TAG, "Failed to parse SplitDetails for new split info file!");
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_INVALID);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_INVALID);
             return;
         }
         String qigsawId = splitDetails.getQigsawId();
         if (TextUtils.isEmpty(qigsawId) || !qigsawId.equals(SplitBaseInfoProvider.getQigsawId())) {
             SplitLog.w(TAG, "New qigsaw-id is not equal to current app, so we could't update splits!");
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_QIGSAW_ID_MISMATCH);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_QIGSAW_ID_MISMATCH);
             return;
         }
         ArrayList<String> updateSplits = (ArrayList<String>) splitDetails.getUpdateSplits();
         if (updateSplits == null || updateSplits.isEmpty()) {
             SplitLog.w(TAG, "There are no splits need to be updated!");
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_NOT_CHANGED);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_NOT_CHANGED);
             return;
         }
         SplitLog.w(TAG, "Success to check update request, updatedSplitInfoPath: %s, updatedSplitInfoVersion: %s", newSplitInfoPath, newSplitInfoVersion);
         if (manager.updateSplitInfoVersion(getApplicationContext(), newSplitInfoVersion, newSplitInfoFile)) {
-            onUpdateOK(newSplitInfoVersion, updateSplits);
+            onUpdateOK(oldSplitInfoVersion, newSplitInfoVersion, updateSplits);
         } else {
-            onUpdateError(newSplitInfoVersion, SplitUpdateErrorCode.INTERNAL_ERROR);
+            onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.INTERNAL_ERROR);
         }
     }
 
-    private void onUpdateOK(String newSplitInfoVersion, List<String> updateSplits) {
+    private void onUpdateOK(String oldSplitInfoVersion, String newSplitInfoVersion, List<String> updateSplits) {
         SplitUpdateReporter updateReporter = SplitUpdateReporterManager.getUpdateReporter();
         if (updateReporter != null) {
-            updateReporter.onUpdateOK(newSplitInfoVersion, updateSplits);
+            updateReporter.onUpdateOK(oldSplitInfoVersion, newSplitInfoVersion, updateSplits);
         }
     }
 
-    private void onUpdateError(String newSplitInfoVersion, int errorCode) {
+    private void onUpdateError(String oldSplitInfoVersion, String newSplitInfoVersion, int errorCode) {
         SplitUpdateReporter updateReporter = SplitUpdateReporterManager.getUpdateReporter();
         if (updateReporter != null) {
-            updateReporter.onUpdateFailed(newSplitInfoVersion, errorCode);
+            updateReporter.onUpdateFailed(oldSplitInfoVersion, newSplitInfoVersion, errorCode);
         }
     }
 }

@@ -50,7 +50,8 @@ final class SplitSessionInstallerImpl implements SplitSessionInstaller {
     }
 
     @Override
-    public void install(int sessionId, List<String> moduleNames, List<SplitInfo> splitInfoList) {
-        executor.execute(new SplitStartInstallTask(sessionId, splitInstaller, sessionManager, moduleNames, splitInfoList));
+    public void install(int sessionId, List<SplitInfo> splitInfoList) {
+        executor.execute(new SplitStartInstallTask(sessionId, splitInstaller, sessionManager, splitInfoList));
     }
+
 }

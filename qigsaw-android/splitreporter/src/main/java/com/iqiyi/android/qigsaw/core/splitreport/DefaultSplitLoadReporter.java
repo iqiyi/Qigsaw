@@ -41,12 +41,17 @@ public class DefaultSplitLoadReporter implements SplitLoadReporter {
     }
 
     @Override
-    public void onLoadOK(List<String> requestModuleNames, String processName, long cost) {
-        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms!", requestModuleNames, processName, cost);
+    public void onLoadOK(String processName, List<SplitBriefInfo> requestSplits, long cost) {
+        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms!", requestSplits, processName, cost);
     }
 
     @Override
-    public void onLoadFailed(List<String> requestModuleNames, String processName, List<SplitLoadError> errors, long cost) {
-        SplitLog.w(TAG, "Failed to load %s in process %s cost %d ms!", errors.toString(), processName, cost);
+    public void onLoadFailed(String processName, List<SplitBriefInfo> requestSplits, List<SplitLoadError> errors, long cost) {
+        for (SplitLoadError loadError : errors) {
+            SplitLog.printErrStackTrace(TAG, loadError.cause,
+                    "Failed to load splits %s, because %s is loaded failed in process %s cost %d ms!",
+                    requestSplits.toString(), loadError.toString(), processName, cost);
+        }
     }
+
 }

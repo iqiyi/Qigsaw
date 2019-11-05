@@ -12,14 +12,15 @@ public class SampleSplitUpdateReporter extends DefaultSplitUpdateReporter {
         super(context);
     }
 
+
     @Override
-    public void onUpdateOK(String newSplitInfoVersion, List<String> updateSplits) {
-        super.onUpdateOK(newSplitInfoVersion, updateSplits);
+    public void onUpdateOK(String oldSplitInfoVersion, String newSplitInfoVersion, List<String> updateSplits) {
+        super.onUpdateOK(oldSplitInfoVersion, newSplitInfoVersion, updateSplits);
     }
 
     @Override
-    public void onUpdateFailed(String newSplitInfoVersion, int errorCode) {
-        super.onUpdateFailed(newSplitInfoVersion, errorCode);
+    public void onUpdateFailed(String oldSplitInfoVersion, String newSplitInfoVersion, int errorCode) {
+        super.onUpdateFailed(oldSplitInfoVersion, newSplitInfoVersion, errorCode);
     }
 
     @Override

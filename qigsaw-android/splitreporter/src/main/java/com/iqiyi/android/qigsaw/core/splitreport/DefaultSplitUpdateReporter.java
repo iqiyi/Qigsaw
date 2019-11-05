@@ -41,13 +41,13 @@ public class DefaultSplitUpdateReporter implements SplitUpdateReporter {
     }
 
     @Override
-    public void onUpdateOK(String newSplitInfoVersion, List<String> updateSplits) {
-        SplitLog.i(TAG, "Success to update version to %s, update splits %s.", newSplitInfoVersion, updateSplits);
+    public void onUpdateOK(String oldSplitInfoVersion, String newSplitInfoVersion, List<String> updateSplits) {
+        SplitLog.i(TAG, "Success to update version from %d to %s, update splits %s.", oldSplitInfoVersion, newSplitInfoVersion, updateSplits);
     }
 
     @Override
-    public void onUpdateFailed(String newSplitInfoVersion, int errorCode) {
-        SplitLog.i(TAG, "Failed to update version to %s, errorCode %d.", newSplitInfoVersion, errorCode);
+    public void onUpdateFailed(String oldSplitInfoVersion, String newSplitInfoVersion, int errorCode) {
+        SplitLog.i(TAG, "Failed to update version from %s to %s, errorCode %d.", oldSplitInfoVersion, newSplitInfoVersion, errorCode);
     }
 
     @Override

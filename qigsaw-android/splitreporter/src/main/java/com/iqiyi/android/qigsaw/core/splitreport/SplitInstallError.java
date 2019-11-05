@@ -25,8 +25,9 @@
 package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 
-public class SplitInstallError {
+public final class SplitInstallError extends SplitBriefInfo {
 
     /**
      * Split apk file does not exist.
@@ -63,50 +64,38 @@ public class SplitInstallError {
      */
     public static final int DEPENDENCIES_NOT_INSTALLED = -17;
 
-    private final String moduleName;
+    /**
+     * error code of this exception.
+     */
+    public final int errorCode;
 
-    private final int errorCode;
+    /**
+     * cause of exception.
+     */
+    public final Throwable cause;
 
-    private final Throwable cause;
-
-    public SplitInstallError(String moduleName,
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    public SplitInstallError(String splitName,
+                             String version,
+                             boolean builtIn,
                              int errorCode,
                              Throwable cause) {
-        this.moduleName = moduleName;
+        super(splitName, version, builtIn);
         this.errorCode = errorCode;
         this.cause = cause;
     }
 
-    /**
-     * module in which load exception occurs.
-     *
-     * @return name of module.
-     */
-    public String getModuleName() {
-        return moduleName;
-    }
-
-    /**
-     * @return error code of this exception.
-     */
-    public int getErrorCode() {
-        return errorCode;
-    }
-
-    /**
-     * @return cause of exception.
-     */
     @NonNull
-    public Throwable getCause() {
-        return cause;
-    }
-
     @Override
     public String toString() {
-        return "SplitInstallError{"
-                + " moduleName=" + moduleName
-                + " errorCode=" + errorCode
-                + " message=" + cause.getMessage()
-                + "}";
+        return "{\"splitName\":"
+                + "\"" + splitName + "\","
+                + "\"version\":"
+                + "\"" + version + "\","
+                + "\"builtIn\":" + builtIn
+                + "\",errorCode\":" + errorCode
+                + "\",errorMsg\":"
+                + "\"" + cause.getMessage() + "\"" +
+                "}";
     }
 }

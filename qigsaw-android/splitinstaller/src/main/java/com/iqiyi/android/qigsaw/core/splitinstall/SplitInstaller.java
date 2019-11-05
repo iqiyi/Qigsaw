@@ -37,9 +37,10 @@ abstract class SplitInstaller {
     /**
      * Install downloaded split apk.
      *
-     * @param splitInfo {@link SplitInfo}
+     * @param startInstall whether install splits immediately.
+     * @param splitInfo    {@link SplitInfo}
      */
-    public abstract InstallResult install(SplitInfo splitInfo) throws InstallException;
+    public abstract InstallResult install(boolean startInstall, SplitInfo splitInfo) throws InstallException;
 
     /**
      * Check whether the signature of split apk is consistent with base app.
