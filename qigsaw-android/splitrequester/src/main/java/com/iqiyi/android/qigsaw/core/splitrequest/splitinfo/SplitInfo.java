@@ -48,7 +48,9 @@ public class SplitInfo {
 
     private final boolean builtIn;
 
-    private final LibInfo libInfo;
+    private final boolean hasLibs;
+
+    private final LibInfo primaryLibInfo;
 
     private final int dexNumber;
 
@@ -71,7 +73,8 @@ public class SplitInfo {
               int dexNumber,
               List<String> workProcesses,
               List<String> dependencies,
-              LibInfo libInfo) {
+              boolean hasLibs,
+              LibInfo primaryLibInfo) {
         this.splitName = splitName;
         this.appVersion = appVersion;
         this.splitVersion = version;
@@ -83,7 +86,8 @@ public class SplitInfo {
         this.dexNumber = dexNumber;
         this.workProcesses = workProcesses;
         this.dependencies = dependencies;
-        this.libInfo = libInfo;
+        this.hasLibs = hasLibs;
+        this.primaryLibInfo = primaryLibInfo;
         this.isMultiDex = dexNumber > 1;
     }
 
@@ -112,7 +116,10 @@ public class SplitInfo {
     }
 
     public LibInfo getLibInfo() {
-        return libInfo;
+        if (hasLibs && primaryLibInfo == null) {
+            throw new RuntimeException("No supported abi for split " + splitName);
+        }
+        return primaryLibInfo;
     }
 
     public List<String> getDependencies() {
@@ -128,7 +135,7 @@ public class SplitInfo {
     }
 
     public boolean hasLibs() {
-        return libInfo != null && libInfo.libs != null && !libInfo.libs.isEmpty();
+        return hasLibs;
     }
 
     public List<String> getWorkProcesses() {
@@ -150,12 +157,12 @@ public class SplitInfo {
     }
 
     private boolean checkLibInfo() {
-        if (libInfo != null && libInfo.libs != null
-                && !libInfo.libs.isEmpty()) {
-            if (TextUtils.isEmpty(libInfo.abi)) {
+        if (primaryLibInfo != null && primaryLibInfo.libs != null
+                && !primaryLibInfo.libs.isEmpty()) {
+            if (TextUtils.isEmpty(primaryLibInfo.abi)) {
                 return false;
             }
-            for (LibInfo.Lib lib : libInfo.libs) {
+            for (LibInfo.Lib lib : primaryLibInfo.libs) {
                 if (TextUtils.isEmpty(lib.name)
                         || TextUtils.isEmpty(lib.md5)) {
                     return false;

@@ -34,13 +34,13 @@ interface ManifestReader {
 
     String readVersionName()
 
-    List<ComponentInfo> readActivities()
+    Set<ComponentInfo> readActivities()
 
-    List<ComponentInfo> readServices()
+    Set<ComponentInfo> readServices()
 
-    List<ComponentInfo> readReceivers()
+    Set<ComponentInfo> readReceivers()
 
-    List<ComponentInfo> readProviders()
+    Set<ComponentInfo> readProviders()
 
     boolean readOnDemand()
 

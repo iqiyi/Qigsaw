@@ -10,9 +10,6 @@ android {
         targetSdkVersion versions.targetSdk
         versionCode 1
         versionName "1.0"
-        ndk {
-            abiFilter 'armeabi-v7a'
-        }
         externalNativeBuild {
             cmake {
                 cppFlags "-std=c++11"

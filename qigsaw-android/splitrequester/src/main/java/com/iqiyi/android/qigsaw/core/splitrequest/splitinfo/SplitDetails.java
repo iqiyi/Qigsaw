@@ -37,13 +37,17 @@ final class SplitDetails {
 
     private final List<String> updateSplits;
 
+    private final List<String> abiFilters;
+
     SplitDetails(String qigsawId,
                  String appVersionName,
                  SplitInfoListing splitInfoListing,
+                 List<String> abiFilters,
                  List<String> updateSplits) {
         this.qigsawId = qigsawId;
         this.appVersionName = appVersionName;
         this.splitInfoListing = splitInfoListing;
+        this.abiFilters = abiFilters;
         this.updateSplits = updateSplits;
     }
 
@@ -61,6 +65,10 @@ final class SplitDetails {
 
     SplitInfoListing getSplitInfoListing() {
         return splitInfoListing;
+    }
+
+    List<String> getAbiFilters() {
+        return abiFilters;
     }
 
     boolean verifySplitInfoListing() {

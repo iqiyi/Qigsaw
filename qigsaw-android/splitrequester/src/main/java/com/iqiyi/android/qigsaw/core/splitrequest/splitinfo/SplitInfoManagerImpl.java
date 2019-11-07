@@ -30,6 +30,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import com.iqiyi.android.qigsaw.core.common.AbiUtil;
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -177,8 +178,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
         if (details == null) {
             String currentVersion = versionManager.getCurrentVersion();
             String defaultVersion = versionManager.getDefaultVersion();
-            SplitLog.i(TAG, "currentVersion = " + currentVersion);
-            SplitLog.i(TAG, "defaultVersion = " + defaultVersion);
+            SplitLog.i(TAG, "currentVersion : %s defaultVersion : %s", currentVersion, defaultVersion);
             if (defaultVersion.equals(currentVersion)) {
                 details = createSplitDetailsForDefaultVersion(context, defaultVersion);
             } else {
@@ -249,7 +249,26 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
         JSONObject contentObj = new JSONObject(content);
         String qigsawId = contentObj.optString("qigsawId");
         String appVersionName = contentObj.optString("appVersionName");
+        JSONArray abiFiltersArray = contentObj.optJSONArray("abiFilters");
+        List<String> abiFilters = null;
+        if (abiFiltersArray != null && abiFiltersArray.length() > 0) {
+            abiFilters = new ArrayList<>(abiFiltersArray.length());
+            for (int i = 0; i < abiFiltersArray.length(); i++) {
+                String str = abiFiltersArray.getString(i);
+                abiFilters.add(str);
+            }
+        }
+        JSONArray updateSplitsArray = contentObj.optJSONArray("updateSplits");
+        List<String> updateSplits = null;
+        if (updateSplitsArray != null && updateSplitsArray.length() > 0) {
+            updateSplits = new ArrayList<>(updateSplitsArray.length());
+            for (int i = 0; i < updateSplitsArray.length(); i++) {
+                String str = updateSplitsArray.getString(i);
+                updateSplits.add(str);
+            }
+        }
         JSONArray array = contentObj.optJSONArray("splits");
+        List<String> splitAbis = null;
         for (int i = 0; i < array.length(); i++) {
             JSONObject itemObj = array.getJSONObject(i);
             boolean builtIn = itemObj.optBoolean("builtIn");
@@ -259,22 +278,29 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
             String apkMd5 = itemObj.optString("md5");
             long size = itemObj.optLong("size");
             int minSdkVersion = itemObj.optInt("minSdkVersion");
-            SplitInfo.LibInfo libDetail = null;
-            JSONObject libDetailObj = itemObj.optJSONObject("libInfo");
-            if (libDetailObj != null) {
-                JSONArray libArray = libDetailObj.optJSONArray("libs");
-                if (libArray != null && libArray.length() > 0) {
-                    List<SplitInfo.LibInfo.Lib> libs = new ArrayList<>(libArray.length());
-                    String cpuAbi = libDetailObj.optString("abi");
-                    for (int j = 0; j < libArray.length(); j++) {
-                        JSONObject libObj = libArray.optJSONObject(j);
-                        String name = libObj.optString("name");
-                        String soMd5 = libObj.optString("md5");
-                        long soSize = libObj.optLong("size");
-                        SplitInfo.LibInfo.Lib lib = new SplitInfo.LibInfo.Lib(name, soMd5, soSize);
-                        libs.add(lib);
+            JSONArray nativeLibrariesArray = itemObj.optJSONArray("nativeLibraries");
+            List<SplitInfo.LibInfo> nativeLibrariesList = null;
+            if (nativeLibrariesArray != null && nativeLibrariesArray.length() > 0) {
+                nativeLibrariesList = new ArrayList<>(nativeLibrariesArray.length());
+                splitAbis = new ArrayList<>(nativeLibrariesArray.length());
+                for (int j = 0; j < nativeLibrariesArray.length(); j++) {
+                    JSONObject nlObj = nativeLibrariesArray.optJSONObject(j);
+                    String cpuAbi = nlObj.optString("abi");
+                    splitAbis.add(cpuAbi);
+                    JSONArray jniLibsArray = nlObj.optJSONArray("jniLibs");
+                    List<SplitInfo.LibInfo.Lib> jniLibs = new ArrayList<>();
+                    if (jniLibsArray != null && jniLibsArray.length() > 0) {
+                        for (int k = 0; k < jniLibsArray.length(); k++) {
+                            JSONObject libObj = jniLibsArray.optJSONObject(k);
+                            String name = libObj.optString("name");
+                            String soMd5 = libObj.optString("md5");
+                            long soSize = libObj.optLong("size");
+                            SplitInfo.LibInfo.Lib lib = new SplitInfo.LibInfo.Lib(name, soMd5, soSize);
+                            jniLibs.add(lib);
+                        }
                     }
-                    libDetail = new SplitInfo.LibInfo(cpuAbi, libs);
+                    SplitInfo.LibInfo libInfo = new SplitInfo.LibInfo(cpuAbi, jniLibs);
+                    nativeLibrariesList.add(libInfo);
                 }
             }
 
@@ -295,20 +321,24 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
                     dependencies.add(dependenciesArray.optString(m));
                 }
             }
+            String basePrimaryAbi = AbiUtil.findBasePrimaryAbi(abiFilters);
+            SplitInfo.LibInfo primaryLibInfo = null;
+            if (splitAbis != null) {
+                String splitPrimaryAbi = AbiUtil.findSplitPrimaryAbi(basePrimaryAbi, splitAbis);
+                if (splitPrimaryAbi != null) {
+                    for (SplitInfo.LibInfo libInfo : nativeLibrariesList) {
+                        if (splitPrimaryAbi.contains(libInfo.getAbi())) {
+                            primaryLibInfo = libInfo;
+                            break;
+                        }
+                    }
+                }
+            }
             SplitInfo splitInfo = new SplitInfo(splitName, appVersionName, version, url, apkMd5,
-                    size, builtIn, minSdkVersion, dexNumber, workProcesses, dependencies, libDetail);
+                    size, builtIn, minSdkVersion, dexNumber, workProcesses, dependencies, splitAbis != null, primaryLibInfo);
             splitInfoMap.put(splitName, splitInfo);
         }
-        JSONArray updateSplitsArray = contentObj.optJSONArray("updateSplits");
-        List<String> updateSplits = null;
-        if (updateSplitsArray != null && updateSplitsArray.length() > 0) {
-            updateSplits = new ArrayList<>(updateSplitsArray.length());
-            for (int i = 0; i < updateSplitsArray.length(); i++) {
-                String str = updateSplitsArray.getString(i);
-                updateSplits.add(str);
-            }
-        }
         SplitInfoListing splitInfoListing = new SplitInfoListing(splitInfoMap);
-        return new SplitDetails(qigsawId, appVersionName, splitInfoListing, updateSplits);
+        return new SplitDetails(qigsawId, appVersionName, splitInfoListing, abiFilters, updateSplits);
     }
 }

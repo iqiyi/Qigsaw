@@ -104,9 +104,9 @@ class SplitResourcesLoaderTransform extends Transform {
         def box = toCtClasses(transformInvocation.getInputs(), classPool)
 
         ManifestReader manifestReader = new ManifestReaderImpl(manifest)
-        List<ComponentInfo> activities = manifestReader.readActivities()
-        List<ComponentInfo> services = manifestReader.readServices()
-        List<ComponentInfo> receivers = manifestReader.readReceivers()
+        Set<ComponentInfo> activities = manifestReader.readActivities()
+        Set<ComponentInfo> services = manifestReader.readServices()
+        Set<ComponentInfo> receivers = manifestReader.readReceivers()
         SplitComponentCodeInjector codeInjector = new SplitComponentCodeInjector(activities, services, receivers)
         codeInjector.injectCode(box, jarFile)
         System.out.println("SplitComponentTransform cost " + (System.currentTimeMillis() - startTime) + " ms")

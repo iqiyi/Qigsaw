@@ -85,7 +85,7 @@ public abstract class ContentProviderProxy extends ContentProvider {
     }
 
     private ContentProvider createRealContentProvider(ClassLoader classLoader) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        if (getContext() == null) {
+        if (getContext() == null || realContentProviderClassName == null) {
             SplitLog.w(TAG, "Cause of null context, we can't create real provider " + realContentProviderClassName);
             return null;
         }
@@ -104,11 +104,11 @@ public abstract class ContentProviderProxy extends ContentProvider {
 
     @Override
     public void attachInfo(Context context, ProviderInfo info) {
-        super.attachInfo(context, info);
         String className = getClass().getName();
         String[] cuts = className.split(NAME_INFIX);
         this.realContentProviderClassName = cuts[0];
         this.splitName = cuts[1];
+        super.attachInfo(context, info);
         this.providerInfo = new ProviderInfo(info);
         AABExtension.getInstance().put(splitName, this);
     }

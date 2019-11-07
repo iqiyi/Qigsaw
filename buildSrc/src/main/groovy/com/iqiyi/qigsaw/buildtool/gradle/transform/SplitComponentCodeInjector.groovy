@@ -35,15 +35,15 @@ import java.util.zip.ZipOutputStream
 
 class SplitComponentCodeInjector {
 
-    List<ComponentInfo> activities
+    Set<ComponentInfo> activities
 
-    List<ComponentInfo> services
+    Set<ComponentInfo> services
 
-    List<ComponentInfo> receivers
+    Set<ComponentInfo> receivers
 
-    SplitComponentCodeInjector(List<ComponentInfo> activities,
-                               List<ComponentInfo> services,
-                               List<ComponentInfo> receivers) {
+    SplitComponentCodeInjector(Set<ComponentInfo> activities,
+                               Set<ComponentInfo> services,
+                               Set<ComponentInfo> receivers) {
         this.activities = activities
         this.services = services
         this.receivers = receivers
@@ -73,7 +73,7 @@ class SplitComponentCodeInjector {
         boolean isActivity = false
         if (!activities.isEmpty()) {
             activities.each {
-                if (it.name.equals(ctClass.name)) {
+                if (it.name.contains(ctClass.name)) {
                     isActivity = true
                 }
             }
@@ -85,7 +85,7 @@ class SplitComponentCodeInjector {
         boolean isService = false
         if (!services.isEmpty()) {
             services.each {
-                if (it.name.equals(ctClass.name)) {
+                if (it.name.contains(ctClass.name)) {
                     isService = true
                 }
             }
@@ -97,7 +97,7 @@ class SplitComponentCodeInjector {
         boolean isReceiver = false
         if (!receivers.isEmpty()) {
             receivers.each {
-                if (it.name.equals(ctClass.name)) {
+                if (it.name.contains(ctClass.name)) {
                     isReceiver = true
                 }
             }
@@ -106,6 +106,7 @@ class SplitComponentCodeInjector {
     }
 
     static void zipFile(byte[] classBytesArray, ZipOutputStream zos, String entryName) {
+        long time = System.currentTimeMillis()
         try {
             ZipEntry entry = new ZipEntry(entryName)
             zos.putNextEntry(entry)
@@ -115,5 +116,6 @@ class SplitComponentCodeInjector {
         } catch (Exception ex) {
             ex.printStackTrace()
         }
+        println("qigsaw ------ cost ${System.currentTimeMillis() - time} to zip " + entryName)
     }
 }

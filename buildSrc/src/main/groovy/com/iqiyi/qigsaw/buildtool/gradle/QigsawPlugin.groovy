@@ -26,7 +26,6 @@ package com.iqiyi.qigsaw.buildtool.gradle
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.Task
 
 abstract class QigsawPlugin implements Plugin<Project> {
 
@@ -39,7 +38,7 @@ abstract class QigsawPlugin implements Plugin<Project> {
     static boolean hasQigsawTask(Project project) {
         List<String> startTaskNames = project.gradle.startParameter.taskNames
         for (String taskName : startTaskNames) {
-            if (taskName.contains(QIGSAW)) {
+            if (taskName.contains(QIGSAW_ASSEMBLE_TASK_PREFIX)) {
                 return true
             }
         }

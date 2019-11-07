@@ -64,11 +64,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 throw new GradleException('generateQigsawApk: AAPT2 required')
             }
             def dynamicFeatures = android.dynamicFeatures
-            File assetsDir = null
+            //fetch base app AndroidManifest.xml file in src dir.
             File baseManifestSrcFile = null
             android.sourceSets.each {
                 if (it.name.equals("main")) {
-                    assetsDir = it.getAssets().srcDirs.getAt(0)
                     baseManifestSrcFile = it.getManifest().srcFile
                 }
             }
@@ -80,103 +79,110 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 featureProjects.add(featureProject)
                 dynamicFeatureNames.add(featureProject.name)
             }
-
             BaseAppInfoGetterImpl infoGetter = new BaseAppInfoGetterImpl(project, baseManifestSrcFile)
             String versionName = infoGetter.versionName
             String packageName = infoGetter.packageName
             String qigsawId = versionName + "_" + getQigsawId(project)
             String splitInfoVersion = versionName + "_" + project.extensions.qigsawSplit.splitInfoVersion
-
             //config qigsaw tasks
             android.getApplicationVariants().all { variant ->
                 ApplicationVariant appVariant = variant
                 String variantName = appVariant.name.capitalize()
-                def variantData = appVariant.variantData
-                Task generateAssetsTask = AGPCompat.getGenerateAssetsTask(project, variantName)
-                if (generateAssetsTask == null) {
-                    throw new RuntimeException("Cannot found generateAssetsTask, current variantName: " + variantName)
-                }
-
-                Task mergeAssetsTask = AGPCompat.getMergeAssetsTask(project, variantName)
-                Task processManifestTask = AGPCompat.getProcessManifestTask(project, variantName)
-                Task packageTask = AGPCompat.getPackageTask(project, variantName)
                 Task generateBuildConfigTask = AGPCompat.getGenerateBuildConfigTask(project, variantName)
-
                 QigsawBuildConfigGenerator generator = new QigsawBuildConfigGenerator(generateBuildConfigTask)
                 generator.injectFields("DEFAULT_SPLIT_INFO_VERSION", splitInfoVersion)
                 generator.injectFields("QIGSAW_ID", qigsawId)
                 generator.injectFields("DYNAMIC_FEATURES", dynamicFeatureNames)
 
-                boolean proguardEnable = appVariant.getBuildType().isMinifyEnabled()
-                if (proguardEnable) {
-                    QigsawProguardConfigTask proguardConfigTask = project.tasks.create("qigsawProcess${variantName}Proguard", QigsawProguardConfigTask)
-                    proguardConfigTask.applicationVariant = appVariant
-                    proguardConfigTask.packageName = packageName
-                    Task r8Task = AGPCompat.getR8Task(project, variantName)
-                    Task proguardTask = AGPCompat.getProguardTask(project, variantName)
-                    if (proguardTask != null) {
-                        proguardTask.dependsOn proguardConfigTask
-                    } else {
-                        if (r8Task != null) {
-                            r8Task.dependsOn proguardConfigTask
-                        }
-                    }
-                    proguardConfigTask.mustRunAfter processManifestTask
-                }
-                boolean multiDexEnabled = variantData.variantConfiguration.isMultiDexEnabled()
-                if (multiDexEnabled) {
-                    def multidexTask = AGPCompat.getMultiDexTask(project, variantName)
-                    if (multidexTask != null) {
-                        removeRulesAboutMultidex(multidexTask, appVariant)
-                    }
-                }
-                QigsawAssembleTask qigsawAssembleTask = project.tasks.create(QIGSAW_ASSEMBLE_TASK_PREFIX + variantName,
-                        QigsawAssembleTask,
-                        assetsDir,
-                        variantName,
-                        versionName,
-                        dynamicFeatures,
-                        qigsawId
-                )
-
-                Task showDependencies = createShowDependenciesTask(project, variantName)
-
-                showDependencies.doLast {
-
-                    Map<String, List<String>> dynamicFeatureDependenciesMap = new HashMap<>()
-
-                    List<String> dynamicFeaturesClassPaths = new ArrayList<>(featureProjects.size())
-
-                    featureProjects.each {
-                        Project dynamicFeatureProject = it
-                        String str = "${dynamicFeatureProject.group}:${dynamicFeatureProject.name}:${dynamicFeatureProject.version}"
-                        dynamicFeaturesClassPaths.add(str)
-                    }
-
-                    featureProjects.each {
-                        Project dynamicFeatureProject = it
-                        Configuration configuration = dynamicFeatureProject.configurations."${variant.name}CompileClasspath"
-                        configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
-                            def identifier = it.module.id
-                            List<String> dynamicFeatureDependencies = new ArrayList<>(0)
-                            String classPath = "${identifier.group}:${identifier.name}:${identifier.version}"
-                            if (dynamicFeaturesClassPaths.contains(classPath)) {
-                                dynamicFeatureDependencies.add(identifier.name)
-                            }
-                            if (!dynamicFeatureDependencies.isEmpty()) {
-                                dynamicFeatureDependenciesMap.put(dynamicFeatureProject.name, dynamicFeatureDependencies)
-                            }
-                        }
-                    }
-
-                    qigsawAssembleTask.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
-                }
+                Task qigsawAssembleTask = createQigsawAssembleTask(project, variantName)
 
                 qigsawAssembleTask.setGroup(QIGSAW)
 
                 //set task dependency
                 if (hasQigsawTask(project)) {
+                    //inject filed to point out, base apk is built by qigsaw command.
                     generator.injectFields("ASSEMBLE_MODE", "qigsaw")
+
+                    Task processManifestTask = AGPCompat.getProcessManifestTask(project, variantName)
+                    Task mergeAssetsTask = AGPCompat.getMergeAssetsTask(project, variantName)
+                    Task packageTask = AGPCompat.getPackageTask(project, variantName)
+                    Task assembleTask = AGPCompat.getAssemble(appVariant)
+                    Task showDependencies = createShowDependenciesTask(project, variantName)
+
+                    //config auto-proguard
+                    boolean proguardEnable = appVariant.getBuildType().isMinifyEnabled()
+                    if (proguardEnable) {
+                        QigsawProguardConfigTask proguardConfigTask = project.tasks.create("qigsawProcess${variantName}Proguard", QigsawProguardConfigTask)
+                        proguardConfigTask.applicationVariant = appVariant
+                        proguardConfigTask.packageName = packageName
+                        Task r8Task = AGPCompat.getR8Task(project, variantName)
+                        Task proguardTask = AGPCompat.getProguardTask(project, variantName)
+                        if (proguardTask != null) {
+                            proguardTask.dependsOn proguardConfigTask
+                        } else {
+                            if (r8Task != null) {
+                                r8Task.dependsOn proguardConfigTask
+                            }
+                        }
+                        proguardConfigTask.mustRunAfter processManifestTask
+                    }
+                    //remove tinker auto-proguard configuration for 'class * extends android.app.Application', because qigsaw support load split application.
+                    boolean multiDexEnabled = appVariant.variantData.variantConfiguration.isMultiDexEnabled()
+                    if (multiDexEnabled) {
+                        def multidexTask = AGPCompat.getMultiDexTask(project, variantName)
+                        if (multidexTask != null) {
+                            removeRulesAboutMultidex(multidexTask, appVariant)
+                        }
+                    }
+                    //fetch every split's dependencies of dynamic-feature
+                    File mergeAssetsDir = null
+                    mergeAssetsTask.outputs.files.each {
+                        if (it.absolutePath.contains(appVariant.name) && !it.absolutePath.contains("incremental")) {
+                            mergeAssetsDir = it
+                        }
+                    }
+                    File mergeJniLibsDir = AGPCompat.getMergeJniLibsDirCompat(project, variantName)
+
+                    PackageVariantTaskProcessor prePackageAction = new PackageVariantTaskProcessor(
+                            project,
+                            mergeAssetsDir,
+                            mergeJniLibsDir,
+                            variantName,
+                            versionName,
+                            dynamicFeatures,
+                            qigsawId
+                    )
+                    showDependencies.doLast {
+
+                        Map<String, List<String>> dynamicFeatureDependenciesMap = new HashMap<>()
+
+                        List<String> dynamicFeaturesClassPaths = new ArrayList<>(featureProjects.size())
+
+                        featureProjects.each {
+                            Project dynamicFeatureProject = it
+                            String str = "${dynamicFeatureProject.group}:${dynamicFeatureProject.name}:${dynamicFeatureProject.version}"
+                            dynamicFeaturesClassPaths.add(str)
+                        }
+
+                        featureProjects.each {
+                            Project dynamicFeatureProject = it
+                            Configuration configuration = dynamicFeatureProject.configurations."${variant.name}CompileClasspath"
+                            configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
+                                def identifier = it.module.id
+                                List<String> dynamicFeatureDependencies = new ArrayList<>(0)
+                                String classPath = "${identifier.group}:${identifier.name}:${identifier.version}"
+                                if (dynamicFeaturesClassPaths.contains(classPath)) {
+                                    dynamicFeatureDependencies.add(identifier.name)
+                                }
+                                if (!dynamicFeatureDependencies.isEmpty()) {
+                                    dynamicFeatureDependenciesMap.put(dynamicFeatureProject.name, dynamicFeatureDependencies)
+                                }
+                            }
+                        }
+
+                        prePackageAction.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
+                    }
+
                     featureProjects.each {
                         Project dynamicFeatureProject = it
                         try {
@@ -190,21 +196,15 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         }
                     }
 
-                    Task assembleTask = AGPCompat.getAssemble(appVariant)
+
                     qigsawAssembleTask.dependsOn showDependencies
-                    generateAssetsTask.finalizedBy(qigsawAssembleTask)
-                    mergeAssetsTask.mustRunAfter(qigsawAssembleTask)
+
                     qigsawAssembleTask.finalizedBy(assembleTask)
-                    assembleTask.doLast {
-                        qigsawAssembleTask.clearQigsawIntermediates()
-                    }
-                    processManifestTask.doLast {
-                        SplitProviderProcessor providerProcessor = new SplitProviderProcessor(project, dynamicFeatureNames, variantName)
-                        providerProcessor.process()
-                    }
-                    if (versionAGP < VersionNumber.parse("3.5.0")) {
-                        Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
-                        packageTask.doFirst {
+
+                    packageTask.doFirst {
+                        prePackageAction.doBeforePackaging()
+                        if (versionAGP < VersionNumber.parse("3.5.0")) {
+                            Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
                             if (dexSplitterTask != null) {
                                 println("start to remerge dex files!")
                                 def startTime = new Date()
@@ -223,6 +223,13 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
                     }
+                    packageTask.doLast {
+                        prePackageAction.doAfterPackaging()
+                    }
+                    processManifestTask.doLast {
+                        SplitProviderProcessor providerProcessor = new SplitProviderProcessor(project, dynamicFeatureNames, variantName)
+                        providerProcessor.process()
+                    }
                 }
             }
         }
@@ -240,6 +247,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
     static Task createShowDependenciesTask(Project project, String variantName) {
         String taskName = "showDependencies${variantName}"
+        return project.tasks.create(taskName)
+    }
+
+    static Task createQigsawAssembleTask(Project project, String variantName) {
+        String taskName = "qigsawAssemble${variantName}"
         return project.tasks.create(taskName)
     }
 

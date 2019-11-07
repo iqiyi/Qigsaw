@@ -78,25 +78,25 @@ class SplitInfoGeneratorImpl implements SplitInfoGenerator {
         splitInfo.builtIn = !manifestReader.readOnDemand() || !releaseSplitApk
 
         List<String> processes = new ArrayList<>()
-        List<ComponentInfo> activities = manifestReader.readActivities()
+        Set<ComponentInfo> activities = manifestReader.readActivities()
         activities.each {
             if (!processes.contains(it.process)) {
                 processes.add(it.process)
             }
         }
-        List<String> services = manifestReader.readServices()
+        Set<String> services = manifestReader.readServices()
         services.each {
             if (!processes.contains(it.process)) {
                 processes.add(it.process)
             }
         }
-        List<String> receivers = manifestReader.readReceivers()
+        Set<String> receivers = manifestReader.readReceivers()
         receivers.each {
             if (!processes.contains(it.process)) {
                 processes.add(it.process)
             }
         }
-        List<String> providers = manifestReader.readProviders()
+        Set<String> providers = manifestReader.readProviders()
         providers.each {
             if (!processes.contains(it.process)) {
                 processes.add(it.process)
@@ -124,11 +124,11 @@ class SplitInfoGeneratorImpl implements SplitInfoGenerator {
             }
         })
         splitInfo.dexNumber = (dexFiles != null ? dexFiles.length : 0)
-        splitInfo.libInfo = createLibInfo(splitExtractDir)
+        splitInfo.nativeLibraries = createLibInfo(splitExtractDir)
         return splitInfo
     }
 
-    static SplitInfo.LibInfo createLibInfo(File splitExtractDir) {
+    static List<SplitInfo.LibInfo> createLibInfo(File splitExtractDir) {
         File[] files = splitExtractDir.listFiles()
         File libDir = null
         for (File file : files) {
@@ -141,26 +141,26 @@ class SplitInfoGeneratorImpl implements SplitInfoGenerator {
             return null
         }
         File[] abiDirs = libDir.listFiles()
-        if (abiDirs.length > 1) {
-            throw new RuntimeException("More than one abi is not allowed in dynamic-feature module!")
-        }
-        File abiDir = abiDirs[0]
-        String abiName = abiDir.name
-        File[] soFiles = abiDir.listFiles()
-        SplitInfo.LibInfo libInfo = new SplitInfo.LibInfo()
-        libInfo.abi = abiName
-        List<SplitInfo.LibInfo.Lib> libs = new ArrayList<>()
-        for (File soFile : soFiles) {
-            if (soFile.name.endsWith(".so")) {
-                String md5 = FileUtils.getMD5(soFile)
-                SplitInfo.LibInfo.Lib lib = new SplitInfo.LibInfo.Lib()
-                lib.name = soFile.name
-                lib.md5 = md5
-                lib.size = soFile.length()
-                libs.add(lib)
+        List<SplitInfo.LibInfo> nativeLibraries = new ArrayList<>(abiDirs.length)
+        for (File abiDir : abiDirs) {
+            String abiName = abiDir.name
+            File[] soFiles = abiDir.listFiles()
+            SplitInfo.LibInfo libInfo = new SplitInfo.LibInfo()
+            libInfo.abi = abiName
+            List<SplitInfo.LibInfo.Lib> jniLibs = new ArrayList<>()
+            for (File soFile : soFiles) {
+                if (soFile.name.endsWith(".so")) {
+                    String md5 = FileUtils.getMD5(soFile)
+                    SplitInfo.LibInfo.Lib lib = new SplitInfo.LibInfo.Lib()
+                    lib.name = soFile.name
+                    lib.md5 = md5
+                    lib.size = soFile.length()
+                    jniLibs.add(lib)
+                }
             }
+            libInfo.jniLibs = jniLibs
+            nativeLibraries.add(libInfo)
         }
-        libInfo.libs = libs
-        return libInfo
+        return nativeLibraries
     }
 }

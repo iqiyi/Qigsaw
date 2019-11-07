@@ -430,21 +430,11 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
      */
     private boolean isCPUArchMatched(SplitInfo splitInfo) {
         if (splitInfo.hasLibs()) {
-            String splitAbi = splitInfo.getLibInfo().getAbi();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                String[] supportABIs = Build.SUPPORTED_ABIS;
-                for (String abi : supportABIs) {
-                    if (splitAbi.equals(abi)) {
-                        return true;
-                    }
-                }
-            } else {
-                String cpuAbi = Build.CPU_ABI;
-                if (splitAbi.equals(cpuAbi)) {
-                    return true;
-                }
+            try {
+                splitInfo.getLibInfo();
+            } catch (Throwable e) {
+                return false;
             }
-            return splitAbi.equals("armeabi");
         }
         return true;
     }

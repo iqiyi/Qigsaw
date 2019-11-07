@@ -92,19 +92,24 @@ class SplitInfo {
     /**
      * info of split so files
      */
-    LibInfo libInfo
+    List<LibInfo> nativeLibraries
 
     List<String> dependencies
+
+    Set<String> abiFilters
 
     static class LibInfo {
 
         String abi
 
-        List<Lib> libs
+        List<Lib> jniLibs
 
         static class Lib {
+
             String name
+
             String md5
+
             long size
         }
     }

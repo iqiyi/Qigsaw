@@ -121,6 +121,28 @@ class AGPCompat {
         return project.tasks.findByName(mergeManifestTaskName)
     }
 
+    static File getMergeJniLibsDirCompat(Project project, String variantName) {
+        Task task = project.tasks.findByName("transformNativeLibsWithMergeJniLibsFor${variantName}")
+        File mergeJniLibsDir = null
+        if (task != null) {
+            task.outputs.files.each {
+                if (it.absolutePath.contains(variantName.uncapitalize()) && !it.absolutePath.contains("incremental")) {
+                    mergeJniLibsDir = new File(it, "0${File.separator}lib")
+                }
+            }
+        } else {
+            task = project.tasks.findByName("merge${variantName}NativeLibs")
+            if (task != null) {
+                task.outputs.files.each {
+                    if (it.absolutePath.contains(variantName.uncapitalize()) && !it.absolutePath.contains("incremental")) {
+                        mergeJniLibsDir = new File(it, "lib")
+                    }
+                }
+            }
+        }
+        return mergeJniLibsDir
+    }
+
     static Task getAssemble(ApplicationVariant variant) {
         try {
             return variant.assembleProvider.get()
@@ -159,11 +181,6 @@ class AGPCompat {
         return project.tasks.findByName(proguardTaskName)
     }
 
-    static Task getGenerateAssetsTask(Project project, String variantName) {
-        String generateAssetsTaskName = "generate${variantName}Assets"
-        return project.tasks.findByName(generateAssetsTaskName)
-    }
-
     static Task getMergeAssetsTask(Project project, String variantName) {
         String mergeAssetsTaskName = "merge${variantName}Assets"
         return project.tasks.findByName(mergeAssetsTaskName)
@@ -179,5 +196,4 @@ class AGPCompat {
         return project.tasks.findByName(proguardTaskName)
 
     }
-
 }

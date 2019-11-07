@@ -51,15 +51,19 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
 
     String qigsawId
 
+    Set<String> abiFilters
+
     SplitDetailsCreatorImpl(Project appProject,
                             String variantName,
                             String appVersionName,
-                            String qigsawId) {
+                            String qigsawId,
+                            Set<String> abiFilters) {
         this.appProject = appProject
         this.variantName = variantName
         this.appVersionName = appVersionName
         this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
         this.qigsawId = qigsawId
+        this.abiFilters = abiFilters
     }
 
     @Override
@@ -77,7 +81,7 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
         for (SplitInfo info : splits) {
             uploadSplitAPKIfNeed(info)
         }
-        SplitDetails newSplitDetails = new SplitDetails(qigsawId, appVersionName, splits, null)
+        SplitDetails newSplitDetails = new SplitDetails(qigsawId, appVersionName, abiFilters, splits, null)
         return createNewSplitInfoJsonFile(newSplitDetails)
     }
 
@@ -204,7 +208,7 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
             if (updateSplits.isEmpty()) {
                 updateSplits = null
             }
-            return new SplitDetails(appliedSplitDetails.qigsawId, appVersionName, splits, updateSplits)
+            return new SplitDetails(appliedSplitDetails.qigsawId, appVersionName, abiFilters, splits, updateSplits)
         }
         throw new RuntimeException("Can not parse applied split details!")
     }

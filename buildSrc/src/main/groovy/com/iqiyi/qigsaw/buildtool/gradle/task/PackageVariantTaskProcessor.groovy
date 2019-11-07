@@ -27,56 +27,60 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 import com.android.SdkConstants
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
+import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetailsCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TopoSort
-import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.tasks.TaskAction
 
-import javax.inject.Inject
+class PackageVariantTaskProcessor {
 
-class QigsawAssembleTask extends DefaultTask {
+    final def dynamicFeatures
 
-    def dynamicFeatures
+    final String variantName
 
-    String variantName
-
-    File assetsDir
+    final File assetsDir
 
     List<File> intermediates = new ArrayList<>()
 
-    String qigsawId
+    final String qigsawId
 
-    String versionName
+    final String versionName
+
+    final Project project
 
     Map<String, List<String>> dynamicFeatureDependenciesMap
 
-    @Inject
-    QigsawAssembleTask(File assetsDir,
-                       String variantName,
-                       String versionName,
-                       def dynamicFeatures,
-                       String qigsawId) {
+    final File mergeJniLib
+
+    PackageVariantTaskProcessor(Project project,
+                                File assetsDir,
+                                File mergeJniLib,
+                                String variantName,
+                                String versionName,
+                                def dynamicFeatures,
+                                String qigsawId) {
+        this.project = project
         this.assetsDir = assetsDir
+        this.mergeJniLib = mergeJniLib
         this.variantName = variantName
         this.versionName = versionName
         this.dynamicFeatures = dynamicFeatures
         this.qigsawId = qigsawId
-        if (!this.assetsDir.exists()) {
-            this.assetsDir.mkdirs()
-        }
     }
 
-    @TaskAction
-    void processSplitAPKs() {
+    void doBeforePackaging() {
         processSplitAPKsInternal()
     }
 
-    void processSplitAPKsInternal() {
+    void doAfterPackaging() {
+        clearQigsawIntermediates()
+    }
+
+    private void processSplitAPKsInternal() {
         Map<String, SplitInfo> splitInfoMap = new HashMap<>()
         //get version name and version code of base app project!
         for (String dynamicFeature : dynamicFeatures) {
@@ -106,11 +110,34 @@ class QigsawAssembleTask extends DefaultTask {
             SplitInfo splitInfo = splitProcessor.createSplitInfo(splitName, splitSignedApk, splitManifest)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
+        Set<String> abiFilters = project.android.defaultConfig.ndk.abiFilters
+        File[] abiDirs = mergeJniLib.listFiles()
+        Set<String> abiNames = null
+        if (abiDirs != null) {
+            ImmutableSet.Builder builder = ImmutableSet.builder()
+            for (File abiDir : abiDirs) {
+                builder.add(abiDir.name)
+            }
+            abiNames = builder.build()
+        }
+        if (abiFilters == null) {
+            abiFilters = abiNames
+        } else {
+            ImmutableSet.Builder builder = ImmutableSet.builder()
+            abiFilters.each {
+                if (abiNames.contains(it)) {
+                    builder.add(it)
+                }
+            }
+            abiFilters = builder.build()
+        }
+        abiFilters = sortAbis(abiFilters)
         SplitDetailsCreator detailsCreator = new SplitDetailsCreatorImpl(
                 getProject(),
                 variantName,
                 versionName,
-                qigsawId
+                qigsawId,
+                abiFilters.isEmpty() ? null : abiFilters
         )
         Map<String, TopoSort.Node> nodeMap = new HashMap<>()
         TopoSort.Graph graph = new TopoSort.Graph()
@@ -142,20 +169,23 @@ class QigsawAssembleTask extends DefaultTask {
     }
 
     void copyQigsawOutputsToAssetsDir(List<SplitInfo> splits, File splitDetailsFile) {
+        if (!this.assetsDir.exists()) {
+            this.assetsDir.mkdirs()
+        }
         File assetsSplitDetailsFile = new File(assetsDir, splitDetailsFile.name)
         if (assetsSplitDetailsFile.exists()) {
             assetsSplitDetailsFile.delete()
         }
-        intermediates.add(assetsSplitDetailsFile)
         FileUtils.copyFile(splitDetailsFile, assetsSplitDetailsFile)
+        intermediates.add(assetsSplitDetailsFile)
         for (SplitInfo info : splits) {
             File assetsSplitApk = new File(assetsDir, info.splitName + SdkConstants.DOT_ZIP)
-            intermediates.add(assetsSplitApk)
             if (assetsSplitApk.exists()) {
                 assetsSplitApk.delete()
             }
             if (info.builtIn) {
                 FileUtils.copyFile(info.splitApk, assetsSplitApk)
+                intermediates.add(assetsSplitApk)
             }
         }
     }
@@ -168,4 +198,26 @@ class QigsawAssembleTask extends DefaultTask {
         }
     }
 
+    static Set<String> sortAbis(Set<String> abis) {
+        if (abis.isEmpty() || abis.size() == 1) {
+            return abis
+        }
+        ImmutableSet.Builder builder = ImmutableSet.builder()
+        if (abis.contains("arm64-v8a")) {
+            builder.add("arm64-v8a")
+        }
+        if (abis.contains("armeabi-v7a")) {
+            builder.add("armeabi-v7a")
+        }
+        if (abis.contains("armeabi")) {
+            builder.add("armeabi")
+        }
+        if (abis.contains("x86")) {
+            builder.add("x86")
+        }
+        if (abis.contains("x86_64")) {
+            builder.add("x86_64")
+        }
+        return builder.build()
+    }
 }

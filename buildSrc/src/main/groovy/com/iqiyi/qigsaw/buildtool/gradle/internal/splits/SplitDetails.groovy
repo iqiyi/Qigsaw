@@ -34,12 +34,16 @@ class SplitDetails {
 
     List<String> updateSplits
 
+    Set<String> abiFilters
+
     SplitDetails(String qigsawId,
                  String appVersionName,
+                 Set<String> abiFilters,
                  List<SplitInfo> splits,
                  List<String> updateSplits) {
         this.qigsawId = qigsawId
         this.appVersionName = appVersionName
+        this.abiFilters = abiFilters
         this.splits = splits
         this.updateSplits = updateSplits
     }

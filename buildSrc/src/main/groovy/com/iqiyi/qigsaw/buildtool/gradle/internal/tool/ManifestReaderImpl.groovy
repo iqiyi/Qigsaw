@@ -24,6 +24,8 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
+import com.google.common.collect.ImmutableSet
+
 class ManifestReaderImpl implements ManifestReader {
 
     def manifest
@@ -55,47 +57,47 @@ class ManifestReaderImpl implements ManifestReader {
     }
 
     @Override
-    List<ComponentInfo> readActivities() {
-        List<ComponentInfo> activities = new ArrayList<>()
+    Set<ComponentInfo> readActivities() {
+        ImmutableSet.Builder activities = ImmutableSet.builder()
         manifest.application.activity.each {
             String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
             activities.add(new ComponentInfo(name, process))
         }
-        return activities
+        return activities.build()
     }
 
     @Override
-    List<ComponentInfo> readServices() {
-        List<ComponentInfo> services = new ArrayList<>()
+    Set<ComponentInfo> readServices() {
+        ImmutableSet.Builder services = ImmutableSet.builder()
         manifest.application.service.each {
             String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
             services.add(new ComponentInfo(name, process))
         }
-        return services
+        return services.build()
     }
 
     @Override
-    List<ComponentInfo> readReceivers() {
-        List<ComponentInfo> receivers = new ArrayList<>()
+    Set<ComponentInfo> readReceivers() {
+        ImmutableSet.Builder receivers = ImmutableSet.builder()
         manifest.application.receiver.each {
             String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
             receivers.add(new ComponentInfo(name, process))
         }
-        return receivers
+        return receivers.build()
     }
 
     @Override
-    List<ComponentInfo> readProviders() {
-        List<ComponentInfo> providers = new ArrayList<>()
+    Set<ComponentInfo> readProviders() {
+        ImmutableSet.Builder providers = ImmutableSet.builder()
         manifest.application.provider.each {
             String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
             providers.add(new ComponentInfo(name, process))
         }
-        return providers
+        return providers.build()
     }
 
     @Override

@@ -54,17 +54,19 @@ class SplitProviderProcessor {
 
     void process() {
         File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(project, variantName)
-        File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(project, variantName)
         File mergedManifest = new File(mergedManifestDir, "AndroidManifest.xml")
-        File bundleManifest = new File(bundleManifestDir, "AndroidManifest.xml")
         List<Pair<String, Node>> splitProviderNodes = getSplitProviderNode()
         if (mergedManifest.exists()) {
             Document mergedManifestDoc = saxReader.read(new File(mergedManifestDir, "AndroidManifest.xml"))
             removeSplitProviders(mergedManifestDoc, mergedManifest, splitProviderNodes)
         }
-        if (bundleManifest.exists()) {
-            Document bundleManifestDoc = saxReader.read(new File(bundleManifestDir, "AndroidManifest.xml"))
-            removeSplitProviders(bundleManifestDoc, bundleManifest, splitProviderNodes)
+        File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(project, variantName)
+        if (bundleManifestDir != null) {
+            File bundleManifest = new File(bundleManifestDir, "AndroidManifest.xml")
+            if (bundleManifest.exists()) {
+                Document bundleManifestDoc = saxReader.read(new File(bundleManifestDir, "AndroidManifest.xml"))
+                removeSplitProviders(bundleManifestDoc, bundleManifest, splitProviderNodes)
+            }
         }
     }
 
