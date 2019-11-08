@@ -196,13 +196,17 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         }
                     }
 
-
                     qigsawAssembleTask.dependsOn showDependencies
 
                     qigsawAssembleTask.finalizedBy(assembleTask)
 
-                    packageTask.doFirst {
+                    Task mergeJniLibsTask = AGPCompat.getMergeJniLibsTask(project, variantName)
+
+                    mergeJniLibsTask.doLast {
                         prePackageAction.doBeforePackaging()
+                    }
+
+                    packageTask.doFirst {
                         if (versionAGP < VersionNumber.parse("3.5.0")) {
                             Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
                             if (dexSplitterTask != null) {

@@ -121,6 +121,14 @@ class AGPCompat {
         return project.tasks.findByName(mergeManifestTaskName)
     }
 
+    static Task getMergeJniLibsTask(Project project, String variantName) {
+        Task task = project.tasks.findByName("transformNativeLibsWithMergeJniLibsFor${variantName}")
+        if (task == null) {
+            task = project.tasks.findByName("merge${variantName}NativeLibs")
+        }
+        return task
+    }
+
     static File getMergeJniLibsDirCompat(Project project, String variantName) {
         Task task = project.tasks.findByName("transformNativeLibsWithMergeJniLibsFor${variantName}")
         File mergeJniLibsDir = null

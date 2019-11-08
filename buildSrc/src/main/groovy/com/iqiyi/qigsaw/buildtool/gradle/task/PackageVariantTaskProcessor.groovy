@@ -137,7 +137,7 @@ class PackageVariantTaskProcessor {
                 variantName,
                 versionName,
                 qigsawId,
-                abiFilters.isEmpty() ? null : abiFilters
+                abiFilters == null || abiFilters.isEmpty() ? null : abiFilters
         )
         Map<String, TopoSort.Node> nodeMap = new HashMap<>()
         TopoSort.Graph graph = new TopoSort.Graph()
@@ -199,7 +199,7 @@ class PackageVariantTaskProcessor {
     }
 
     static Set<String> sortAbis(Set<String> abis) {
-        if (abis.isEmpty() || abis.size() == 1) {
+        if (abis == null || abis.isEmpty() || abis.size() == 1) {
             return abis
         }
         ImmutableSet.Builder builder = ImmutableSet.builder()
