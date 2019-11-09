@@ -22,10 +22,38 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.splits
+package com.iqiyi.qigsaw.buildtool.gradle.internal.entity
 
-interface SplitInfoGenerator {
+class SplitDetails {
 
-    SplitInfo generate(String splitName, File splitApk, File splitManifest)
+    String qigsawId
 
+    String appVersionName
+
+    List<SplitInfo> splits
+
+    List<String> updateSplits
+
+    Set<String> abiFilters
+
+    SplitDetails(String qigsawId,
+                 String appVersionName,
+                 Set<String> abiFilters,
+                 List<SplitInfo> splits,
+                 List<String> updateSplits) {
+        this.qigsawId = qigsawId
+        this.appVersionName = appVersionName
+        this.abiFilters = abiFilters
+        this.splits = splits
+        this.updateSplits = updateSplits
+    }
+
+    @Override
+    String toString() {
+        """| qigsawId = ${qigsawId}
+           | appVersionName = ${appVersionName}
+           | splits = \n${splits}
+           | updateSplits = \n${updateSplits}
+        """.stripMargin()
+    }
 }

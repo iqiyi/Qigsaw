@@ -151,14 +151,16 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     SplitLog.i(TAG, "Split %s has been loaded, ignore it!", splitInfo.getSplitName());
                     continue;
                 }
-                SplitLog.i(TAG, "Split %s will work in this process!", splitInfo.getSplitName());
                 Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo);
                 if (splitFileIntent != null) {
-                    SplitLog.i(TAG, "Split %s has been installed, pack it!", splitInfo.getSplitName());
                     splitFileIntents.add(splitFileIntent);
                 }
+                SplitLog.i(TAG, "Split %s will work in process %s, %s it is %s",
+                        splitInfo.getSplitName(), currentProcessName,
+                        splitFileIntent == null ? "but" : "and",
+                        splitFileIntent == null ? "not installed" : "installed");
             } else {
-                SplitLog.i(TAG, "Split %s do not need work in this process", splitInfo.getSplitName());
+                SplitLog.i(TAG, "Split %s do not need work in process %s", splitInfo.getSplitName(), currentProcessName);
             }
         }
         return splitFileIntents;
@@ -169,7 +171,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         if (workProcesses != null && !workProcesses.isEmpty()) {
             String packageName = getContext().getPackageName();
             String simpleProcessName = currentProcessName.replace(packageName, "");
-            SplitLog.i(TAG, "Current process simple name: " + (TextUtils.isEmpty(simpleProcessName) ? "null" : simpleProcessName));
             return workProcesses.contains(simpleProcessName);
         }
         return true;
@@ -196,9 +197,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
         File markFile = new File(splitDir, splitInfo.getMd5());
-        File splitApk = new File(splitDir, splitName + SplitConstants.DOT_APK);
+        File splitApk;
+        if (splitInfo.isBuiltIn() && splitInfo.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+            splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
+        } else {
+            splitApk = new File(splitDir, splitName + SplitConstants.DOT_APK);
+        }
         if (markFile.exists()) {
-            SplitLog.i(TAG, "Split %s mark file is existed!", splitName);
             List<String> dependencies = splitInfo.getDependencies();
             if (dependencies != null) {
                 SplitLog.i(TAG, "Split %s has dependencies %s !", splitName, dependencies);
@@ -234,7 +239,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             if (addedDexPaths != null) {
                 splitFileIntent.putStringArrayListExtra(SplitConstants.KEY_ADDED_DEX, addedDexPaths);
             }
-            SplitLog.i(TAG, "Split %s has been installed, we can load it!", splitName);
             return splitFileIntent;
         }
         return null;

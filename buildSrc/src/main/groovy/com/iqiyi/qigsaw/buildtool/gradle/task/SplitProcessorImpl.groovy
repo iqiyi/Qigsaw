@@ -31,16 +31,16 @@ import com.android.build.gradle.internal.dsl.SigningConfig
 import com.android.ide.common.signing.CertificateInfo
 import com.android.ide.common.signing.KeystoreHelper
 import com.google.common.base.Preconditions
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfoGenerator
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitProcessor
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoGenerator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
 
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
-class SplitProcessorImpl implements SplitProcessor {
+class SplitProcessorImpl implements SplitApkProcessor {
 
     private Project appProject
 
@@ -96,7 +96,7 @@ class SplitProcessorImpl implements SplitProcessor {
     }
 
     @Override
-    final SplitInfo createSplitInfo(String splitName, File splitSignedApk, File splitManifest) {
+    final SplitInfo generateSplitInfo(String splitName, File splitSignedApk, File splitManifest) {
         SplitInfoGenerator infoGenerator = new SplitInfoGeneratorImpl(appProject, android, variantName, dynamicFeatureDependenciesMap)
         SplitInfo splitInfo = infoGenerator.generate(splitName, splitSignedApk, splitManifest)
         return splitInfo

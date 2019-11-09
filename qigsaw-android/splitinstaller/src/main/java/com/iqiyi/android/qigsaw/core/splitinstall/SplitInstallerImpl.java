@@ -64,7 +64,12 @@ final class SplitInstallerImpl extends SplitInstaller {
     @Override
     public InstallResult install(boolean startInstall, SplitInfo info) throws InstallException {
         File splitDir = SplitPathManager.require().getSplitDir(info);
-        File sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
+        File sourceApk;
+        if (info.isBuiltIn() && info.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+            sourceApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + info.getSplitName()));
+        } else {
+            sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
+        }
         validateSignature(sourceApk, info.getMd5());
         File splitLibDir = null;
         if (isLibExtractNeeded(info)) {

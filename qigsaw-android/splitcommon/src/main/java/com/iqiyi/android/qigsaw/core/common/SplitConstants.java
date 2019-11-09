@@ -57,4 +57,11 @@ public class SplitConstants {
 
     public static final String KEY_ADDED_DEX = "added-dex";
 
+    public static final String URL_ASSETS = "assets://";
+
+    public static final String URL_NATIVE = "native://";
+
+    public static final String SPLIT_PREFIX = "split_";
+
+
 }

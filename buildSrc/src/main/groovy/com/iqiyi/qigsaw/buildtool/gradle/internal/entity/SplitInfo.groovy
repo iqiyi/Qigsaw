@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.splits;
+package com.iqiyi.qigsaw.buildtool.gradle.internal.entity;
 
 class SplitInfo {
 

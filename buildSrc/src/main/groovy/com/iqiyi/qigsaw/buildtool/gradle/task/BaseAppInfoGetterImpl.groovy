@@ -24,8 +24,8 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.BaseAppInfoGetter
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.BaseAppInfoGetter
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import org.gradle.api.Project
 

@@ -22,26 +22,14 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
+package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-interface ManifestReader {
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo;
 
-    ComponentInfo readApplicationName()
+interface SplitApkProcessor {
 
-    String readPackageName()
+    File signSplitAPKIfNeed(File splitApk)
 
-    String readVersionCode()
-
-    String readVersionName()
-
-    Set<ComponentInfo> readActivities()
-
-    Set<ComponentInfo> readServices()
-
-    Set<ComponentInfo> readReceivers()
-
-    Set<ComponentInfo> readProviders()
-
-    boolean readOnDemand()
+    SplitInfo generateSplitInfo(String splitName, File splitSignedApk, File splitManifest)
 
 }

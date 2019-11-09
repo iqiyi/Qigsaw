@@ -27,9 +27,9 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
 import com.google.gson.Gson
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetails
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetailsCreator
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploader
@@ -37,7 +37,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploaderInstance
 import org.gradle.api.Project
 import org.gradle.api.Task
 
-class SplitDetailsCreatorImpl implements SplitDetailsCreator {
+class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
 
     final static String JSON_SUFFIX = ".json"
 
@@ -53,27 +53,31 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
 
     Set<String> abiFilters
 
+    boolean copyToAssets
+
     SplitDetailsCreatorImpl(Project appProject,
                             String variantName,
                             String appVersionName,
                             String qigsawId,
-                            Set<String> abiFilters) {
+                            Set<String> abiFilters,
+                            boolean copyToAssets) {
         this.appProject = appProject
         this.variantName = variantName
         this.appVersionName = appVersionName
         this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
         this.qigsawId = qigsawId
         this.abiFilters = abiFilters
+        this.copyToAssets = copyToAssets
     }
 
     @Override
     File createSplitDetailsJsonFile(List<SplitInfo> splits) {
-        AppliedSplitInfoJsonFileGetter fileGetter = new AppliedSplitInfoJsonFileGetter(appProject, splitDetailsFilePrefix)
-        File splitInfoJsonFromTinker = fileGetter.getSplitInfoJsonFileFromTinkerOldApk()
+        AppliedSplitJsonFileGetter fileGetter = new AppliedSplitJsonFileGetter(appProject, splitDetailsFilePrefix)
+        File splitInfoJsonFromTinker = fileGetter.getSplitJsonFileFromTinkerOldApk()
         if (splitInfoJsonFromTinker != null) {
             return createAppliedSplitInfoJsonFile(splitInfoJsonFromTinker, splits)
         }
-        File splitInfoJsonFromQigsaw = fileGetter.getSplitInfoJsonFileFromQigsawOldApk()
+        File splitInfoJsonFromQigsaw = fileGetter.getSplitJsonFileFromQigsawOldApk()
         if (splitInfoJsonFromQigsaw != null) {
             return createAppliedSplitInfoJsonFile(splitInfoJsonFromQigsaw, splits)
         }
@@ -164,7 +168,11 @@ class SplitDetailsCreatorImpl implements SplitDetailsCreator {
             }
         }
         splitInfo.builtIn = true
-        splitInfo.url = "assets://" + splitInfo.splitName + SdkConstants.DOT_ZIP
+        if (copyToAssets) {
+            splitInfo.url = "assets://${splitInfo.splitName + SdkConstants.DOT_ZIP}"
+        } else {
+            splitInfo.url = "native://libsplit_${splitInfo.splitName + SdkConstants.DOT_NATIVE_LIBS}"
+        }
     }
 
 

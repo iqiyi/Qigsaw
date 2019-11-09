@@ -22,21 +22,12 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
+package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-class ComponentInfo {
+interface BaseAppInfoGetter {
 
-    String name
+    String getPackageName()
 
-    String process
-
-    ComponentInfo(String name) {
-        this(name, null)
-    }
-
-    ComponentInfo(String name, String process) {
-        this.name = name
-        this.process = process
-    }
+    String getVersionName()
 
 }

@@ -22,12 +22,11 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.splits
+package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-interface BaseAppInfoGetter {
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
-    String getPackageName()
+interface SplitJsonFileCreator {
 
-    String getVersionName()
-
+    File createSplitDetailsJsonFile(List<SplitInfo> splits)
 }

@@ -28,15 +28,19 @@ import com.android.SdkConstants
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
 import com.google.common.collect.ImmutableSet
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitDetailsCreator
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TopoSort
+import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.tasks.TaskAction
 
-class PackageVariantTaskProcessor {
+import javax.inject.Inject
+
+class MakeSplitJsonFileTask extends DefaultTask {
 
     final def dynamicFeatures
 
@@ -50,20 +54,17 @@ class PackageVariantTaskProcessor {
 
     final String versionName
 
-    final Project project
-
     Map<String, List<String>> dynamicFeatureDependenciesMap
 
     final File mergeJniLib
 
-    PackageVariantTaskProcessor(Project project,
-                                File assetsDir,
-                                File mergeJniLib,
-                                String variantName,
-                                String versionName,
-                                def dynamicFeatures,
-                                String qigsawId) {
-        this.project = project
+    @Inject
+    MakeSplitJsonFileTask(File assetsDir,
+                          File mergeJniLib,
+                          String variantName,
+                          String versionName,
+                          def dynamicFeatures,
+                          String qigsawId) {
         this.assetsDir = assetsDir
         this.mergeJniLib = mergeJniLib
         this.variantName = variantName
@@ -72,15 +73,20 @@ class PackageVariantTaskProcessor {
         this.qigsawId = qigsawId
     }
 
-    void doBeforePackaging() {
-        processSplitAPKsInternal()
+    @TaskAction
+    void makeSplitInfoFile() {
+        makeSplitInfoFileInternal()
     }
 
-    void doAfterPackaging() {
-        clearQigsawIntermediates()
+    void deleteIntermediates() {
+        intermediates.each {
+            if (it.exists()) {
+                it.delete()
+            }
+        }
     }
 
-    private void processSplitAPKsInternal() {
+    void makeSplitInfoFileInternal() {
         Map<String, SplitInfo> splitInfoMap = new HashMap<>()
         //get version name and version code of base app project!
         for (String dynamicFeature : dynamicFeatures) {
@@ -107,18 +113,24 @@ class PackageVariantTaskProcessor {
             SplitProcessorImpl splitProcessor = new SplitProcessorImpl(project, android, variantName, dynamicFeatureDependenciesMap)
             //sign split apk if needed
             File splitSignedApk = splitProcessor.signSplitAPKIfNeed(splitApk)
-            SplitInfo splitInfo = splitProcessor.createSplitInfo(splitName, splitSignedApk, splitManifest)
+            SplitInfo splitInfo = splitProcessor.generateSplitInfo(splitName, splitSignedApk, splitManifest)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
         Set<String> abiFilters = project.android.defaultConfig.ndk.abiFilters
         File[] abiDirs = mergeJniLib.listFiles()
         Set<String> abiNames = null
+        boolean copyToAssets = true
         if (abiDirs != null) {
             ImmutableSet.Builder builder = ImmutableSet.builder()
             for (File abiDir : abiDirs) {
                 builder.add(abiDir.name)
             }
             abiNames = builder.build()
+        }
+        if (abiFilters != null && abiNames != null) {
+            if (abiNames.containsAll(abiFilters)) {
+                copyToAssets = false
+            }
         }
         if (abiFilters == null) {
             abiFilters = abiNames
@@ -132,12 +144,13 @@ class PackageVariantTaskProcessor {
             abiFilters = builder.build()
         }
         abiFilters = sortAbis(abiFilters)
-        SplitDetailsCreator detailsCreator = new SplitDetailsCreatorImpl(
+        SplitJsonFileCreator detailsCreator = new SplitDetailsCreatorImpl(
                 getProject(),
                 variantName,
                 versionName,
                 qigsawId,
-                abiFilters == null || abiFilters.isEmpty() ? null : abiFilters
+                abiFilters == null || abiFilters.isEmpty() ? null : abiFilters,
+                copyToAssets
         )
         Map<String, TopoSort.Node> nodeMap = new HashMap<>()
         TopoSort.Graph graph = new TopoSort.Graph()
@@ -164,36 +177,45 @@ class PackageVariantTaskProcessor {
             splits.add(info)
         }
         splits.addAll(splitInfoMap.values())
-        File splitDetailsFile = detailsCreator.createSplitDetailsJsonFile(splits)
-        copyQigsawOutputsToAssetsDir(splits, splitDetailsFile)
+        File splitJsonFile = detailsCreator.createSplitDetailsJsonFile(splits)
+        copySplitJsonFileAndSplitAPKs(splits, splitJsonFile, abiNames, copyToAssets)
     }
 
-    void copyQigsawOutputsToAssetsDir(List<SplitInfo> splits, File splitDetailsFile) {
+    void copySplitJsonFileAndSplitAPKs(List<SplitInfo> splits, File splitJsonFile, Set<String> abiNames, boolean copyToAssets) {
         if (!this.assetsDir.exists()) {
             this.assetsDir.mkdirs()
         }
-        File assetsSplitDetailsFile = new File(assetsDir, splitDetailsFile.name)
-        if (assetsSplitDetailsFile.exists()) {
-            assetsSplitDetailsFile.delete()
+        File outputJsonFile = new File(assetsDir, splitJsonFile.name)
+        if (outputJsonFile.exists()) {
+            outputJsonFile.delete()
         }
-        FileUtils.copyFile(splitDetailsFile, assetsSplitDetailsFile)
-        intermediates.add(assetsSplitDetailsFile)
-        for (SplitInfo info : splits) {
-            File assetsSplitApk = new File(assetsDir, info.splitName + SdkConstants.DOT_ZIP)
-            if (assetsSplitApk.exists()) {
-                assetsSplitApk.delete()
-            }
-            if (info.builtIn) {
-                FileUtils.copyFile(info.splitApk, assetsSplitApk)
-                intermediates.add(assetsSplitApk)
-            }
-        }
-    }
 
-    void clearQigsawIntermediates() {
-        intermediates.each {
-            if (it.exists()) {
-                it.delete()
+        FileUtils.copyFile(splitJsonFile, outputJsonFile)
+        intermediates.add(outputJsonFile)
+
+        if (copyToAssets) {
+            for (SplitInfo info : splits) {
+                File assetsSplitApk = new File(assetsDir, info.splitName + SdkConstants.DOT_ZIP)
+                if (assetsSplitApk.exists()) {
+                    assetsSplitApk.delete()
+                }
+                if (info.builtIn) {
+                    FileUtils.copyFile(info.splitApk, assetsSplitApk)
+                    intermediates.add(assetsSplitApk)
+                }
+            }
+        } else {
+            abiNames.each {
+                for (SplitInfo info : splits) {
+                    File jniSplitApk = new File(mergeJniLib, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
+                    if (jniSplitApk.exists()) {
+                        jniSplitApk.delete()
+                    }
+                    if (info.builtIn) {
+                        FileUtils.copyFile(info.splitApk, jniSplitApk)
+                        intermediates.add(jniSplitApk)
+                    }
+                }
             }
         }
     }

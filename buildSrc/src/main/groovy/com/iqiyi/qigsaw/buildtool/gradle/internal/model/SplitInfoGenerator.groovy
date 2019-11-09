@@ -22,12 +22,12 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.splits;
+package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-interface SplitProcessor {
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
-    File signSplitAPKIfNeed(File splitApk)
+interface SplitInfoGenerator {
 
-    SplitInfo createSplitInfo(String splitName, File splitSignedApk, File splitManifest)
+    SplitInfo generate(String splitName, File splitApk, File splitManifest)
 
 }

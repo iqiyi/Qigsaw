@@ -143,8 +143,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     }
                     File mergeJniLibsDir = AGPCompat.getMergeJniLibsDirCompat(project, variantName)
 
-                    PackageVariantTaskProcessor prePackageAction = new PackageVariantTaskProcessor(
-                            project,
+                    MakeSplitJsonFileTask makeSplitJsonFileTask = project.tasks.create("makeSplitJsonFileFor${variantName}", MakeSplitJsonFileTask,
                             mergeAssetsDir,
                             mergeJniLibsDir,
                             variantName,
@@ -152,6 +151,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             dynamicFeatures,
                             qigsawId
                     )
+
                     showDependencies.doLast {
 
                         Map<String, List<String>> dynamicFeatureDependenciesMap = new HashMap<>()
@@ -180,7 +180,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
 
-                        prePackageAction.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
+                        makeSplitJsonFileTask.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
                     }
 
                     featureProjects.each {
@@ -202,9 +202,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                     Task mergeJniLibsTask = AGPCompat.getMergeJniLibsTask(project, variantName)
 
-                    mergeJniLibsTask.doLast {
-                        prePackageAction.doBeforePackaging()
-                    }
+
+                    mergeJniLibsTask.finalizedBy(makeSplitJsonFileTask)
 
                     packageTask.doFirst {
                         if (versionAGP < VersionNumber.parse("3.5.0")) {
@@ -228,10 +227,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         }
                     }
                     packageTask.doLast {
-                        prePackageAction.doAfterPackaging()
+                        makeSplitJsonFileTask.deleteIntermediates()
                     }
                     processManifestTask.doLast {
-                        SplitProviderProcessor providerProcessor = new SplitProviderProcessor(project, dynamicFeatureNames, variantName)
+                        SplitContentProviderProcessor providerProcessor = new SplitContentProviderProcessor(project, dynamicFeatureNames, variantName)
                         providerProcessor.process()
                     }
                 }

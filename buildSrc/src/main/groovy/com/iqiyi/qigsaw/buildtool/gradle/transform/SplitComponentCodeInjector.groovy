@@ -24,7 +24,7 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ComponentInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import javassist.CannotCompileException
 import javassist.CtClass
 import javassist.NotFoundException
@@ -106,7 +106,6 @@ class SplitComponentCodeInjector {
     }
 
     static void zipFile(byte[] classBytesArray, ZipOutputStream zos, String entryName) {
-        long time = System.currentTimeMillis()
         try {
             ZipEntry entry = new ZipEntry(entryName)
             zos.putNextEntry(entry)
@@ -116,6 +115,5 @@ class SplitComponentCodeInjector {
         } catch (Exception ex) {
             ex.printStackTrace()
         }
-        println("qigsaw ------ cost ${System.currentTimeMillis() - time} to zip " + entryName)
     }
 }

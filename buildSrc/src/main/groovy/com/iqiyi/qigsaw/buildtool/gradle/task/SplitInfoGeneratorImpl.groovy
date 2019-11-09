@@ -26,12 +26,12 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.build.gradle.AppExtension
 import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.splits.SplitInfoGenerator
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ComponentInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoGenerator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import org.gradle.api.Project
 
 class SplitInfoGeneratorImpl implements SplitInfoGenerator {

@@ -463,16 +463,18 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         for (SplitInfo splitInfo : splitInfoList) {
             File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
             String fileName = splitInfo.getSplitName() + SplitConstants.DOT_APK;
-            File splitApk = new File(splitDir, fileName);
-            checkSplitApkMd5(splitInfo, splitDir, splitApk);
+            File splitApk;
+            if (splitInfo.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+                splitApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
+            } else {
+                splitApk = new File(splitDir, fileName);
+            }
             SplitDownloadPreprocessor processor = new SplitDownloadPreprocessor(splitDir, splitApk);
             try {
                 processor.load(appContext, splitInfo);
             } finally {
                 FileUtil.closeQuietly(processor);
             }
-            SplitLog.d(TAG, "Split dir :" + splitDir.getAbsolutePath());
-            SplitLog.d(TAG, "Split Name :" + fileName);
             //calculate splits total download size.
             totalBytesToDownload = totalBytesToDownload + splitInfo.getSize();
             if (!splitApk.exists()) {
@@ -480,23 +482,5 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             }
         }
         return new long[]{totalBytesToDownload, realTotalBytesNeedToDownload};
-    }
-
-    private void checkSplitApkMd5(SplitInfo info, File splitDir, File splitApk) {
-        if (FileUtil.isLegalFile(splitApk)) {
-            String apkMd5 = FileUtil.getMD5(splitApk);
-            if (TextUtils.isEmpty(apkMd5)) {
-                //fallback to check apk length.
-                if (info.getSize() != splitApk.length()) {
-                    SplitLog.w(TAG, "Split %s length change", info.getSplitName());
-                    FileUtil.deleteDir(splitDir, false);
-                }
-            } else {
-                if (!info.getMd5().equals(apkMd5)) {
-                    SplitLog.w(TAG, "Split %s md5 change", info.getSplitName());
-                    FileUtil.deleteDir(splitDir, false);
-                }
-            }
-        }
     }
 }

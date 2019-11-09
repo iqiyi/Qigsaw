@@ -22,38 +22,21 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.splits;
+package com.iqiyi.qigsaw.buildtool.gradle.internal.entity
 
-class SplitDetails {
+class ComponentInfo {
 
-    String qigsawId
+    String name
 
-    String appVersionName
+    String process
 
-    List<SplitInfo> splits
-
-    List<String> updateSplits
-
-    Set<String> abiFilters
-
-    SplitDetails(String qigsawId,
-                 String appVersionName,
-                 Set<String> abiFilters,
-                 List<SplitInfo> splits,
-                 List<String> updateSplits) {
-        this.qigsawId = qigsawId
-        this.appVersionName = appVersionName
-        this.abiFilters = abiFilters
-        this.splits = splits
-        this.updateSplits = updateSplits
+    ComponentInfo(String name) {
+        this(name, null)
     }
 
-    @Override
-    String toString() {
-        """| qigsawId = ${qigsawId}
-           | appVersionName = ${appVersionName}
-           | splits = \n${splits}
-           | updateSplits = \n${updateSplits}
-        """.stripMargin()
+    ComponentInfo(String name, String process) {
+        this.name = name
+        this.process = process
     }
+
 }

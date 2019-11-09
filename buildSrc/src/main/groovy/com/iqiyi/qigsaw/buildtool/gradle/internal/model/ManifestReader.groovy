@@ -22,10 +22,28 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.splits
+package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-interface SplitDetailsCreator {
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 
-    File createSplitDetailsJsonFile(List<SplitInfo> splits)
+interface ManifestReader {
+
+    ComponentInfo readApplicationName()
+
+    String readPackageName()
+
+    String readVersionCode()
+
+    String readVersionName()
+
+    Set<ComponentInfo> readActivities()
+
+    Set<ComponentInfo> readServices()
+
+    Set<ComponentInfo> readReceivers()
+
+    Set<ComponentInfo> readProviders()
+
+    boolean readOnDemand()
 
 }

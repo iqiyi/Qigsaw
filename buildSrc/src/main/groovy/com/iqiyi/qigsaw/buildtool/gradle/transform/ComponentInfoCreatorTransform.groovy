@@ -31,7 +31,7 @@ import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection

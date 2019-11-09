@@ -25,6 +25,8 @@
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.google.common.collect.ImmutableSet
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 
 class ManifestReaderImpl implements ManifestReader {
 

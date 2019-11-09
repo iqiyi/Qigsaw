@@ -32,8 +32,8 @@ import com.android.build.api.transform.TransformException
 import com.android.build.api.transform.TransformInput
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ComponentInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import javassist.ClassPool
 import javassist.CtClass

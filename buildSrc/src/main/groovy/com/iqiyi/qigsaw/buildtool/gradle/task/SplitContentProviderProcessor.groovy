@@ -34,7 +34,7 @@ import org.dom4j.io.XMLWriter
 import org.gradle.api.Project
 import org.gradle.internal.Pair
 
-class SplitProviderProcessor {
+class SplitContentProviderProcessor {
 
     Project project
 
@@ -44,9 +44,9 @@ class SplitProviderProcessor {
 
     SAXReader saxReader = new SAXReader()
 
-    SplitProviderProcessor(Project project,
-                           def dynamicFeatures,
-                           String variantName) {
+    SplitContentProviderProcessor(Project project,
+                                  def dynamicFeatures,
+                                  String variantName) {
         this.project = project
         this.dynamicFeatures = dynamicFeatures
         this.variantName = variantName

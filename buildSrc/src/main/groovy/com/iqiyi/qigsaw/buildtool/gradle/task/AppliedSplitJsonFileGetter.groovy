@@ -30,28 +30,28 @@ import org.gradle.api.Project
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-class AppliedSplitInfoJsonFileGetter {
+class AppliedSplitJsonFileGetter {
 
     Project project
 
     String splitDetailsFilePrefix
 
-    AppliedSplitInfoJsonFileGetter(Project project, String splitDetailsFilePrefix) {
+    AppliedSplitJsonFileGetter(Project project, String splitDetailsFilePrefix) {
         this.project = project
         this.splitDetailsFilePrefix = splitDetailsFilePrefix
     }
 
-    File getSplitInfoJsonFileFromQigsawOldApk() {
+    File getSplitJsonFileFromQigsawOldApk() {
         String oldApkPath = project.extensions.qigsawSplit.oldApk
         if (oldApkPath == null) return null
         File oldApk = new File(oldApkPath)
         if (oldApk.exists() && oldApk.length() > 0) {
-            return extractSplitInfoJsonFileInOldApk(oldApk)
+            return extractSplitJsonFileInOldApk(oldApk)
         }
         return null
     }
 
-    File getSplitInfoJsonFileFromTinkerOldApk() {
+    File getSplitJsonFileFromTinkerOldApk() {
         String oldApkPath = null
         try {
             oldApkPath = project.extensions.tinkerPatch.oldApk
@@ -61,12 +61,12 @@ class AppliedSplitInfoJsonFileGetter {
         if (oldApkPath == null) return null
         File oldApk = new File(oldApkPath)
         if (oldApk.exists() && oldApk.length() > 0) {
-            return extractSplitInfoJsonFileInOldApk(oldApk)
+            return extractSplitJsonFileInOldApk(oldApk)
         }
         return null
     }
 
-    private File extractSplitInfoJsonFileInOldApk(File oldApk) {
+    private File extractSplitJsonFileInOldApk(File oldApk) {
         ZipFile sourceZip = new ZipFile(oldApk)
         Enumeration e = sourceZip.entries()
         File file = null
