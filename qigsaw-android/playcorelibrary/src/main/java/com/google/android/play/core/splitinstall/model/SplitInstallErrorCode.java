@@ -8,7 +8,7 @@ public @interface SplitInstallErrorCode {
      */
     int ACTIVE_SESSIONS_LIMIT_EXCEEDED = -1;
     /**
-     * A requested module is not available (to this user/device, for the hasInstance apk).
+     * A requested module is not available (to this user/device, for the installed apk).
      */
     int MODULE_UNAVAILABLE = -2;
     /**

@@ -34,7 +34,7 @@ package com.iqiyi.android.qigsaw.core.splitinstall;
     int ACTIVE_SESSIONS_LIMIT_EXCEEDED = -1;
 
     /**
-     * A requested module is not available (to this user/device, for the hasInstance apk).
+     * A requested module is not available (to this user/device, for the installed apk).
      */
     int MODULE_UNAVAILABLE = -2;
 
@@ -72,6 +72,11 @@ package com.iqiyi.android.qigsaw.core.splitinstall;
      * Split download has failed.
      */
     int DOWNLOAD_FAILED = -10;
+
+    /**
+     * Can't uninstall splits so far.
+     */
+    int UNINSTALLATION_UNSUPPORTED = -98;
 
     /**
      * Copying builtin split apk failed

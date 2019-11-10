@@ -43,6 +43,29 @@ public class FileUtil {
         }
     }
 
+    public static void createFileSafely(File file) throws IOException {
+        if (!file.exists()) {
+            boolean isCreationSuccessful = false;
+            int numAttempts = 0;
+            Exception cause = null;
+            while (numAttempts < SplitConstants.MAX_RETRY_ATTEMPTS && !isCreationSuccessful) {
+                numAttempts++;
+                try {
+                    if (!file.createNewFile()) {
+                        SplitLog.w(TAG, "File %s already exists", file.getAbsolutePath());
+                    }
+                    isCreationSuccessful = true;
+                } catch (Exception e) {
+                    isCreationSuccessful = false;
+                    cause = e;
+                }
+            }
+            if (!isCreationSuccessful) {
+                throw new IOException("Failed to create file " + file.getAbsolutePath(), cause);
+            }
+        }
+    }
+
     public static void copyFile(File source, File dest) throws IOException {
         copyFile(new FileInputStream(source), new FileOutputStream(dest));
     }

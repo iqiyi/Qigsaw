@@ -15,11 +15,11 @@ public @interface SplitInstallSessionStatus {
      */
     int DOWNLOADING = 2;
     /**
-     * The split is downloaded but not yet hasInstance.
+     * The split is downloaded but not yet installed.
      */
     int DOWNLOADED = 3;
     /**
-     * The splits are being hasInstance.
+     * The splits are being installed.
      */
     int INSTALLING = 4;
     /**

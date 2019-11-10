@@ -196,7 +196,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     private Intent createLastInstalledSplitFileIntent(SplitInfo splitInfo) {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
-        File markFile = new File(splitDir, splitInfo.getMd5());
+        File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo);
         File splitApk;
         if (splitInfo.isBuiltIn() && splitInfo.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
             splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
@@ -209,8 +209,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                 SplitLog.i(TAG, "Split %s has dependencies %s !", splitName, dependencies);
                 for (String dependency : dependencies) {
                     SplitInfo dependencySplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getContext(), dependency);
-                    File dependencySplitDir = SplitPathManager.require().getSplitDir(dependencySplitInfo);
-                    File dependencyMarkFile = new File(dependencySplitDir, dependencySplitInfo.getMd5());
+                    File dependencyMarkFile = SplitPathManager.require().getSplitMarkFile(dependencySplitInfo);
                     if (!dependencyMarkFile.exists()) {
                         SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
                         return null;

@@ -67,9 +67,15 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     private final long downloadSizeThresholdValue;
 
-    private final Set<String> installedSplitInstallInfo;
+    private final Set<String> installedSplitForAAB;
 
     private final Class<?> obtainUserConfirmationActivityClass;
+
+    private static final int DEFAULT_INTERNAL_ERROR_CODE = -1;
+
+    private int internalErrorCodeCache = DEFAULT_INTERNAL_ERROR_CODE;
+
+    private List<String> allSplitNamesCache;
 
     SplitInstallSupervisorImpl(Context appContext,
                                SplitInstallSessionManager sessionManager,
@@ -80,7 +86,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         this.userDownloader = userDownloader;
         long downloadSizeThreshold = userDownloader.getDownloadSizeThresholdWhenUsingMobileData();
         this.downloadSizeThresholdValue = downloadSizeThreshold < 0 ? Long.MAX_VALUE : downloadSizeThreshold;
-        this.installedSplitInstallInfo = new SplitAABInfoProvider(this.appContext).getInstalledSplitsForAAB();
+        this.installedSplitForAAB = new SplitAABInfoProvider(this.appContext).getInstalledSplitsForAAB();
         this.obtainUserConfirmationActivityClass = obtainUserConfirmationActivityClass;
     }
 
@@ -124,8 +130,8 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         List<String> moduleNameList = unBundleModuleNames(moduleNames);
         int errorCode = onPreInstallSplits(moduleNameList);
         if (errorCode == SplitInstallInternalErrorCode.NO_ERROR) {
-            if (!getInstalledSplitInstallInfo().isEmpty()) {
-                if (getInstalledSplitInstallInfo().containsAll(moduleNameList)) {
+            if (!getInstalledSplitForAAB().isEmpty()) {
+                if (getInstalledSplitForAAB().containsAll(moduleNameList)) {
                     callback.onDeferredInstall(null);
                 }
             } else {
@@ -140,7 +146,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     @Override
     public void deferredUninstall(List<Bundle> moduleNames, Callback callback) {
         //don't support now.
-        callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.INTERNAL_ERROR));
+        callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.UNINSTALLATION_UNSUPPORTED));
     }
 
     @Override
@@ -225,8 +231,8 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private int onPreInstallSplits(List<String> moduleNames) {
-        if (!getInstalledSplitInstallInfo().isEmpty()) {
-            if (!getInstalledSplitInstallInfo().containsAll(moduleNames)) {
+        if (!getInstalledSplitForAAB().isEmpty()) {
+            if (!getInstalledSplitForAAB().containsAll(moduleNames)) {
                 return SplitInstallInternalErrorCode.INVALID_REQUEST;
             }
         } else {
@@ -240,7 +246,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private int checkRequestErrorCode(List<String> moduleNames) {
-        if (!isRequestValid(moduleNames)) {
+        if (isRequestInvalid(moduleNames)) {
             return SplitInstallInternalErrorCode.INVALID_REQUEST;
         }
         if (!isModuleAvailable(moduleNames)) {
@@ -250,33 +256,41 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private int checkInternalErrorCode() {
+        if (internalErrorCodeCache != DEFAULT_INTERNAL_ERROR_CODE) {
+            return internalErrorCodeCache;
+        }
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         if (manager == null) {
             SplitLog.w(TAG, "Failed to fetch SplitInfoManager instance!");
-            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            return internalErrorCodeCache;
         }
         Collection<SplitInfo> allSplits = manager.getAllSplitInfo(appContext);
         if (allSplits == null || allSplits.isEmpty()) {
             SplitLog.w(TAG, "Failed to parse json file of split info!");
-            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            return internalErrorCodeCache;
         }
         String baseAppVersionName = manager.getBaseAppVersionName(appContext);
         String versionName = SplitBaseInfoProvider.getVersionName();
         if (TextUtils.isEmpty(baseAppVersionName) || !baseAppVersionName.equals(versionName)) {
             SplitLog.w(TAG, "Failed to match base app version-name excepted base app version %s but %s!", versionName, baseAppVersionName);
-            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            return internalErrorCodeCache;
         }
         String qigsawId = manager.getQigsawId(appContext);
         String baseAppQigsawId = SplitBaseInfoProvider.getQigsawId();
         if (TextUtils.isEmpty(qigsawId) || !qigsawId.equals(baseAppQigsawId)) {
             SplitLog.w(TAG, "Failed to match base app qigsaw-version excepted %s but %s!", baseAppQigsawId, qigsawId);
-            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
+            return internalErrorCodeCache;
         }
-        return SplitInstallInternalErrorCode.NO_ERROR;
+        internalErrorCodeCache = SplitInstallInternalErrorCode.NO_ERROR;
+        return internalErrorCodeCache;
     }
 
-    private Set<String> getInstalledSplitInstallInfo() {
-        return installedSplitInstallInfo;
+    private Set<String> getInstalledSplitForAAB() {
+        return installedSplitForAAB;
     }
 
     private List<SplitInfo> getNeed2BeInstalledSplits(List<String> moduleNames) {
@@ -387,15 +401,18 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         sessionManager.emitSessionState(sessionState);
     }
 
-    private boolean isRequestValid(List<String> moduleNames) {
+    private boolean isRequestInvalid(List<String> moduleNames) {
+        if (allSplitNamesCache != null) {
+            return !allSplitNamesCache.containsAll(moduleNames);
+        }
+        allSplitNamesCache = new ArrayList<>();
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
-        List<String> allSplits = new ArrayList<>();
         assert manager != null;
         Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(appContext);
         for (SplitInfo info : splitInfoList) {
-            allSplits.add(info.getSplitName());
+            allSplitNamesCache.add(info.getSplitName());
         }
-        return allSplits.containsAll(moduleNames);
+        return !allSplitNamesCache.containsAll(moduleNames);
     }
 
     private boolean isModuleAvailable(List<String> moduleNames) {

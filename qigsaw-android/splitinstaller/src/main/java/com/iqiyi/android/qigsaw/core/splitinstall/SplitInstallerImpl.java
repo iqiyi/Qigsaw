@@ -116,8 +116,7 @@ final class SplitInstallerImpl extends SplitInstaller {
         if (dependencies != null) {
             for (String dependency : dependencies) {
                 SplitInfo dependencySplitInfo = manager.getSplitInfo(appContext, dependency);
-                File dependencySplitDir = SplitPathManager.require().getSplitDir(dependencySplitInfo);
-                File dependencyMarkFile = new File(dependencySplitDir, dependencySplitInfo.getMd5());
+                File dependencyMarkFile = SplitPathManager.require().getSplitMarkFile(dependencySplitInfo);
                 if (!dependencyMarkFile.exists()) {
                     SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
                     return false;
@@ -198,28 +197,13 @@ final class SplitInstallerImpl extends SplitInstaller {
 
     @Override
     protected void createInstalledMark(SplitInfo info) throws InstallException {
-        File splitDir = SplitPathManager.require().getSplitDir(info);
-        File markFile = new File(splitDir, info.getMd5());
+        File markFile = SplitPathManager.require().getSplitMarkFile(info);
         if (!markFile.exists()) {
-            boolean isCreationSuccessful = false;
-            int numAttempts = 0;
-            Exception cause = null;
-            while (numAttempts < SplitConstants.MAX_RETRY_ATTEMPTS && !isCreationSuccessful) {
-                numAttempts++;
-                try {
-                    if (!markFile.createNewFile()) {
-                        SplitLog.w(TAG, "Split %s mark file %s already exists", info.getSplitName(), markFile.getAbsolutePath());
-                    }
-                    isCreationSuccessful = true;
-                } catch (Exception e) {
-                    isCreationSuccessful = false;
-                    cause = e;
-                }
+            try {
+                FileUtil.createFileSafely(markFile);
+            } catch (IOException e) {
+                throw new InstallException(SplitInstallError.MARK_CREATE_FAILED, e);
             }
-            if (!isCreationSuccessful) {
-                throw new InstallException(SplitInstallError.MARK_CREATE_FAILED, cause);
-            }
-
         }
     }
 

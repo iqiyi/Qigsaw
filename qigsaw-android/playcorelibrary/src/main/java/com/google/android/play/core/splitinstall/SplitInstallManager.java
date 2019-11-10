@@ -56,7 +56,7 @@ public interface SplitInstallManager {
     Task<Void> deferredUninstall(List<String> moduleNames);
 
     /**
-     * Returns which modules are hasInstance (excluding the base module).
+     * Returns which modules are installed (excluding the base module).
      */
     Set<String> getInstalledModules();
 

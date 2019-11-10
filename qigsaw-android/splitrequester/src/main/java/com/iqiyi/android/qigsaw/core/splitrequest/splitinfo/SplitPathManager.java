@@ -91,6 +91,24 @@ public final class SplitPathManager {
         return splitDir;
     }
 
+    public File getUninstallSplitsDir() {
+        File uninstallSplitsDir = new File(rootDir, "uninstall");
+        if (!uninstallSplitsDir.exists()) {
+            uninstallSplitsDir.mkdirs();
+        }
+        return uninstallSplitsDir;
+    }
+
+    /**
+     * Get mark file for split, if file is existed, indicate the split has been installed.
+     *
+     * @param info split info.
+     */
+    public File getSplitMarkFile(SplitInfo info) {
+        File splitDir = getSplitDir(info);
+        return new File(splitDir, info.getMd5());
+    }
+
     /**
      * get storage path of split optimized dex
      *
