@@ -73,7 +73,7 @@ class SplitComponentCodeInjector {
         boolean isActivity = false
         if (!activities.isEmpty()) {
             activities.each {
-                if (it.name.contains(ctClass.name)) {
+                if (it.name.equals(ctClass.name)) {
                     isActivity = true
                 }
             }
@@ -85,7 +85,7 @@ class SplitComponentCodeInjector {
         boolean isService = false
         if (!services.isEmpty()) {
             services.each {
-                if (it.name.contains(ctClass.name)) {
+                if (it.name.equals(ctClass.name)) {
                     isService = true
                 }
             }
@@ -97,7 +97,7 @@ class SplitComponentCodeInjector {
         boolean isReceiver = false
         if (!receivers.isEmpty()) {
             receivers.each {
-                if (it.name.contains(ctClass.name)) {
+                if (it.name.equals(ctClass.name)) {
                     isReceiver = true
                 }
             }

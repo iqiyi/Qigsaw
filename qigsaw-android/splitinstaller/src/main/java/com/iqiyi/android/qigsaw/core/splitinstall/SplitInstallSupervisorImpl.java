@@ -71,12 +71,6 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     private final Class<?> obtainUserConfirmationActivityClass;
 
-    private static final int DEFAULT_INTERNAL_ERROR_CODE = -1;
-
-    private int internalErrorCodeCache = DEFAULT_INTERNAL_ERROR_CODE;
-
-    private List<String> allSplitNamesCache;
-
     SplitInstallSupervisorImpl(Context appContext,
                                SplitInstallSessionManager sessionManager,
                                Downloader userDownloader,
@@ -256,37 +250,29 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private int checkInternalErrorCode() {
-        if (internalErrorCodeCache != DEFAULT_INTERNAL_ERROR_CODE) {
-            return internalErrorCodeCache;
-        }
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         if (manager == null) {
             SplitLog.w(TAG, "Failed to fetch SplitInfoManager instance!");
-            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
-            return internalErrorCodeCache;
+            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
         }
         Collection<SplitInfo> allSplits = manager.getAllSplitInfo(appContext);
         if (allSplits == null || allSplits.isEmpty()) {
             SplitLog.w(TAG, "Failed to parse json file of split info!");
-            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
-            return internalErrorCodeCache;
+            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
         }
         String baseAppVersionName = manager.getBaseAppVersionName(appContext);
         String versionName = SplitBaseInfoProvider.getVersionName();
         if (TextUtils.isEmpty(baseAppVersionName) || !baseAppVersionName.equals(versionName)) {
             SplitLog.w(TAG, "Failed to match base app version-name excepted base app version %s but %s!", versionName, baseAppVersionName);
-            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
-            return internalErrorCodeCache;
+            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
         }
         String qigsawId = manager.getQigsawId(appContext);
         String baseAppQigsawId = SplitBaseInfoProvider.getQigsawId();
         if (TextUtils.isEmpty(qigsawId) || !qigsawId.equals(baseAppQigsawId)) {
             SplitLog.w(TAG, "Failed to match base app qigsaw-version excepted %s but %s!", baseAppQigsawId, qigsawId);
-            internalErrorCodeCache = SplitInstallInternalErrorCode.INTERNAL_ERROR;
-            return internalErrorCodeCache;
+            return SplitInstallInternalErrorCode.INTERNAL_ERROR;
         }
-        internalErrorCodeCache = SplitInstallInternalErrorCode.NO_ERROR;
-        return internalErrorCodeCache;
+        return SplitInstallInternalErrorCode.NO_ERROR;
     }
 
     private Set<String> getInstalledSplitForAAB() {
@@ -402,17 +388,14 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private boolean isRequestInvalid(List<String> moduleNames) {
-        if (allSplitNamesCache != null) {
-            return !allSplitNamesCache.containsAll(moduleNames);
-        }
-        allSplitNamesCache = new ArrayList<>();
+        List<String> allSplitNames = new ArrayList<>();
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         assert manager != null;
         Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(appContext);
         for (SplitInfo info : splitInfoList) {
-            allSplitNamesCache.add(info.getSplitName());
+            allSplitNames.add(info.getSplitName());
         }
-        return !allSplitNamesCache.containsAll(moduleNames);
+        return !allSplitNames.containsAll(moduleNames);
     }
 
     private boolean isModuleAvailable(List<String> moduleNames) {

@@ -26,7 +26,6 @@ package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
@@ -53,7 +52,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
             throw new GradleException('generateQigsawApk: Android Gradle Version is required 3.2.0 at least!')
         }
         //extends from AppExtension
-        BaseAppModuleExtension android = project.extensions.getByType(BaseAppModuleExtension)
+        def android = project.extensions.android
 
         ComponentInfoCreatorTransform commonInfoCreatorTransform = new ComponentInfoCreatorTransform(project)
         android.registerTransform(commonInfoCreatorTransform)
@@ -134,7 +133,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             removeRulesAboutMultidex(multidexTask, appVariant)
                         }
                     }
-                    //fetch every split's dependencies of dynamic-feature
                     File mergeAssetsDir = null
                     mergeAssetsTask.outputs.files.each {
                         if (it.absolutePath.contains(appVariant.name) && !it.absolutePath.contains("incremental")) {
@@ -151,7 +149,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             dynamicFeatures,
                             qigsawId
                     )
-
+                    //fetch every split's dependencies of dynamic-feature
                     showDependencies.doLast {
 
                         Map<String, List<String>> dynamicFeatureDependenciesMap = new HashMap<>()

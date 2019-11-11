@@ -154,7 +154,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
             SplitLog.i(TAG, "Cost %d mil-second to parse default split info", (System.currentTimeMillis() - currentTime));
             return details;
         } catch (Throwable e) {
-            SplitLog.w(TAG, "Failed to create default split info!", e);
+            SplitLog.printErrStackTrace(TAG, e, "Failed to create default split info!");
         }
         return null;
     }
@@ -167,7 +167,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
             SplitLog.i(TAG, "Cost %d mil-second to parse updated split info", (System.currentTimeMillis() - currentTime));
             return details;
         } catch (Throwable e) {
-            SplitLog.w(TAG, "Failed to create updated split info!", e);
+            SplitLog.printErrStackTrace(TAG, e, "Failed to create updated split info!");
         }
         return null;
     }
@@ -268,7 +268,6 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
             }
         }
         JSONArray array = contentObj.optJSONArray("splits");
-        List<String> splitAbis = null;
         for (int i = 0; i < array.length(); i++) {
             JSONObject itemObj = array.getJSONObject(i);
             boolean builtIn = itemObj.optBoolean("builtIn");
@@ -280,6 +279,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
             int minSdkVersion = itemObj.optInt("minSdkVersion");
             JSONArray nativeLibrariesArray = itemObj.optJSONArray("nativeLibraries");
             List<SplitInfo.LibInfo> nativeLibrariesList = null;
+            List<String> splitAbis = null;
             if (nativeLibrariesArray != null && nativeLibrariesArray.length() > 0) {
                 nativeLibrariesList = new ArrayList<>(nativeLibrariesArray.length());
                 splitAbis = new ArrayList<>(nativeLibrariesArray.length());
