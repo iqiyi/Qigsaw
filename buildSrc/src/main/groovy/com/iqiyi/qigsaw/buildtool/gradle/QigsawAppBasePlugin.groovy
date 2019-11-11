@@ -184,12 +184,12 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     featureProjects.each {
                         Project dynamicFeatureProject = it
                         try {
-                            configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, qigsawAssembleTask)
+                            configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, makeSplitJsonFileTask)
                             println("dynamic feature project has been evaluated!")
                         } catch (Exception e) {
                             println("dynamic feature project has not been evaluated!")
                             it.afterEvaluate {
-                                configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, qigsawAssembleTask)
+                                configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, makeSplitJsonFileTask)
                             }
                         }
                     }
@@ -236,12 +236,12 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         }
     }
 
-    private static void configQigsawAssembleTaskDependencies(Project dynamicFeatureProject, String baseAppVariant, Task qigsawAssembleTask) {
+    private static void configQigsawAssembleTaskDependencies(Project dynamicFeatureProject, String baseAppVariant, Task makeSplitJsonFileTask) {
         AppExtension dynamicFeatureAndroid = dynamicFeatureProject.extensions.getByType(AppExtension)
         dynamicFeatureAndroid.applicationVariants.all { variant ->
             ApplicationVariant appVariant = variant
             if (appVariant.name.equalsIgnoreCase(baseAppVariant)) {
-                qigsawAssembleTask.dependsOn AGPCompat.getAssemble(appVariant)
+                makeSplitJsonFileTask.dependsOn AGPCompat.getAssemble(appVariant)
             }
         }
     }
