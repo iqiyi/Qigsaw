@@ -51,13 +51,18 @@ final class SplitUnKnownFileTypeDexLoader {
                             Constructor<?> constructor_Init = HiddenApiReflection.findConstructor(class_Element, File.class, boolean.class, File.class, DexFile.class);
                             element = constructor_Init.newInstance(file, false, file, dex);
                         } catch (NoSuchMethodException ex) {
-                            Constructor<?> constructor_Init = HiddenApiReflection.findConstructor(class_Element, File.class, ZipFile.class, DexFile.class);
                             try {
-                                ZipFile zipFile = new ZipFile(file);
-                                element = constructor_Init.newInstance(file, zipFile, dex);
-                            } catch (IOException ioEx) {
-                                SplitLog.printErrStackTrace(TAG, ioEx, "Unable to open zip file: " + file.getAbsolutePath());
-                                continue;
+                                Constructor<?> constructor_Init = HiddenApiReflection.findConstructor(class_Element, File.class, File.class, DexFile.class);
+                                element = constructor_Init.newInstance(file, file, dex);
+                            } catch (NoSuchMethodException ex2) {
+                                Constructor<?> constructor_Init = HiddenApiReflection.findConstructor(class_Element, File.class, ZipFile.class, DexFile.class);
+                                try {
+                                    ZipFile zipFile = new ZipFile(file);
+                                    element = constructor_Init.newInstance(file, zipFile, dex);
+                                } catch (IOException ioEx) {
+                                    SplitLog.printErrStackTrace(TAG, ioEx, "Unable to open zip file: " + file.getAbsolutePath());
+                                    continue;
+                                }
                             }
                         }
                         elements.add(element);
