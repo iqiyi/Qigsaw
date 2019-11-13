@@ -151,7 +151,7 @@ final class SplitInstallerImpl extends SplitInstaller {
     @Override
     protected List<String> extractMultiDex(SplitInfo info, File splitApk) throws InstallException {
         SplitLog.w(TAG,
-                "VM do not support multi-dex, but split %s has multi dex files, so we need creteSplitInstallService other dex files manually",
+                "VM do not support multi-dex, but split %s has multi dex files, so we need install other dex files manually",
                 splitApk.getName());
         File codeCacheDir = SplitPathManager.require().getSplitCodeCacheDir(info);
         String prefsKeyPrefix = info.getSplitName() + "@" + SplitBaseInfoProvider.getVersionName() + "@" + info.getSplitVersion();

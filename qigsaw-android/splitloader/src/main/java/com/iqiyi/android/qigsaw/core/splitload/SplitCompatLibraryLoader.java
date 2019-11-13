@@ -20,7 +20,7 @@ final class SplitCompatLibraryLoader {
     private static final String TAG = "SplitCompatLibraryLoader";
 
     /**
-     * All versions of createSplitInstallService logic follow these rules:
+     * All versions of load logic follow these rules:
      * 1. If path of {@code folder} is not injected into the classloader, inject it to the
      * beginning of pathList in the classloader.
      * <p>
@@ -40,7 +40,7 @@ final class SplitCompatLibraryLoader {
             try {
                 V25.load(classLoader, folder);
             } catch (Throwable throwable) {
-                // createSplitInstallService fail, try to treat it as v23
+                // load fail, try to treat it as v23
                 // some preview N version may go here
                 SplitLog.e(TAG, "load, v25 fail, sdk: %d, error: %s, try to fallback to V23",
                         Build.VERSION.SDK_INT, throwable.getMessage());
@@ -50,7 +50,7 @@ final class SplitCompatLibraryLoader {
             try {
                 V23.load(classLoader, folder);
             } catch (Throwable throwable) {
-                // createSplitInstallService fail, try to treat it as v14
+                // load fail, try to treat it as v14
                 SplitLog.e(TAG, "load, v23 fail, sdk: %d, error: %s, try to fallback to V14",
                         Build.VERSION.SDK_INT, throwable.getMessage());
 

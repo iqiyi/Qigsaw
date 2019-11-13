@@ -11,17 +11,17 @@ import java.util.Set;
 public interface SplitInstallManager {
 
     /**
-     * Registers a listener that will be alerted of state changes for creteSplitInstallService sessions for this app.
+     * Registers a listener that will be alerted of state changes for module install sessions for this app.
      */
     void registerListener(SplitInstallStateUpdatedListener listener);
 
     /**
-     * Unregisters a listener previously added using
+     * Unregisters a listener you previously registered using
      */
     void unregisterListener(SplitInstallStateUpdatedListener listener);
 
     /**
-     * Initiates a split creteSplitInstallService request.
+     * Initiates a split install request.
      */
     Task<Integer> startInstall(SplitInstallRequest request);
 
@@ -31,7 +31,7 @@ public interface SplitInstallManager {
     boolean startConfirmationDialogForResult(SplitInstallSessionState sessionState, Activity activity, int requestCode) throws IntentSender.SendIntentException;
 
     /**
-     * Starts a request to cancel a pending split creteSplitInstallService.
+     * Starts a request to cancel a pending split install.
      */
     Task<Void> cancelInstall(int sessionId);
 
