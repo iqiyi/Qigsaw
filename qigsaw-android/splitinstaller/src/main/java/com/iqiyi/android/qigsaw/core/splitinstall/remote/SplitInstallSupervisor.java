@@ -110,7 +110,7 @@ public abstract class SplitInstallSupervisor {
                 .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivityManager != null) {
             NetworkInfo[] networkInfo = connectivityManager.getAllNetworkInfo();
-            if (networkInfo != null && networkInfo.length > 0) {
+            if (networkInfo.length > 0) {
                 for (NetworkInfo info : networkInfo) {
                     if (info.getState() == NetworkInfo.State.CONNECTED) {
                         return true;

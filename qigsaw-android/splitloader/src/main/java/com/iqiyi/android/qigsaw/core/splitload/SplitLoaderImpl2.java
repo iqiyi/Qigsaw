@@ -66,6 +66,7 @@ final class SplitLoaderImpl2 extends SplitLoader {
             }
             try {
                 SplitCompatDexLoader.load(classLoader, optimizedDirectory, dexFiles);
+                SplitUnKnownFileTypeDexLoader.loadDex(classLoader, dexPaths, optimizedDirectory);
             } catch (Throwable cause) {
                 throw new SplitLoadException(SplitLoadError.LOAD_DEX_FAILED, cause);
             }

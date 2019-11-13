@@ -152,6 +152,36 @@ final class HiddenApiReflection {
     }
 
     /**
+     * Locates a given constructor anywhere in the class inheritance hierarchy.
+     *
+     * @param clazz          a class to search the method from.
+     * @param parameterTypes constructor parameter types
+     * @return a constructor object
+     * @throws NoSuchMethodException if the constructor cannot be located
+     */
+    static Constructor<?> findConstructor(Class<?> clazz, Class<?>... parameterTypes)
+            throws NoSuchMethodException {
+        for (; clazz != null; clazz = clazz.getSuperclass()) {
+            try {
+                Constructor<?> ctor = clazz.getDeclaredConstructor(parameterTypes);
+
+                if (!ctor.isAccessible()) {
+                    ctor.setAccessible(true);
+                }
+
+                return ctor;
+            } catch (NoSuchMethodException e) {
+                // ignore and search next
+            }
+        }
+
+        throw new NoSuchMethodException("Constructor"
+                + " with parameters "
+                + Arrays.asList(parameterTypes)
+                + " not found in " + clazz);
+    }
+
+    /**
      * Replace the value of a field containing a non-null array, by a new array containing the
      * elements of the original array plus the elements of extraElements.
      *

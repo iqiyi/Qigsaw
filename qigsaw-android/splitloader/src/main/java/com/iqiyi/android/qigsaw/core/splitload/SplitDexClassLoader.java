@@ -41,23 +41,23 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
     private final String moduleName;
 
     private SplitDexClassLoader(String moduleName,
-                                String dexPath,
+                                List<String> dexPaths,
                                 File optimizedDirectory,
                                 String librarySearchPath,
-                                ClassLoader parent) {
-        super(dexPath, optimizedDirectory, librarySearchPath, parent);
+                                ClassLoader parent) throws Throwable {
+        super((dexPaths == null) ? "" : TextUtils.join(File.pathSeparator, dexPaths), optimizedDirectory, librarySearchPath, parent);
         this.moduleName = moduleName;
+        SplitUnKnownFileTypeDexLoader.loadDex(this, dexPaths, optimizedDirectory);
     }
 
     static SplitDexClassLoader create(String moduleName,
                                       List<String> dexPaths,
                                       File optimizedDirectory,
-                                      File librarySearchFile) {
-        String dexPath = (dexPaths == null) ? "" : TextUtils.join(File.pathSeparator, dexPaths);
+                                      File librarySearchFile) throws Throwable {
         long time = System.currentTimeMillis();
         SplitDexClassLoader cl = new SplitDexClassLoader(
                 moduleName,
-                dexPath,
+                dexPaths,
                 optimizedDirectory,
                 librarySearchFile == null ? null : librarySearchFile.getAbsolutePath(),
                 SplitDexClassLoader.class.getClassLoader()

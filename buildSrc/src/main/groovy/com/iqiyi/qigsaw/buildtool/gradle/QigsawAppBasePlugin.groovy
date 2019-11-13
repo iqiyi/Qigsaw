@@ -93,7 +93,24 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 generator.injectFields("QIGSAW_ID", qigsawId)
                 generator.injectFields("DYNAMIC_FEATURES", dynamicFeatureNames)
 
-                Task qigsawAssembleTask = createQigsawAssembleTask(project, variantName)
+                Task mergeAssetsTask = AGPCompat.getMergeAssetsTask(project, variantName)
+                File mergeAssetsDir = null
+                mergeAssetsTask.outputs.files.each {
+                    if (it.absolutePath.contains(appVariant.name) && !it.absolutePath.contains("incremental")) {
+                        mergeAssetsDir = it
+                    }
+                }
+
+                File mergeJniLibsDir = AGPCompat.getMergeJniLibsDirCompat(project, variantName)
+
+                QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName}", QigsawAssembleTask,
+                        mergeAssetsDir,
+                        mergeJniLibsDir,
+                        variantName,
+                        versionName,
+                        dynamicFeatures,
+                        qigsawId
+                )
 
                 qigsawAssembleTask.setGroup(QIGSAW)
 
@@ -101,13 +118,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 if (hasQigsawTask(project)) {
                     //inject filed to point out, base apk is built by qigsaw command.
                     generator.injectFields("ASSEMBLE_MODE", "qigsaw")
-
                     Task processManifestTask = AGPCompat.getProcessManifestTask(project, variantName)
-                    Task mergeAssetsTask = AGPCompat.getMergeAssetsTask(project, variantName)
                     Task packageTask = AGPCompat.getPackageTask(project, variantName)
                     Task assembleTask = AGPCompat.getAssemble(appVariant)
                     Task showDependencies = createShowDependenciesTask(project, variantName)
-
                     //config auto-proguard
                     boolean proguardEnable = appVariant.getBuildType().isMinifyEnabled()
                     if (proguardEnable) {
@@ -133,22 +147,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             removeRulesAboutMultidex(multidexTask, appVariant)
                         }
                     }
-                    File mergeAssetsDir = null
-                    mergeAssetsTask.outputs.files.each {
-                        if (it.absolutePath.contains(appVariant.name) && !it.absolutePath.contains("incremental")) {
-                            mergeAssetsDir = it
-                        }
-                    }
-                    File mergeJniLibsDir = AGPCompat.getMergeJniLibsDirCompat(project, variantName)
 
-                    MakeSplitJsonFileTask makeSplitJsonFileTask = project.tasks.create("makeSplitJsonFileFor${variantName}", MakeSplitJsonFileTask,
-                            mergeAssetsDir,
-                            mergeJniLibsDir,
-                            variantName,
-                            versionName,
-                            dynamicFeatures,
-                            qigsawId
-                    )
                     //fetch every split's dependencies of dynamic-feature
                     showDependencies.doLast {
 
@@ -178,30 +177,31 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
 
-                        makeSplitJsonFileTask.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
+                        qigsawAssembleTask.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
                     }
+
+                    Task mergeJniLibsTask = AGPCompat.getMergeJniLibsTask(project, variantName)
 
                     featureProjects.each {
                         Project dynamicFeatureProject = it
                         try {
-                            configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, makeSplitJsonFileTask)
+                            configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, mergeJniLibsTask)
                             println("dynamic feature project has been evaluated!")
                         } catch (Exception e) {
                             println("dynamic feature project has not been evaluated!")
                             it.afterEvaluate {
-                                configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, makeSplitJsonFileTask)
+                                configQigsawAssembleTaskDependencies(dynamicFeatureProject, variantName, mergeJniLibsTask)
                             }
                         }
                     }
 
+                    qigsawAssembleTask.dependsOn(mergeJniLibsTask)
+
+                    mergeJniLibsTask.dependsOn(mergeAssetsTask)
+
                     qigsawAssembleTask.dependsOn showDependencies
 
                     qigsawAssembleTask.finalizedBy(assembleTask)
-
-                    Task mergeJniLibsTask = AGPCompat.getMergeJniLibsTask(project, variantName)
-
-
-                    mergeJniLibsTask.finalizedBy(makeSplitJsonFileTask)
 
                     packageTask.doFirst {
                         if (versionAGP < VersionNumber.parse("3.5.0")) {
@@ -225,7 +225,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         }
                     }
                     packageTask.doLast {
-                        makeSplitJsonFileTask.deleteIntermediates()
+                        qigsawAssembleTask.deleteIntermediates()
                     }
                     processManifestTask.doLast {
                         SplitContentProviderProcessor providerProcessor = new SplitContentProviderProcessor(project, dynamicFeatureNames, variantName)
@@ -236,23 +236,18 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         }
     }
 
-    private static void configQigsawAssembleTaskDependencies(Project dynamicFeatureProject, String baseAppVariant, Task makeSplitJsonFileTask) {
+    private static void configQigsawAssembleTaskDependencies(Project dynamicFeatureProject, String baseAppVariant, Task mergeJniLibsTask) {
         AppExtension dynamicFeatureAndroid = dynamicFeatureProject.extensions.getByType(AppExtension)
         dynamicFeatureAndroid.applicationVariants.all { variant ->
             ApplicationVariant appVariant = variant
             if (appVariant.name.equalsIgnoreCase(baseAppVariant)) {
-                makeSplitJsonFileTask.dependsOn AGPCompat.getAssemble(appVariant)
+                mergeJniLibsTask.dependsOn AGPCompat.getAssemble(appVariant)
             }
         }
     }
 
     static Task createShowDependenciesTask(Project project, String variantName) {
         String taskName = "showDependencies${variantName}"
-        return project.tasks.create(taskName)
-    }
-
-    static Task createQigsawAssembleTask(Project project, String variantName) {
-        String taskName = "qigsawAssemble${variantName}"
         return project.tasks.create(taskName)
     }
 
