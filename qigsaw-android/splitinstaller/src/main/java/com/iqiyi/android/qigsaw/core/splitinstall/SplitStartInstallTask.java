@@ -61,7 +61,8 @@ final class SplitStartInstallTask extends SplitInstallTask {
     }
 
     @Override
-    protected void onInstallCompleted(List<SplitInstaller.InstallResult> installResults, long cost) {
+    void onInstallCompleted(List<SplitInstaller.InstallResult> installResults) {
+        super.onInstallCompleted(installResults);
         List<Intent> splitFileIntents = new ArrayList<>(installResults.size());
         for (SplitInstaller.InstallResult installResult : installResults) {
             Intent splitFileIntent = new Intent();
@@ -75,19 +76,15 @@ final class SplitStartInstallTask extends SplitInstallTask {
         mSessionState.setSplitFileIntents(splitFileIntents);
         mSessionManager.changeSessionState(mSessionState.sessionId(), SplitInstallInternalSessionStatus.POST_INSTALLED);
         emitSessionStatus();
-        if (SplitInstallReporterManager.getInstallReporter() != null) {
-            SplitInstallReporterManager.getInstallReporter().onStartInstallOK(splitBriefInfoList, cost);
-        }
+
     }
 
     @Override
-    protected void onInstallFailed(List<SplitInstallError> errors, long cost) {
+    void onInstallFailed(List<SplitInstallError> errors) {
+        super.onInstallFailed(errors);
         mSessionState.setErrorCode(errors.get(0).errorCode);
         mSessionManager.changeSessionState(mSessionState.sessionId(), SplitInstallInternalSessionStatus.FAILED);
         emitSessionStatus();
-        if (SplitInstallReporterManager.getInstallReporter() != null) {
-            SplitInstallReporterManager.getInstallReporter().onStartInstallFailed(splitBriefInfoList, errors.get(0), cost);
-        }
     }
 
     private void emitSessionStatus() {

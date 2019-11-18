@@ -43,26 +43,26 @@ public class DefaultSplitInstallReporter implements SplitInstallReporter {
     }
 
     @Override
-    public void onStartInstallOK(List<SplitBriefInfo> requestSplits, long cost) {
-        SplitLog.i(TAG, "Start install %s OK, cost time %d ms.", requestSplits.toString(), cost);
+    public void onStartInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
+        SplitLog.i(TAG, "Start install %s OK, cost time %d ms.", installedSplits.toString(), cost);
     }
 
     @Override
-    public void onStartInstallFailed(List<SplitBriefInfo> requestSplits, @NonNull SplitInstallError error, long cost) {
-        SplitLog.printErrStackTrace(TAG, error.cause, "Start install splits %s but %s installed failed, cost time %d ms.", requestSplits.toString(), error.splitName, cost);
+    public void onStartInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull SplitInstallError error, long cost) {
+        SplitLog.printErrStackTrace(TAG, error.cause, "Start to install split %s failed, cost time %d ms.", error.splitName, cost);
     }
 
     @Override
-    public void onDeferredInstallOK(List<SplitBriefInfo> requestSplits, long cost) {
-        SplitLog.i(TAG, "Deferred install %s OK, cost time %d ms.", requestSplits.toString(), cost);
+    public void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
+        SplitLog.i(TAG, "Deferred install %s OK, cost time %d ms.", installedSplits.toString(), cost);
     }
 
     @Override
-    public void onDeferredInstallFailed(List<SplitBriefInfo> requestSplits, @NonNull List<SplitInstallError> errors, long cost) {
+    public void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull List<SplitInstallError> errors, long cost) {
         for (SplitInstallError installError : errors) {
             SplitLog.printErrStackTrace(TAG, installError.cause,
-                    "Deferred install splits %s but %s installed failed with error code %d, cost time %d ms.",
-                    requestSplits.toString(), installError.splitName, installError.errorCode, cost);
+                    "Defer to install split %s failed with error code %d, cost time %d ms.",
+                    installError.splitName, installError.errorCode, cost);
         }
     }
 }

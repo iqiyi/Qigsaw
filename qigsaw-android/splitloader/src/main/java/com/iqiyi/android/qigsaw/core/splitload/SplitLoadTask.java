@@ -110,18 +110,10 @@ abstract class SplitLoadTask implements Runnable {
                 try {
                     mLock.wait();
                 } catch (InterruptedException e) {
-                    List<SplitLoadError> errors = new ArrayList<>(1);
-                    List<SplitBriefInfo> splitBriefInfoList = new ArrayList<>(splitFileIntents.size());
-                    for (Intent splitFileIntent : splitFileIntents) {
-                        String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
-                        SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
-                        SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
-                        if (errors.isEmpty()) {
-                            errors = Collections.singletonList(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERRUPTED_ERROR, e));
-                        }
-                        splitBriefInfoList.add(splitBriefInfo);
-                    }
-                    reportLoadResult(splitBriefInfoList, errors, 0);
+                    String splitName = splitFileIntents.get(0).getStringExtra(SplitConstants.KET_NAME);
+                    SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
+                    SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
+                    reportLoadResult(Collections.<SplitBriefInfo>emptyList(), Collections.singletonList(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERRUPTED_ERROR, e)), 0);
                 }
             }
         }
@@ -137,7 +129,6 @@ abstract class SplitLoadTask implements Runnable {
             String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
             SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
             SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
-            splitBriefInfoList.add(splitBriefInfo);
             //if if split has been loaded, just skip.
             if (checkSplitLoaded(splitName)) {
                 SplitLog.i(TAG, "Split %s has been loaded!", splitName);
@@ -176,10 +167,11 @@ abstract class SplitLoadTask implements Runnable {
                 onSplitActivateFailed(classLoader);
                 continue;
             }
-            splits.add(new Split(splitName, splitApkPath));
             if (!splitDir.setLastModified(System.currentTimeMillis())) {
                 SplitLog.w(TAG, "Failed to set last modified time for " + splitName);
             }
+            splitBriefInfoList.add(splitBriefInfo);
+            splits.add(new Split(splitName, splitApkPath));
         }
         loadManager.putSplits(splits);
         reportLoadResult(splitBriefInfoList, loadErrors, System.currentTimeMillis() - time);

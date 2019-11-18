@@ -75,12 +75,10 @@ public final class SplitInstallError extends SplitBriefInfo {
     public final Throwable cause;
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    public SplitInstallError(String splitName,
-                             String version,
-                             boolean builtIn,
+    public SplitInstallError(SplitBriefInfo briefInfo,
                              int errorCode,
                              Throwable cause) {
-        super(splitName, version, builtIn);
+        super(briefInfo.splitName, briefInfo.version, briefInfo.builtIn);
         this.errorCode = errorCode;
         this.cause = cause;
     }

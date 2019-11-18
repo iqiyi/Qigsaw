@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 
 public class SplitLoadError extends SplitBriefInfo {
 
@@ -70,6 +71,7 @@ public class SplitLoadError extends SplitBriefInfo {
      */
     public final Throwable cause;
 
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public SplitLoadError(SplitBriefInfo briefInfo,
                           int errorCode,
                           Throwable cause) {

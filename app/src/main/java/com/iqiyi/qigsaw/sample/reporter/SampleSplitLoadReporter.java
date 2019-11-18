@@ -1,6 +1,7 @@
 package com.iqiyi.qigsaw.sample.reporter;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitLoadReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;
@@ -15,12 +16,12 @@ public class SampleSplitLoadReporter extends DefaultSplitLoadReporter {
     }
 
     @Override
-    public void onLoadOK(String processName, List<SplitBriefInfo> requestSplits, long cost) {
-        super.onLoadOK(processName, requestSplits, cost);
+    public void onLoadOK(String processName, @NonNull List<SplitBriefInfo> loadedSplits, long cost) {
+        super.onLoadOK(processName, loadedSplits, cost);
     }
 
     @Override
-    public void onLoadFailed(String processName, List<SplitBriefInfo> requestSplits, List<SplitLoadError> errors, long cost) {
-        super.onLoadFailed(processName, requestSplits, errors, cost);
+    public void onLoadFailed(String processName, @NonNull List<SplitBriefInfo> loadedSplits, @NonNull List<SplitLoadError> errors, long cost) {
+        super.onLoadFailed(processName, loadedSplits, errors, cost);
     }
 }
