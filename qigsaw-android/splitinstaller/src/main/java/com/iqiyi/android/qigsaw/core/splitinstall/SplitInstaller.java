@@ -45,10 +45,17 @@ abstract class SplitInstaller {
     /**
      * Check whether the signature of split apk is consistent with base app.
      *
+     * @param splitApk file of split apk.
+     */
+    protected abstract void verifySignature(File splitApk) throws InstallException;
+
+    /**
+     * check md5 for split apk.
+     *
      * @param splitApk    file of split apk.
      * @param splitApkMd5 md5 value of split apk.
      */
-    protected abstract void validateSignature(File splitApk, String splitApkMd5) throws InstallException;
+    protected abstract void checkSplitMD5(File splitApk, String splitApkMd5) throws InstallException;
 
     /**
      * Extract split apk dex files if current platform does't support multi dex.

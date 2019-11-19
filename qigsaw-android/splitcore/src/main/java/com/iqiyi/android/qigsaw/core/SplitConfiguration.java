@@ -50,6 +50,8 @@ public class SplitConfiguration {
 
     final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
+    final boolean verifySignature;
+
     public static SplitConfiguration.Builder newBuilder() {
         return new SplitConfiguration.Builder();
     }
@@ -66,6 +68,7 @@ public class SplitConfiguration {
         this.updateReporter = builder.updateReporter;
         this.obtainUserConfirmationDialogClass = builder.obtainUserConfirmationDialogClass;
         this.workProcesses = builder.workProcesses;
+        this.verifySignature = builder.verifySignature;
     }
 
     public static class Builder {
@@ -85,6 +88,8 @@ public class SplitConfiguration {
         private SplitUpdateReporter updateReporter;
 
         private Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
+
+        private boolean verifySignature = true;
 
         private Builder() {
             this.obtainUserConfirmationDialogClass = DefaultObtainUserConfirmationDialog.class;
@@ -166,6 +171,15 @@ public class SplitConfiguration {
          */
         public Builder obtainUserConfirmationDialogClass(@NonNull Class<? extends ObtainUserConfirmationDialog> clazz) {
             this.obtainUserConfirmationDialogClass = clazz;
+            return this;
+        }
+
+        /**
+         * Whether need to verify signature of split apk. if {@code true} split apk is verified to match the base apk,
+         * otherwise ignore signature verification for split apks.
+         */
+        public Builder verifySignature(boolean verifySignature) {
+            this.verifySignature = verifySignature;
             return this;
         }
 

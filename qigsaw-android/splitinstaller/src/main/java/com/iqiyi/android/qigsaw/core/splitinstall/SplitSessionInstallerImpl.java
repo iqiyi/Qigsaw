@@ -24,8 +24,6 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
-import android.content.Context;
-
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 
 import java.util.List;
@@ -39,11 +37,7 @@ final class SplitSessionInstallerImpl implements SplitSessionInstaller {
 
     private final SplitInstaller splitInstaller;
 
-    SplitSessionInstallerImpl(Context context, SplitInstallSessionManager sessionManager, Executor executor) {
-        this(new SplitInstallerImpl(context), sessionManager, executor);
-    }
-
-    private SplitSessionInstallerImpl(SplitInstaller splitInstaller, SplitInstallSessionManager sessionManager, Executor executor) {
+    SplitSessionInstallerImpl(SplitInstaller splitInstaller, SplitInstallSessionManager sessionManager, Executor executor) {
         this.splitInstaller = splitInstaller;
         this.sessionManager = sessionManager;
         this.executor = executor;

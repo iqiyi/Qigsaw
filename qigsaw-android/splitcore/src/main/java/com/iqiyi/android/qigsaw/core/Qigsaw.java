@@ -127,7 +127,11 @@ public class Qigsaw {
         SplitLoadManagerService.getInstance().loadInstalledSplitsWhenAppLaunches();
         //only work in main process!
         if (context.getPackageName().equals(currentProcessName)) {
-            SplitApkInstaller.install(context, downloader, splitConfiguration.obtainUserConfirmationDialogClass);
+            SplitApkInstaller.install(
+                    context,
+                    downloader,
+                    splitConfiguration.obtainUserConfirmationDialogClass,
+                    splitConfiguration.verifySignature);
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
 
                 @Override

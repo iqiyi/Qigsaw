@@ -53,12 +53,15 @@ final class SplitInstallerImpl extends SplitInstaller {
 
     private static final boolean IS_VM_MULTIDEX_CAPABLE = isVMMultiDexCapable(System.getProperty("java.vm.version"));
 
-    private static final String TAG = "Split:SplitInstallerImpl";
+    private static final String TAG = "SplitInstallerImpl";
 
     private final Context appContext;
 
-    SplitInstallerImpl(Context context) {
+    private final boolean verifySignature;
+
+    SplitInstallerImpl(Context context, boolean verifySignature) {
         this.appContext = context;
+        this.verifySignature = verifySignature;
     }
 
     @Override
@@ -70,7 +73,17 @@ final class SplitInstallerImpl extends SplitInstaller {
         } else {
             sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
         }
-        validateSignature(sourceApk, info.getMd5());
+        if (!FileUtil.isLegalFile(sourceApk)) {
+            throw new InstallException(
+                    SplitInstallError.APK_FILE_ILLEGAL,
+                    new FileNotFoundException("Split apk " + sourceApk.getAbsolutePath() + " is illegal!")
+            );
+        }
+        if (verifySignature) {
+            SplitLog.d(TAG, "Need to verify split %s signature!", sourceApk.getAbsolutePath());
+            verifySignature(sourceApk);
+        }
+        checkSplitMD5(sourceApk, info.getMd5());
         File splitLibDir = null;
         if (isLibExtractNeeded(info)) {
             extractLib(info, sourceApk);
@@ -127,13 +140,7 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected void validateSignature(File splitApk, String splitApkMd5) throws InstallException {
-        if (!FileUtil.isLegalFile(splitApk)) {
-            throw new InstallException(
-                    SplitInstallError.APK_FILE_ILLEGAL,
-                    new FileNotFoundException("Split apk " + splitApk.getAbsolutePath() + " is illegal!")
-            );
-        }
+    protected void verifySignature(File splitApk) throws InstallException {
         if (!SignatureValidator.validateSplit(appContext, splitApk)) {
             deleteCorruptedFiles(Collections.singletonList(splitApk));
             throw new InstallException(
@@ -141,6 +148,10 @@ final class SplitInstallerImpl extends SplitInstaller {
                     new SignatureException("Failed to check split apk " + splitApk.getAbsolutePath() + " signature!")
             );
         }
+    }
+
+    @Override
+    protected void checkSplitMD5(File splitApk, String splitApkMd5) throws InstallException {
         String curMd5 = FileUtil.getMD5(splitApk);
         if (!splitApkMd5.equals(curMd5)) {
             deleteCorruptedFiles(Collections.singletonList(splitApk));

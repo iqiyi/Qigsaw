@@ -47,13 +47,15 @@ public final class SplitApkInstaller {
 
     public static void install(Context context,
                                Downloader downloader,
-                               Class<? extends Activity> obtainUserConfirmationActivityClass) {
+                               Class<? extends Activity> obtainUserConfirmationActivityClass,
+                               boolean verifySignature) {
         if (sSplitApkInstallerRef.get() == null) {
             sSplitApkInstallerRef.set(new SplitInstallSupervisorImpl(
                     context,
                     new SplitInstallSessionManagerImpl(context),
                     downloader,
-                    obtainUserConfirmationActivityClass)
+                    obtainUserConfirmationActivityClass,
+                    verifySignature)
             );
         }
     }

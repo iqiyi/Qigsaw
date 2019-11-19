@@ -71,10 +71,13 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     private final Class<?> obtainUserConfirmationActivityClass;
 
+    private final SplitInstaller splitInstaller;
+
     SplitInstallSupervisorImpl(Context appContext,
                                SplitInstallSessionManager sessionManager,
                                Downloader userDownloader,
-                               Class<? extends Activity> obtainUserConfirmationActivityClass) {
+                               Class<? extends Activity> obtainUserConfirmationActivityClass,
+                               boolean verifySignature) {
         this.appContext = appContext;
         this.sessionManager = sessionManager;
         this.userDownloader = userDownloader;
@@ -82,6 +85,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         this.downloadSizeThresholdValue = downloadSizeThreshold < 0 ? Long.MAX_VALUE : downloadSizeThreshold;
         this.installedSplitForAAB = new SplitAABInfoProvider(this.appContext).getInstalledSplitsForAAB();
         this.obtainUserConfirmationActivityClass = obtainUserConfirmationActivityClass;
+        this.splitInstaller = new SplitInstallerImpl(appContext, verifySignature);
     }
 
     @Override
@@ -195,7 +199,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         SplitInstallInternalSessionState sessionState = sessionManager.getSessionState(sessionId);
         if (sessionState != null) {
             StartDownloadCallback downloadCallback = new StartDownloadCallback(
-                    appContext, sessionId, sessionManager, sessionState.needInstalledSplits);
+                    splitInstaller, sessionId, sessionManager, sessionState.needInstalledSplits);
             sessionManager.changeSessionState(sessionId, SplitInstallInternalSessionStatus.PENDING);
             sessionManager.emitSessionState(sessionState);
             userDownloader.startDownload(sessionState.sessionId(), sessionState.downloadRequests, downloadCallback);
@@ -299,7 +303,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             long realTotalBytesNeedToDownload = result[1];
             int sessionId = createSessionId(needInstallSplits);
             SplitLog.d(TAG, "DeferredInstall session id: " + sessionId);
-            DeferredDownloadCallback downloadCallback = new DeferredDownloadCallback(appContext, needInstallSplits);
+            DeferredDownloadCallback downloadCallback = new DeferredDownloadCallback(splitInstaller, needInstallSplits);
             if (realTotalBytesNeedToDownload == 0) {
                 SplitLog.d(TAG, "Splits have been downloaded, install them directly!");
                 downloadCallback.onCompleted();
@@ -350,7 +354,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             long realTotalBytesNeedToDownload = result[1];
             SplitLog.d(TAG, "totalBytesToDownload: %d, realTotalBytesNeedToDownload: %d ", totalBytesToDownload, realTotalBytesNeedToDownload);
             sessionState.setTotalBytesToDownload(totalBytesToDownload);
-            StartDownloadCallback downloadCallback = new StartDownloadCallback(appContext, sessionId, sessionManager, needInstallSplits);
+            StartDownloadCallback downloadCallback = new StartDownloadCallback(splitInstaller, sessionId, sessionManager, needInstallSplits);
             if (realTotalBytesNeedToDownload <= 0) {
                 SplitLog.d(TAG, "Splits have been downloaded, install them directly!");
                 downloadCallback.onCompleted();
