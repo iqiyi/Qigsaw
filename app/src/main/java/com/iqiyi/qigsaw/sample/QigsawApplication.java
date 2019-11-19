@@ -29,6 +29,7 @@ public class QigsawApplication extends Application {
                 .workProcesses(workProcesses)
 //                .forbiddenWorkProcesses(forbiddenWorkProcesses)
                 .logger(new SampleLogger())
+                .verifySignature(true)
                 .loadReporter(new SampleSplitLoadReporter(this))
                 .manifestPackageName(base.getPackageName())
                 .installReporter(new SampleSplitInstallReporter(this))
