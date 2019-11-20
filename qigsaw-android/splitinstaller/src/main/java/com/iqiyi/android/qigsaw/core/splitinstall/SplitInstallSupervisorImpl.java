@@ -73,6 +73,8 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     private final SplitInstaller splitInstaller;
 
+    private final boolean verifySignature;
+
     SplitInstallSupervisorImpl(Context appContext,
                                SplitInstallSessionManager sessionManager,
                                Downloader userDownloader,
@@ -86,6 +88,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         this.installedSplitForAAB = new SplitAABInfoProvider(this.appContext).getInstalledSplitsForAAB();
         this.obtainUserConfirmationActivityClass = obtainUserConfirmationActivityClass;
         this.splitInstaller = new SplitInstallerImpl(appContext, verifySignature);
+        this.verifySignature = verifySignature;
     }
 
     @Override
@@ -475,7 +478,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             }
             SplitDownloadPreprocessor processor = new SplitDownloadPreprocessor(splitDir, splitApk);
             try {
-                processor.load(appContext, splitInfo);
+                processor.load(appContext, splitInfo, verifySignature);
             } finally {
                 FileUtil.closeQuietly(processor);
             }

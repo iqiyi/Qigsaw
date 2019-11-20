@@ -82,7 +82,7 @@ final class SplitDownloadPreprocessor implements Closeable {
     }
 
 
-    void load(Context context, SplitInfo info) throws IOException {
+    void load(Context context, SplitInfo info, boolean verifySignature) throws IOException {
         if (!cacheLock.isValid()) {
             throw new IllegalStateException("FileCheckerAndCopier was closed");
         } else {
@@ -96,16 +96,16 @@ final class SplitDownloadPreprocessor implements Closeable {
                         copyBuiltInSplit(context, info);
                     }
                     //check size
-                    if (!verifySplitApk(context, info, splitApk)) {
+                    if (!verifySplitApk(context, info, verifySignature)) {
                         throw new IOException(String.format("Failed to check built-in split %s, it may be corrupted", splitName));
                     }
                 } else {
                     SplitLog.v(TAG, "Built-in split %s is existing", splitApk.getAbsolutePath());
-                    if (!verifySplitApk(context, info, splitApk)) {
+                    if (!verifySplitApk(context, info, verifySignature)) {
                         if (builtInSplitInAssets) {
                             copyBuiltInSplit(context, info);
                         }
-                        if (!verifySplitApk(context, info, splitApk)) {
+                        if (!verifySplitApk(context, info, verifySignature)) {
                             throw new IOException(String.format("Failed to check built-in split %s, it may be corrupted", splitApk.getAbsolutePath()));
                         }
                     }
@@ -113,7 +113,7 @@ final class SplitDownloadPreprocessor implements Closeable {
             } else {
                 if (splitApk.exists()) {
                     SplitLog.v(TAG, "split %s is downloaded", splitName);
-                    verifySplitApk(context, info, splitApk);
+                    verifySplitApk(context, info, verifySignature);
                 } else {
                     SplitLog.v(TAG, " split %s is not downloaded", splitName);
                 }
@@ -121,26 +121,34 @@ final class SplitDownloadPreprocessor implements Closeable {
         }
     }
 
-    private boolean verifySplitApk(Context context, SplitInfo info, File splitApk) {
+    private boolean verifySplitApk(Context context, SplitInfo info, boolean verifySignature) {
         if (FileUtil.isLegalFile(splitApk)) {
-            if (SignatureValidator.validateSplit(context, splitApk)) {
-                //check md5
-                String apkMd5 = FileUtil.getMD5(splitApk);
-                if (TextUtils.isEmpty(apkMd5)) {
-                    //fallback to check apk length.
-                    if (info.getSize() == splitApk.length()) {
-                        return true;
-                    }
-                } else {
-                    if (info.getMd5().equals(apkMd5)) {
-                        return true;
-                    }
+            boolean ret;
+            if (verifySignature) {
+                ret = SignatureValidator.validateSplit(context, splitApk);
+                if (ret) {
+                    ret = checkSplitMD5(info);
                 }
+            } else {
+                ret = checkSplitMD5(info);
             }
-            SplitLog.w(TAG, "Oops! Failed to check split %s signature and md5", info.getSplitName());
-            deleteCorruptedOrObsoletedSplitApk();
+            if (!ret) {
+                SplitLog.w(TAG, "Oops! Failed to check split %s signature and md5", info.getSplitName());
+                deleteCorruptedOrObsoletedSplitApk();
+            }
+            return ret;
         }
         return false;
+    }
+
+    private boolean checkSplitMD5(SplitInfo info) {
+        String apkMd5 = FileUtil.getMD5(splitApk);
+        if (TextUtils.isEmpty(apkMd5)) {
+            //fallback to check apk length.
+            return info.getSize() == splitApk.length();
+        } else {
+            return info.getMd5().equals(apkMd5);
+        }
     }
 
     private void deleteCorruptedOrObsoletedSplitApk() {
