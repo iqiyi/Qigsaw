@@ -35,6 +35,10 @@ public abstract class StateUpdateListenerRegister<StateT> {
 
     public final synchronized void registerListener(StateUpdatedListener<StateT> listener) {
         this.playCore.debug("registerListener");
+        if (mStateUpdatedListeners.contains(listener)) {
+            this.playCore.debug("listener has been registered!");
+            return;
+        }
         mStateUpdatedListeners.add(listener);
         if (mStateUpdatedListeners.size() == 1) {
             context.registerReceiver(receiver, intentFilter);
