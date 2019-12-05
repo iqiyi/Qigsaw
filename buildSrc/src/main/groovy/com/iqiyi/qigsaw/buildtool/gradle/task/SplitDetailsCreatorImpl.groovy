@@ -161,6 +161,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
                 appProject.logger.error("SplitApkUploader has not been implemented, just make split " + splitInfo.splitName + " built-in")
             } else {
                 String uploadedUrl = uploader.uploadSync(appProject, splitInfo.splitApk, splitInfo.splitName)
+                println("Split ${splitName} apk file has been uploaded, see ${uploadedUrl}")
                 if (uploadedUrl != null && uploadedUrl.startsWith("http")) {
                     splitInfo.url = uploadedUrl
                     return

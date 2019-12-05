@@ -116,40 +116,54 @@ class QigsawAssembleTask extends DefaultTask {
             SplitInfo splitInfo = splitProcessor.generateSplitInfo(splitName, splitSignedApk, splitManifest)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
-        Set<String> abiFilters = project.android.defaultConfig.ndk.abiFilters
+        //get Abis that have been merged
         File[] abiDirs = mergeJniLib.listFiles()
-        Set<String> abiNames = null
+        Set<String> abiDirNames = null
         boolean copyToAssets = true
         if (abiDirs != null) {
             ImmutableSet.Builder builder = ImmutableSet.builder()
             for (File abiDir : abiDirs) {
                 builder.add(abiDir.name)
             }
-            abiNames = builder.build()
+            abiDirNames = builder.build()
         }
-        if (abiFilters != null && abiNames != null) {
-            if (abiNames.containsAll(abiFilters)) {
+        Set<String> abiFilters = project.android.defaultConfig.ndk.abiFilters
+        //check need copy splits to asset dir.
+        if (abiFilters == null) {
+            if (abiDirNames != null && abiDirNames.size() == 1) {
                 copyToAssets = false
             }
-        }
-        if (abiFilters == null) {
-            abiFilters = abiNames
         } else {
-            ImmutableSet.Builder builder = ImmutableSet.builder()
-            abiFilters.each {
-                if (abiNames.contains(it)) {
-                    builder.add(it)
+            if (abiDirNames != null) {
+                if (abiFilters.size() == 1 && abiDirNames.containsAll(abiFilters)) {
+                    copyToAssets = false
                 }
             }
-            abiFilters = builder.build()
         }
-        abiFilters = sortAbis(abiFilters)
+        //fix abiFilters
+        Set<String> fixedAbis
+        if (abiFilters == null) {
+            fixedAbis = abiDirNames
+        } else {
+            if (abiDirNames != null) {
+                ImmutableSet.Builder fixedAbisBuilder = ImmutableSet.builder()
+                abiFilters.each {
+                    if (abiDirNames.contains(it)) {
+                        fixedAbisBuilder.add(it)
+                    }
+                }
+                fixedAbis = fixedAbisBuilder.build()
+            } else {
+                fixedAbis = abiFilters
+            }
+        }
+        fixedAbis = sortAbis(fixedAbis)
         SplitJsonFileCreator detailsCreator = new SplitDetailsCreatorImpl(
                 getProject(),
                 variantName,
                 versionName,
                 qigsawId,
-                abiFilters == null || abiFilters.isEmpty() ? null : abiFilters,
+                fixedAbis == null || fixedAbis.isEmpty() ? null : fixedAbis,
                 copyToAssets
         )
         Map<String, TopoSort.Node> nodeMap = new HashMap<>()
@@ -178,10 +192,10 @@ class QigsawAssembleTask extends DefaultTask {
         }
         splits.addAll(splitInfoMap.values())
         File splitJsonFile = detailsCreator.createSplitDetailsJsonFile(splits)
-        copySplitJsonFileAndSplitAPKs(splits, splitJsonFile, abiNames, copyToAssets)
+        copySplitJsonFileAndSplitAPKs(splits, splitJsonFile, abiDirNames, copyToAssets)
     }
 
-    void copySplitJsonFileAndSplitAPKs(List<SplitInfo> splits, File splitJsonFile, Set<String> abiNames, boolean copyToAssets) {
+    void copySplitJsonFileAndSplitAPKs(List<SplitInfo> splits, File splitJsonFile, Set<String> abiDirNames, boolean copyToAssets) {
         if (!this.assetsDir.exists()) {
             this.assetsDir.mkdirs()
         }
@@ -205,13 +219,14 @@ class QigsawAssembleTask extends DefaultTask {
                 }
             }
         } else {
-            abiNames.each {
+            abiDirNames.each {
                 for (SplitInfo info : splits) {
                     File jniSplitApk = new File(mergeJniLib, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
                     if (jniSplitApk.exists()) {
                         jniSplitApk.delete()
                     }
                     if (info.builtIn) {
+                        println("copy file " + jniSplitApk.absolutePath)
                         FileUtils.copyFile(info.splitApk, jniSplitApk)
                         intermediates.add(jniSplitApk)
                     }
