@@ -30,6 +30,6 @@ interface SplitComponentWeaver {
 
     String METHOD_WOVEN = "loadResources"
 
-    byte[] weave(byte[] byteCodeArray)
+    byte[] weave(InputStream inputStream)
 
 }

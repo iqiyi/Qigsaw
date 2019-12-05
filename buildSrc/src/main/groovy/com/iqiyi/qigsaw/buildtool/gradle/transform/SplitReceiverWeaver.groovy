@@ -36,8 +36,8 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC
 class SplitReceiverWeaver implements SplitComponentWeaver {
 
     @Override
-    byte[] weave(byte[] byteCodeArray) {
-        ClassReader cr = new ClassReader(byteCodeArray)
+    byte[] weave(InputStream inputStream) {
+        ClassReader cr = new ClassReader(inputStream)
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
         ClassVisitor cv = new ReceiverClassVisitor(Opcodes.ASM5, cw)
         cr.accept(cv, Opcodes.ASM5)

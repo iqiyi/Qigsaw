@@ -40,8 +40,8 @@ import static org.objectweb.asm.Opcodes.RETURN
 class SplitServiceWeaver implements SplitComponentWeaver {
 
     @Override
-    byte[] weave(byte[] byteCodeArray) {
-        ClassReader cr = new ClassReader(byteCodeArray)
+    byte[] weave(InputStream inputStream) {
+        ClassReader cr = new ClassReader(inputStream)
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
         ClassVisitor cv = new ServiceClassVisitor(Opcodes.ASM5, cw)
         cr.accept(cv, Opcodes.ASM5)
