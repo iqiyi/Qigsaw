@@ -294,7 +294,7 @@ public abstract class ContentProviderProxy extends ContentProvider {
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-        if (checkRealContentProviderInstallStatus(splitName)) {
+        if (realContentProvider != null) {
             realContentProvider.onTrimMemory(level);
         }
     }
@@ -302,7 +302,7 @@ public abstract class ContentProviderProxy extends ContentProvider {
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        if (checkRealContentProviderInstallStatus(splitName)) {
+        if (realContentProvider != null) {
             realContentProvider.onLowMemory();
         }
     }
