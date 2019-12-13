@@ -42,7 +42,7 @@ class SplitResourcesLoaderInjector {
             Files.isRegularFile(it)
         }.each { Path path ->
             File file = path.toFile()
-            if (file.name.endsWith("jar")) {
+            if (file.name.endsWith(".jar")) {
                 injectJar(file)
             } else if (file.name.endsWith(SdkConstants.DOT_CLASS)) {
                 this.waitableExecutor.execute {
@@ -72,7 +72,8 @@ class SplitResourcesLoaderInjector {
                     if (!pathString.endsWith(SdkConstants.DOT_CLASS)) {
                         return
                     }
-                    byte[] bytes = injectClass(path, pathString.replaceAll(Matcher.quoteReplacement(File.separator), '.'))
+                    String className = pathString.replaceAll(Matcher.quoteReplacement(File.separator), '.').replace(SdkConstants.DOT_CLASS, "")
+                    byte[] bytes = injectClass(path, className)
                     if (bytes != null) {
                         Files.write(path, bytes, StandardOpenOption.WRITE)
                     }
