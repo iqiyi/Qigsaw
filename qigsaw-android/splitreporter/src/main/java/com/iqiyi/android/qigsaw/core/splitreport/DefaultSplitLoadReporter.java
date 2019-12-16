@@ -51,7 +51,7 @@ public class DefaultSplitLoadReporter implements SplitLoadReporter {
         for (SplitLoadError loadError : errors) {
             SplitLog.printErrStackTrace(TAG, loadError.cause,
                     "Failed to load split %s in process %s cost %d ms, error code: %d!",
-                    loadError.splitName, loadError.toString(), processName, cost, loadError.errorCode);
+                    loadError.splitName, processName, cost, loadError.errorCode);
         }
     }
 
