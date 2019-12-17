@@ -21,16 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.iqiyi.qigsaw.buildtool.gradle.task
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+import org.gradle.api.DefaultTask
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.tasks.TaskAction
 
-import com.android.build.gradle.AppExtension
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+class AnalyzeDependenciesTask extends DefaultTask {
 
-interface SplitApkProcessor {
+    String variantName
 
-    File signSplitAPKIfNeed(File splitApk)
+    void initArgs(String variantName) {
+        this.variantName = variantName
+    }
 
-    SplitInfo createSplitInfo(String splitName, AppExtension splitExtension, List<String> dfDependencies, File splitManifest, File splitSignedApk)
-
+    @TaskAction
+    analyzeDependencies() {
+        Configuration configuration = project.configurations."${variantName.uncapitalize()}CompileClasspath"
+        List<String> dependencies = new ArrayList<>(0)
+        configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
+            def identifier = it.module.id
+            String classPath = "${identifier.group}:${identifier.name}:${identifier.version}"
+            dependencies.add(classPath)
+        }
+        SplitDependencyStatistics.getInstance().putDependencies(project.name, variantName, dependencies)
+    }
 }

@@ -22,12 +22,39 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.qigsaw.buildtool.gradle
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+import org.gradle.api.Project
 
-interface SplitInfoGenerator {
+final class SplitOutputFile {
 
-    SplitInfo generate(String splitName, File splitApk, File splitManifest)
+    File splitApk
 
+    File splitManifest
+
+    Project splitProject
+
+    String variantName
+
+    SplitOutputFile(Project splitProject, String variantName, File splitApk, File splitManifest) {
+        this.splitProject = splitProject
+        this.variantName = variantName
+        this.splitApk = splitApk
+        this.splitManifest = splitManifest
+    }
+
+    @Override
+    boolean equals(Object o) {
+        if (o == null) {
+            return false
+        }
+        if (!(o instanceof SplitOutputFile)) {
+            return false
+        }
+        return (splitApk.equals(o.splitApk) &&
+                splitManifest.equals(splitManifest) &&
+                splitProject.equals(o.splitProject) &&
+                variantName.equals(o.variantName)
+        )
+    }
 }

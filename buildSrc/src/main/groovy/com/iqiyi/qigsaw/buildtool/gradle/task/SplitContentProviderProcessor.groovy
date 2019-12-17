@@ -24,57 +24,40 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
+import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFile
+import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFileManager
 import org.dom4j.Document
 import org.dom4j.Element
 import org.dom4j.Node
 import org.dom4j.io.OutputFormat
 import org.dom4j.io.SAXReader
 import org.dom4j.io.XMLWriter
-import org.gradle.api.Project
 import org.gradle.internal.Pair
 
 class SplitContentProviderProcessor {
 
-    Project project
+    final String variantName
 
-    def dynamicFeatures
+    final SAXReader saxReader
 
-    String variantName
-
-    SAXReader saxReader = new SAXReader()
-
-    SplitContentProviderProcessor(Project project,
-                                  def dynamicFeatures,
-                                  String variantName) {
-        this.project = project
-        this.dynamicFeatures = dynamicFeatures
+    SplitContentProviderProcessor(String variantName) {
         this.variantName = variantName
+        this.saxReader = new SAXReader()
     }
 
-    void process() {
-        File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(project, variantName)
-        File mergedManifest = new File(mergedManifestDir, "AndroidManifest.xml")
+    void process(File baseManifestFile, File bundleManifestFile) {
         List<Pair<String, Node>> splitProviderNodes = getSplitProviderNode()
-        if (mergedManifest.exists()) {
-            Document mergedManifestDoc = saxReader.read(new File(mergedManifestDir, "AndroidManifest.xml"))
-            removeSplitProviders(mergedManifestDoc, mergedManifest, splitProviderNodes)
+        if (baseManifestFile != null && baseManifestFile.exists()) {
+            Document mergedManifestDoc = saxReader.read(baseManifestFile)
+            removeSplitProviders(mergedManifestDoc, baseManifestFile, splitProviderNodes)
         }
-        File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(project, variantName)
-        if (bundleManifestDir != null) {
-            File bundleManifest = new File(bundleManifestDir, "AndroidManifest.xml")
-            if (bundleManifest.exists()) {
-                Document bundleManifestDoc = saxReader.read(new File(bundleManifestDir, "AndroidManifest.xml"))
-                removeSplitProviders(bundleManifestDoc, bundleManifest, splitProviderNodes)
-            }
+        if (bundleManifestFile != null && bundleManifestFile.exists()) {
+            Document bundleManifestDoc = saxReader.read(bundleManifestFile)
+            removeSplitProviders(bundleManifestDoc, bundleManifestFile, splitProviderNodes)
         }
     }
 
-    private void removeSplitProviders(Document document, File xmlFile, List<Pair<String, Node>> splitProviderNodes) {
-        if (!xmlFile.exists()) {
-            project.logger.error("AndroidManifest file " + xmlFile.absolutePath + " is not existed")
-            return
-        }
+    static void removeSplitProviders(Document document, File xmlFile, List<Pair<String, Node>> splitProviderNodes) {
         Element rootEle = document.getRootElement()
         List<? extends Node> appProviderNodes = rootEle.selectNodes("//provider")
         if (appProviderNodes != null && !appProviderNodes.empty) {
@@ -103,17 +86,19 @@ class SplitContentProviderProcessor {
 
     private List<Pair<String, Node>> getSplitProviderNode() {
         List<Pair<String, Node>> splitProviderNodes = new ArrayList<>()
-        for (String dynamicFeature : dynamicFeatures) {
-            Project dynamicFeatureProject = project.rootProject.project(dynamicFeature)
-            File splitManifestDir = AGPCompat.getMergedManifestDirCompat(dynamicFeatureProject, variantName)
-            File splitManifest = new File(splitManifestDir, "AndroidManifest.xml")
-            if (splitManifest.exists()) {
+        Set<SplitOutputFile> splitOutputFiles = SplitOutputFileManager.getInstance().getOutputFiles()
+        for (SplitOutputFile splitOutputFile : splitOutputFiles) {
+            if (!splitOutputFile.variantName.equals(variantName)) {
+                continue
+            }
+            File splitManifest = splitOutputFile.splitManifest
+            if (splitManifest != null && splitManifest.exists()) {
                 Document splitManifestDoc = saxReader.read(splitManifest)
                 Element splitRootEle = splitManifestDoc.getRootElement()
                 List<? extends Node> providers = splitRootEle.selectNodes("//provider")
                 if (providers != null && !providers.empty) {
                     for (Node provideNode : providers) {
-                        splitProviderNodes.add(Pair.of(dynamicFeature, provideNode))
+                        splitProviderNodes.add(Pair.of(splitOutputFile.splitProject.name, provideNode))
                     }
                 }
             }

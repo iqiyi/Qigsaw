@@ -25,52 +25,50 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.android.build.gradle.AppExtension
-import com.android.build.gradle.api.ApplicationVariant
 import com.google.common.collect.ImmutableSet
+import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFile
+import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFileManager
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TopoSort
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.tasks.TaskAction
-
-import javax.inject.Inject
 
 class QigsawAssembleTask extends DefaultTask {
 
-    final def dynamicFeatures
+    String qigsawId
 
-    final String variantName
+    String variantName
 
-    final File assetsDir
+    File assetsDir
 
-    List<File> intermediates = new ArrayList<>()
+    File mergeJniLibDir
 
-    final String qigsawId
+    File packageOutputDir
 
-    final String versionName
+    File baseManifestFile
 
-    Map<String, List<String>> dynamicFeatureDependenciesMap
+    List<String> dfClassPaths
 
-    final File mergeJniLib
+    List<File> qigsawIntermediates = new ArrayList<>()
 
-    @Inject
-    QigsawAssembleTask(File assetsDir,
-                       File mergeJniLib,
-                       String variantName,
-                       String versionName,
-                       def dynamicFeatures,
-                       String qigsawId) {
-        this.assetsDir = assetsDir
-        this.mergeJniLib = mergeJniLib
-        this.variantName = variantName
-        this.versionName = versionName
-        this.dynamicFeatures = dynamicFeatures
+    void initArgs(String qigsawId,
+                  String variantName,
+                  File assetsDir,
+                  File mergeJniLib,
+                  File packageOutputDir,
+                  File baseManifestFile,
+                  List<String> dfClassPaths) {
         this.qigsawId = qigsawId
+        this.variantName = variantName
+        this.assetsDir = assetsDir
+        this.mergeJniLibDir = mergeJniLib
+        this.packageOutputDir = packageOutputDir
+        this.baseManifestFile = baseManifestFile
+        this.dfClassPaths = dfClassPaths
     }
 
     @TaskAction
@@ -79,7 +77,7 @@ class QigsawAssembleTask extends DefaultTask {
     }
 
     void deleteIntermediates() {
-        intermediates.each {
+        qigsawIntermediates.each {
             if (it.exists()) {
                 it.delete()
             }
@@ -88,36 +86,37 @@ class QigsawAssembleTask extends DefaultTask {
 
     void makeSplitInfoFileInternal() {
         Map<String, SplitInfo> splitInfoMap = new HashMap<>()
-        //get version name and version code of base app project!
-        for (String dynamicFeature : dynamicFeatures) {
-            Project dynamicFeatureProject = project.rootProject.project(dynamicFeature)
-            String splitName = dynamicFeatureProject.name
-            AppExtension android = dynamicFeatureProject.extensions.getByType(AppExtension)
-            File splitApk = null
-            File splitManifest = null
-
-            android.applicationVariants.all { variant ->
-                ApplicationVariant appVariant = variant
-                Task assembleTask = AGPCompat.getAssemble(appVariant)
-                if (assembleTask.name.endsWith(variantName)) {
-                    appVariant.outputs.each {
-                        splitApk = it.outputFile
-                        File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(dynamicFeatureProject, appVariant.name.capitalize())
-                        splitManifest = new File(mergedManifestDir, "AndroidManifest.xml")
+        Set<SplitOutputFile> splitOutputFiles = SplitOutputFileManager.getInstance().getOutputFiles()
+        for (SplitOutputFile splitOutputFile : splitOutputFiles) {
+            if (!splitOutputFile.variantName.equals(variantName)) {
+                continue
+            }
+            Project splitProject = splitOutputFile.splitProject
+            String splitName = splitProject.name
+            File splitManifest = splitOutputFile.splitManifest
+            File splitApk = splitOutputFile.splitApk
+            if (splitApk == null || splitManifest == null) {
+                throw new RuntimeException("Can not find output files of " + splitName + " " + splitApk + " " + splitManifest)
+            }
+            List<String> allDependencies = SplitDependencyStatistics.getInstance().getDependencies(splitName, variantName)
+            List<String> dfDependencies = new ArrayList<>()
+            if (allDependencies != null) {
+                allDependencies.each {
+                    if (dfClassPaths.contains(it)) {
+                        dfDependencies.add(it.split(":")[1])
                     }
                 }
             }
-            if (splitApk == null || splitManifest == null) {
-                throw new RuntimeException("Can not find output files of " + dynamicFeature + " " + splitApk + " " + splitManifest)
-            }
-            SplitProcessorImpl splitProcessor = new SplitProcessorImpl(project, android, variantName, dynamicFeatureDependenciesMap)
+            println("dynamic feature ${splitName} has dependencies: ${dfDependencies.toString()}")
+            SplitApkProcessor splitProcessor = new SplitApkProcessorImpl(project, variantName)
             //sign split apk if needed
             File splitSignedApk = splitProcessor.signSplitAPKIfNeed(splitApk)
-            SplitInfo splitInfo = splitProcessor.generateSplitInfo(splitName, splitSignedApk, splitManifest)
+            //create split info
+            SplitInfo splitInfo = splitProcessor.createSplitInfo(splitName, splitProject.extensions.android, dfDependencies, splitManifest, splitSignedApk)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
         //get Abis that have been merged
-        File[] abiDirs = mergeJniLib.listFiles()
+        File[] abiDirs = mergeJniLibDir.listFiles()
         Set<String> abiDirNames = null
         boolean copyToAssets = true
         if (abiDirs != null) {
@@ -159,12 +158,11 @@ class QigsawAssembleTask extends DefaultTask {
         }
         fixedAbis = sortAbis(fixedAbis)
         SplitJsonFileCreator detailsCreator = new SplitDetailsCreatorImpl(
-                getProject(),
-                variantName,
-                versionName,
                 qigsawId,
+                copyToAssets,
+                getProject(),
+                packageOutputDir,
                 fixedAbis == null || fixedAbis.isEmpty() ? null : fixedAbis,
-                copyToAssets
         )
         Map<String, TopoSort.Node> nodeMap = new HashMap<>()
         TopoSort.Graph graph = new TopoSort.Graph()
@@ -184,7 +182,7 @@ class QigsawAssembleTask extends DefaultTask {
         }
         TopoSort.KahnTopo topo = new TopoSort.KahnTopo(graph)
         topo.process()
-        List<SplitInfo> splits = new ArrayList<>(dynamicFeatures.size())
+        List<SplitInfo> splits = new ArrayList<>()
         for (int i = topo.result.size() - 1; i >= 0; i--) {
             SplitInfo info = topo.result.get(i).val
             splitInfoMap.remove(info.splitName)
@@ -205,7 +203,7 @@ class QigsawAssembleTask extends DefaultTask {
         }
 
         FileUtils.copyFile(splitJsonFile, outputJsonFile)
-        intermediates.add(outputJsonFile)
+        qigsawIntermediates.add(outputJsonFile)
 
         if (copyToAssets) {
             for (SplitInfo info : splits) {
@@ -215,20 +213,19 @@ class QigsawAssembleTask extends DefaultTask {
                 }
                 if (info.builtIn) {
                     FileUtils.copyFile(info.splitApk, assetsSplitApk)
-                    intermediates.add(assetsSplitApk)
+                    qigsawIntermediates.add(assetsSplitApk)
                 }
             }
         } else {
             abiDirNames.each {
                 for (SplitInfo info : splits) {
-                    File jniSplitApk = new File(mergeJniLib, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
+                    File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
                     if (jniSplitApk.exists()) {
                         jniSplitApk.delete()
                     }
                     if (info.builtIn) {
-                        println("copy file " + jniSplitApk.absolutePath)
                         FileUtils.copyFile(info.splitApk, jniSplitApk)
-                        intermediates.add(jniSplitApk)
+                        qigsawIntermediates.add(jniSplitApk)
                     }
                 }
             }

@@ -24,41 +24,34 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.BaseAppInfoGetter
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
-import org.gradle.api.Project
+import java.util.concurrent.ConcurrentHashMap
 
-class BaseAppInfoGetterImpl implements BaseAppInfoGetter {
+final class SplitDependencyStatistics {
 
-    Project project
+    private final ConcurrentHashMap<String, List<String>> dependenciesMap = new ConcurrentHashMap<>()
 
-    ManifestReader manifestReader
+    private static SplitDependencyStatistics sInstance
 
-    BaseAppInfoGetterImpl(Project project,
-                          File baseAppManifest) {
-        this.project = project
-        if (baseAppManifest != null && baseAppManifest.exists()) {
-            manifestReader = new ManifestReaderImpl(baseAppManifest)
-        }
-    }
-
-    @Override
-    String getPackageName() {
-        if (manifestReader != null) {
-            return manifestReader.readPackageName()
-        }
-        return null
-    }
-
-    @Override
-    String getVersionName() {
-        String baseAppVersionName = project.extensions.android.defaultConfig.versionName
-        if (baseAppVersionName == null) {
-            if (manifestReader != null) {
-                return manifestReader.readVersionName()
+    static SplitDependencyStatistics getInstance() {
+        synchronized (SplitDependencyStatistics.class) {
+            if (sInstance == null) {
+                sInstance = new SplitDependencyStatistics()
             }
+            return sInstance
         }
-        return baseAppVersionName
+    }
+
+    void putDependencies(String projectName, String variantName, List<String> dependencies) {
+        String key = "${projectName}_${variantName}"
+        dependenciesMap.put(key, dependencies)
+    }
+
+    List<String> getDependencies(String projectName, String variantName) {
+        String key = "${projectName}_${variantName}"
+        return dependenciesMap.get(key)
+    }
+
+    void clear() {
+        dependenciesMap.clear()
     }
 }

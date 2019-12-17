@@ -32,7 +32,7 @@ import com.android.ide.common.signing.CertificateInfo
 import com.android.ide.common.signing.KeystoreHelper
 import com.google.common.base.Preconditions
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoGenerator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
@@ -40,34 +40,24 @@ import org.gradle.api.UnknownDomainObjectException
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
-class SplitProcessorImpl implements SplitApkProcessor {
+class SplitApkProcessorImpl implements SplitApkProcessor {
 
-    private Project appProject
+    final Project baseProject
 
-    private AppExtension android
+    final String variantName
 
-    private String variantName
-
-    private Map<String, List<String>> dynamicFeatureDependenciesMap
-
-    SplitProcessorImpl(Project appProject,
-                       AppExtension splitExtension,
-                       String variantName,
-                       Map<String, List<String>> dynamicFeatureDependenciesMap) {
-        this.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
-        this.appProject = appProject
-        this.android = splitExtension
+    SplitApkProcessorImpl(Project project, String variantName) {
+        this.baseProject = project
         this.variantName = variantName
     }
 
     @Override
-    final File signSplitAPKIfNeed(File splitApk) {
+    File signSplitAPKIfNeed(File splitApk) {
         ApkVerifier apkVerifier = new ApkVerifier.Builder(splitApk).build()
         if (!apkVerifier.verify().verified) {
-            AppExtension appAndroid = appProject.extensions.android
             SigningConfig signingConfig
             try {
-                signingConfig = appAndroid.signingConfigs.getByName(variantName.uncapitalize())
+                signingConfig = baseProject.extensions.android.signingConfigs.getByName(variantName.uncapitalize())
             } catch (UnknownDomainObjectException e) {
                 //Catch block
                 throw new RuntimeException("Can't get " + variantName.uncapitalize() + " signingConfigs in app project", e)
@@ -96,9 +86,20 @@ class SplitProcessorImpl implements SplitApkProcessor {
     }
 
     @Override
-    final SplitInfo generateSplitInfo(String splitName, File splitSignedApk, File splitManifest) {
-        SplitInfoGenerator infoGenerator = new SplitInfoGeneratorImpl(appProject, android, variantName, dynamicFeatureDependenciesMap)
-        SplitInfo splitInfo = infoGenerator.generate(splitName, splitSignedApk, splitManifest)
+    SplitInfo createSplitInfo(String splitName,
+                              AppExtension splitExtension,
+                              List<String> dfDependencies,
+                              File splitManifest,
+                              File splitSignedApk) {
+        SplitInfoCreator infoCreator = new SplitInfoCreatorImpl(
+                baseProject,
+                variantName,
+                splitExtension,
+                splitName,
+                splitSignedApk,
+                splitManifest,
+                dfDependencies)
+        SplitInfo splitInfo = infoCreator.create()
         return splitInfo
     }
 }

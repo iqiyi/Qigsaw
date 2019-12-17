@@ -25,33 +25,64 @@
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.android.build.gradle.api.ApplicationVariant
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.util.VersionNumber
 
 class AGPCompat {
 
-    static File getMergedManifestDirCompat(Project project, String variantName) {
-        Task processManifest = getProcessManifestTask(project, variantName)
-        File mergedManifestDir = null
-        if (processManifest != null) {
-            processManifest.outputs.files.each {
-                if (it.toPath().toString().contains(File.separator + "merged_manifests" + File.separator)) {
-                    mergedManifestDir = it.toPath().toFile()
-                }
-            }
+    static final String ANDROIDMANIFEST_DOT_XML = "AndroidManifest.xml"
+
+    static String getMergeAssetsBaseDirCompat(Task mergeAssetsTask) {
+        String mergeAssetsOutputDir
+        try {
+            mergeAssetsOutputDir = mergeAssetsTask.outputDir.asFile.get()
+        } catch (Throwable ignored) {
+            mergeAssetsOutputDir = mergeAssetsTask.outputDir
         }
-        return mergedManifestDir
+        if (mergeAssetsOutputDir == null) {
+            throw new GradleException("Can't read 'outputDir' from " + mergeAssetsTask == null ? null : mergeAssetsTask.class.name)
+        }
+        return mergeAssetsOutputDir
     }
 
-    static File getBundleManifestDirCompat(Project project, String variantName) {
-        Task processManifest = getProcessManifestTask(project, variantName)
+    static File getPackageApplicationDirCompat(Task packageApplicationTask) {
+        return packageApplicationTask.outputDirectory
+    }
+
+    static String getMergedManifestBaseDirCompat(Task processManifestTask) {
+        String manifestOutputBaseDir
+        try {
+            manifestOutputBaseDir = processManifestTask.manifestOutputDirectory.asFile.get()
+        } catch (Throwable ignored) {
+            manifestOutputBaseDir = processManifestTask.manifestOutputDirectory
+        }
+        if (manifestOutputBaseDir == null) {
+            throw new GradleException("Can't read 'manifestOutputDirectory' form " + processManifestTask == null ? null : processManifestTask.class.name)
+        }
+        return manifestOutputBaseDir
+    }
+
+    static File getMergeJniLibsDirCompat(Task mergeJniLibsTask, def versionAGP) {
+        File mergeJniLibsDir
+        if (versionAGP < VersionNumber.parse("3.5.0")) {
+            mergeJniLibsDir = new File(mergeJniLibsTask.outputStream.getRootLocation(), "0${File.separator}lib")
+        } else {
+            mergeJniLibsDir = new File(mergeJniLibsTask.outputDir.asFile.get(), "lib")
+        }
+        if (mergeJniLibsDir == null) {
+            throw new GradleException("Can't read 'outputDir' form " + mergeJniLibsTask == null ? null : mergeJniLibsTask.class.name)
+        }
+        return mergeJniLibsDir
+    }
+
+    static File getBundleManifestDirCompat(Task processManifestTask) {
         File bundleManifestDir = null
-        if (processManifest != null) {
-            processManifest.outputs.files.each {
-                if (it.toPath().toString().contains(File.separator + "bundle_manifest" + File.separator)) {
-                    bundleManifestDir = it.toPath().toFile()
-                }
-            }
+        try {
+            bundleManifestDir = processManifestTask.bundleManifestOutputDirectory
+        } catch (Throwable e) {
+
         }
         return bundleManifestDir
     }
@@ -75,7 +106,6 @@ class AGPCompat {
         return aapt2Enabled
     }
 
-
     /**
      * get android gradle plugin version by reflect
      */
@@ -95,7 +125,7 @@ class AGPCompat {
     /**
      * get com.android.build.gradle.options.ProjectOptions obj by reflect
      */
-    static def getProjectOptions(Project project) {
+    private static def getProjectOptions(Project project) {
         try {
             def basePlugin = project.getPlugins().hasPlugin('com.android.application') ? project.getPlugins().findPlugin('com.android.application') : project.getPlugins().findPlugin('com.android.library')
             return Class.forName("com.android.build.gradle.BasePlugin").getMetaClass().getProperty(basePlugin, 'projectOptions')
@@ -107,7 +137,7 @@ class AGPCompat {
     /**
      * get enum obj by reflect
      */
-    static <T> T resolveEnumValue(String value, Class<T> type) {
+    private static <T> T resolveEnumValue(String value, Class<T> type) {
         for (T constant : type.getEnumConstants()) {
             if (constant.toString().equalsIgnoreCase(value)) {
                 return constant
@@ -129,27 +159,6 @@ class AGPCompat {
         return task
     }
 
-    static File getMergeJniLibsDirCompat(Project project, String variantName) {
-        Task task = project.tasks.findByName("transformNativeLibsWithMergeJniLibsFor${variantName}")
-        File mergeJniLibsDir = null
-        if (task != null) {
-            task.outputs.files.each {
-                if (it.absolutePath.contains(variantName.uncapitalize()) && !it.absolutePath.contains("incremental")) {
-                    mergeJniLibsDir = new File(it, "0${File.separator}lib")
-                }
-            }
-        } else {
-            task = project.tasks.findByName("merge${variantName}NativeLibs")
-            if (task != null) {
-                task.outputs.files.each {
-                    if (it.absolutePath.contains(variantName.uncapitalize()) && !it.absolutePath.contains("incremental")) {
-                        mergeJniLibsDir = new File(it, "lib")
-                    }
-                }
-            }
-        }
-        return mergeJniLibsDir
-    }
 
     static Task getAssemble(ApplicationVariant variant) {
         try {

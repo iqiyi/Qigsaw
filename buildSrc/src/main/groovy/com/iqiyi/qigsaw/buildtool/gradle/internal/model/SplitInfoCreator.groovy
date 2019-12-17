@@ -24,10 +24,10 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-interface BaseAppInfoGetter {
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
-    String getPackageName()
+interface SplitInfoCreator {
 
-    String getVersionName()
+    SplitInfo create()
 
 }

@@ -25,24 +25,24 @@
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
 import com.android.build.api.transform.*
-import com.android.build.gradle.AppExtension
-import com.android.build.gradle.api.ApplicationVariant
-import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.google.common.collect.ImmutableSet
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
+import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFile
+import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFileManager
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 
-class ComponentInfoCreatorTransform extends SimpleClassCreatorTransform {
+class ComponentInfoTransform extends SimpleClassCreatorTransform {
 
     Project project
 
-    ComponentInfoCreatorTransform(Project project) {
+    ComponentInfoTransform(Project project) {
         this.project = project
     }
 
@@ -76,57 +76,55 @@ class ComponentInfoCreatorTransform extends SimpleClassCreatorTransform {
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
         super.transform(transformInvocation)
         transformInvocation.getOutputProvider().deleteAll()
-        BaseAppModuleExtension android = project.extensions.getByType(BaseAppModuleExtension)
-        def dynamicFeatures = android.dynamicFeatures
+
+        Set<SplitOutputFile> splitOutputFiles = SplitOutputFileManager.getInstance().getOutputFiles()
+        if (splitOutputFiles.isEmpty()) {
+            project.logger.error("can't get manifest files from DynamicFeatureManifestManager!")
+            return
+        }
+        String variantName = transformInvocation.context.variantName.capitalize()
         Map<String, List> addFieldMap = new HashMap<>()
-
-        for (String dynamicFeature : dynamicFeatures) {
-            Project dynamicFeatureProject = project.rootProject.project(dynamicFeature)
-            AppExtension dynamicAndroid = dynamicFeatureProject.extensions.getByType(AppExtension)
-            File splitManifest = null
-            dynamicAndroid.applicationVariants.all { variant ->
-                ApplicationVariant appVariant = variant
-                if (appVariant.name == transformInvocation.context.variantName) {
-                    File mergedManifestDir = AGPCompat.getMergedManifestDirCompat(dynamicFeatureProject, appVariant.name.capitalize())
-                    splitManifest = new File(mergedManifestDir, "AndroidManifest.xml")
-                }
+        for (SplitOutputFile splitOutputFile : splitOutputFiles) {
+            if (!variantName.equals(splitOutputFile.variantName)) {
+                continue
             }
-            String splitName = dynamicFeatureProject.getName()
-            if (null != splitManifest) {
-                ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
-
-                List<String> activities = new ArrayList<>()
-                List<String> services = new ArrayList<>()
-                List<String> receivers = new ArrayList<>()
-                List<String> providers = new ArrayList<>()
-                List<String> applications = new ArrayList<>()
-
-                String applicationName = manifestReader.readApplicationName().name
-                if (applicationName != null && applicationName.length() > 0) {
-                    applications.add(applicationName)
-                }
-
-                manifestReader.readActivities().each {
-                    activities.add(it.name)
-                }
-
-                manifestReader.readServices().each {
-                    services.add(it.name)
-                }
-                manifestReader.readReceivers().each {
-                    receivers.add(it.name)
-                }
-
-                manifestReader.readProviders().each {
-                    providers.add(it.name)
-                }
-
-                addFieldMap.put(splitName + "_APPLICATION", applications)
-                addFieldMap.put(splitName + "_ACTIVITIES", activities)
-                addFieldMap.put(splitName + "_SERVICES", services)
-                addFieldMap.put(splitName + "_RECEIVERS", receivers)
-                addFieldMap.put(splitName + "_PROVIDERS", providers)
+            String splitName = splitOutputFile.splitProject.name
+            File splitManifest = splitOutputFile.splitManifest
+            if (splitManifest == null || !splitManifest.exists()) {
+                throw new GradleException("can't get manifest file of project ${splitName} from DynamicFeatureManifestManager!")
             }
+            ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
+            List<String> activities = new ArrayList<>()
+            List<String> services = new ArrayList<>()
+            List<String> receivers = new ArrayList<>()
+            List<String> providers = new ArrayList<>()
+            List<String> applications = new ArrayList<>()
+
+            String applicationName = manifestReader.readApplicationName().name
+            if (applicationName != null && applicationName.length() > 0) {
+                applications.add(applicationName)
+            }
+
+            manifestReader.readActivities().each {
+                activities.add(it.name)
+            }
+
+            manifestReader.readServices().each {
+                services.add(it.name)
+            }
+            manifestReader.readReceivers().each {
+                receivers.add(it.name)
+            }
+
+            manifestReader.readProviders().each {
+                providers.add(it.name)
+            }
+
+            addFieldMap.put(splitName + "_APPLICATION", applications)
+            addFieldMap.put(splitName + "_ACTIVITIES", activities)
+            addFieldMap.put(splitName + "_SERVICES", services)
+            addFieldMap.put(splitName + "_RECEIVERS", receivers)
+            addFieldMap.put(splitName + "_PROVIDERS", providers)
         }
 
         def dest = prepareToCreateClass(transformInvocation)
@@ -137,7 +135,6 @@ class ComponentInfoCreatorTransform extends SimpleClassCreatorTransform {
                 injectCommonInfo(dest, cw, addFieldMap)
             }
         })
-
     }
 
     static void injectCommonInfo(def dest, ClassWriter cw, Map<String, List> addFieldMap) {

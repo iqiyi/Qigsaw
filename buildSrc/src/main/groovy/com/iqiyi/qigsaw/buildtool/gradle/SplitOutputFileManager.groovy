@@ -22,15 +22,32 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.qigsaw.buildtool.gradle
 
-import com.android.build.gradle.AppExtension
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+final class SplitOutputFileManager {
 
-interface SplitApkProcessor {
+    private final Set<SplitOutputFile> outFileMap = new HashSet<>()
 
-    File signSplitAPKIfNeed(File splitApk)
+    private static SplitOutputFileManager sInstance
 
-    SplitInfo createSplitInfo(String splitName, AppExtension splitExtension, List<String> dfDependencies, File splitManifest, File splitSignedApk)
+    static SplitOutputFileManager getInstance() {
+        synchronized (SplitOutputFileManager.class) {
+            if (sInstance == null) {
+                sInstance = new SplitOutputFileManager()
+            }
+            return sInstance
+        }
+    }
 
+    void addOutputFile(SplitOutputFile outputFile) {
+        outFileMap.add(outputFile)
+    }
+
+    Set<SplitOutputFile> getOutputFiles() {
+        return outFileMap
+    }
+
+    void clear() {
+        outFileMap.clear()
+    }
 }

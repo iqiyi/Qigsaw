@@ -27,40 +27,52 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 import com.android.build.gradle.AppExtension
 import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoGenerator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import org.gradle.api.Project
 
-class SplitInfoGeneratorImpl implements SplitInfoGenerator {
+class SplitInfoCreatorImpl implements SplitInfoCreator {
 
-    Project appProject
+    final Project appProject
 
-    AppExtension android
+    final String splitName
 
-    String variantName
+    final AppExtension splitExtension
 
-    Map<String, List<String>> dynamicFeatureDependenciesMap
+    final String variantName
 
-    SplitInfoGeneratorImpl(Project appProject,
-                           AppExtension splitExtension,
-                           String variantName,
-                           Map<String, List<String>> dynamicFeatureDependenciesMap) {
-        this.dynamicFeatureDependenciesMap = dynamicFeatureDependenciesMap
+    final File splitApk
+
+    final File splitManifestFile
+
+    final List<String> dfDependencies
+
+    SplitInfoCreatorImpl(Project appProject,
+                         String variantName,
+                         AppExtension splitExtension,
+                         String splitName,
+                         File splitApk,
+                         File splitManifestFile,
+                         List<String> dfDependencies) {
         this.appProject = appProject
-        this.android = splitExtension
         this.variantName = variantName
+        this.splitExtension = splitExtension
+        this.splitName = splitName
+        this.splitApk = splitApk
+        this.splitManifestFile = splitManifestFile
+        this.dfDependencies = dfDependencies
     }
 
     @Override
-    SplitInfo generate(String splitName, File splitApk, File splitManifest) {
-        String versionName = android.defaultConfig.versionName
+    SplitInfo create() {
+        String versionName = splitExtension.defaultConfig.versionName
         if (versionName == null) {
             throw new RuntimeException("Dynamic feature ${splitName} version name is not set!")
         }
-        Integer versionCode = android.defaultConfig.versionCode
+        Integer versionCode = splitExtension.defaultConfig.versionCode
         if (versionCode == null) {
             versionCode = 0
         }
@@ -69,14 +81,13 @@ class SplitInfoGeneratorImpl implements SplitInfoGenerator {
                 splitName,
                 splitApk,
                 md5,
-                android.defaultConfig.minSdkVersion.apiLevel,
+                splitExtension.defaultConfig.minSdkVersion.apiLevel,
                 versionName + "@" + versionCode,
         )
-        splitInfo.dependencies = dynamicFeatureDependenciesMap.get(splitName)
-        ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
+        splitInfo.dependencies = dfDependencies.isEmpty() ? null : dfDependencies
+        ManifestReader manifestReader = new ManifestReaderImpl(splitManifestFile)
         boolean releaseSplitApk = appProject.extensions.qigsawSplit.releaseSplitApk
         splitInfo.builtIn = !manifestReader.readOnDemand() || !releaseSplitApk
-
         List<String> processes = new ArrayList<>()
         Set<ComponentInfo> activities = manifestReader.readActivities()
         activities.each {

@@ -29,7 +29,8 @@ import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.scope.VariantScope
 import org.gradle.api.Project
 
-class AdjustManifestKeepHandler {
+class FixedMainDexList {
+
     final String[] FILTERRULES = [
             "class * implements com.tencent.tinker.entry.ApplicationLifeCycle",
             "class * extends android.app.Application"
@@ -38,7 +39,7 @@ class AdjustManifestKeepHandler {
 
     final VariantScope variantScope
 
-    AdjustManifestKeepHandler(Project project, ApplicationVariant variant) {
+    FixedMainDexList(Project project, ApplicationVariant variant) {
         this.variantScope = variant.variantData.scope
     }
 

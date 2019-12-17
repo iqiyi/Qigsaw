@@ -27,6 +27,7 @@ package com.iqiyi.qigsaw.buildtool.gradle
 import com.android.build.gradle.AppExtension
 import com.android.build.gradle.api.ApplicationVariant
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
+import com.iqiyi.qigsaw.buildtool.gradle.task.AnalyzeDependenciesTask
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitLibraryLoaderTransform
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitResourcesLoaderTransform
 import org.gradle.api.GradleException
@@ -40,9 +41,12 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
         if (!project.getPlugins().hasPlugin("com.android.dynamic-feature")) {
             throw new GradleException("generateQigsawApk: Dynamic-feature plugin required")
         }
+        boolean hasQigsawTask = hasQigsawTask(project)
+
         AppExtension android = project.extensions.getByType(AppExtension)
         SplitResourcesLoaderTransform resourcesLoaderTransform
-        if (hasQigsawTask(project)) {
+
+        if (hasQigsawTask) {
             resourcesLoaderTransform = new SplitResourcesLoaderTransform(project)
             SplitLibraryLoaderTransform libraryLoaderTransform = new SplitLibraryLoaderTransform(project)
             android.registerTransform(resourcesLoaderTransform)
@@ -51,9 +55,23 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
         project.afterEvaluate {
             android.applicationVariants.all { variant ->
                 ApplicationVariant appVariant = variant
-                File manifestOutputDirectory = AGPCompat.getMergedManifestDirCompat(project, appVariant.name.capitalize())
-                File manifestFile = new File(manifestOutputDirectory, "AndroidManifest.xml")
-                Task splitComponentTransformTask = getSplitComponentTransformTask(project, appVariant.name.capitalize())
+                String variantName = appVariant.name.capitalize()
+                Task Assembletask = AGPCompat.getAssemble(appVariant)
+                Task processManifestTask = AGPCompat.getProcessManifestTask(project, appVariant.name.capitalize())
+                if (hasQigsawTask) {
+                    Task packageTask = AGPCompat.getPackageApplication(appVariant)
+                    AnalyzeDependenciesTask analyzeDependenciesTask = project.tasks.create("analyzeDependencies${appVariant.name.capitalize()}", AnalyzeDependenciesTask)
+                    analyzeDependenciesTask.initArgs(variantName)
+                    packageTask.finalizedBy analyzeDependenciesTask
+                }
+                File manifestFile = new File(AGPCompat.getMergedManifestBaseDirCompat(processManifestTask), AGPCompat.ANDROIDMANIFEST_DOT_XML)
+                File apkFile = null
+                appVariant.outputs.each {
+                    apkFile = it.outputFile
+                }
+                SplitOutputFile outputFile = new SplitOutputFile(project, variantName, apkFile, manifestFile)
+                SplitOutputFileManager.getInstance().addOutputFile(outputFile)
+                Task splitComponentTransformTask = getSplitComponentTransformTask(project, variantName)
                 if (splitComponentTransformTask != null) {
                     splitComponentTransformTask.doFirst {
                         if (resourcesLoaderTransform != null) {

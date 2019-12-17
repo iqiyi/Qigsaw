@@ -39,7 +39,7 @@ import org.gradle.api.Task
 
 class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
 
-    final static String JSON_SUFFIX = ".json"
+    final static String JSON_SUFFIX = SdkConstants.DOT_JSON
 
     Project appProject
 
@@ -47,7 +47,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
 
     String splitDetailsFilePrefix
 
-    String variantName
+    File packageOutputDir
 
     String qigsawId
 
@@ -55,19 +55,18 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
 
     boolean copyToAssets
 
-    SplitDetailsCreatorImpl(Project appProject,
-                            String variantName,
-                            String appVersionName,
-                            String qigsawId,
-                            Set<String> abiFilters,
-                            boolean copyToAssets) {
-        this.appProject = appProject
-        this.variantName = variantName
-        this.appVersionName = appVersionName
-        this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
+    SplitDetailsCreatorImpl(String qigsawId,
+                            boolean copyToAssets,
+                            Project appProject,
+                            File packageOutputDir,
+                            Set<String> abiFilters) {
         this.qigsawId = qigsawId
-        this.abiFilters = abiFilters
         this.copyToAssets = copyToAssets
+        this.appProject = appProject
+        this.packageOutputDir = packageOutputDir
+        this.appVersionName = appProject.extensions.android.defaultConfig.versionName
+        this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
+        this.abiFilters = abiFilters
     }
 
     @Override
@@ -102,21 +101,13 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
     private File createNewSplitInfoJsonFile(SplitDetails splitDetails) {
         Gson gson = new Gson()
         String splitDetailsStr = gson.toJson(splitDetails)
-        File outputDir = null
-        appProject.extensions.android.applicationVariants.each {
-            ApplicationVariant appVariant = it
-            if (appVariant.name.equalsIgnoreCase(variantName)) {
-                Task packageApplicationTask = AGPCompat.getPackageApplication(appVariant)
-                outputDir = packageApplicationTask.outputDirectory
-            }
-        }
-        if (outputDir != null) {
-            if (!outputDir.exists()) {
-                outputDir.mkdirs()
+        if (packageOutputDir != null) {
+            if (!packageOutputDir.exists()) {
+                packageOutputDir.mkdirs()
             }
             String splitInfoVersion = appProject.extensions.qigsawSplit.splitInfoVersion
             String fileName = splitDetailsFilePrefix + splitInfoVersion + JSON_SUFFIX
-            File splitDetailsFile = new File(outputDir, fileName)
+            File splitDetailsFile = new File(packageOutputDir, fileName)
             if (splitDetailsFile.exists()) {
                 splitDetailsFile.delete()
             }
@@ -175,7 +166,6 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
             splitInfo.url = "native://libsplit_${splitInfo.splitName + SdkConstants.DOT_NATIVE_LIBS}"
         }
     }
-
 
     private static boolean hasSplitVersionChanged(SplitDetails appliedSplitDetails, List<SplitInfo> splits) {
         boolean versionChanged = false

@@ -51,7 +51,6 @@ class QigsawBuildConfigGenerator {
         Object itemsObj = field.get(generateBuildConfigTask)
         Supplier<List<Object>> items = (Supplier<List<Object>>) itemsObj
         items.get().add(new ClassFieldImpl(String.class.name, key, "\"" + value + "\""))
-
     }
 
     void injectFields(String key, List<String> value) {

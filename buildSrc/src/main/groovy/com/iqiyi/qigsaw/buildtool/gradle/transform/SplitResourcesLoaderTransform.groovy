@@ -81,13 +81,11 @@ class SplitResourcesLoaderTransform extends Transform {
         super.transform(transformInvocation)
         long startTime = System.currentTimeMillis()
         transformInvocation.getOutputProvider().deleteAll()
-        if (manifest == null) {
+        if (manifest == null || !manifest.exists()) {
             project.logger.error("SplitResourcesLoaderTransform Task of project ${project.name} has no manifest file!")
             return
         }
-
         SplitResourcesLoaderInjector resourcesLoaderInjector = new SplitResourcesLoaderInjector(waitableExecutor, manifest)
-
         transformInvocation.inputs.each {
             Collection<DirectoryInput> directoryInputs = it.directoryInputs
 
