@@ -57,8 +57,13 @@ public class SplitBaseInfoProvider {
         sPackageName = packageName;
     }
 
-    private static Class getCommonInfoClass() throws ClassNotFoundException {
-        return Class.forName(sPackageName + CLASS_BuildConfig);
+    private static Class getCommonInfoClass() {
+        try {
+            return Class.forName(sPackageName + CLASS_BuildConfig);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Qigsaw Error: Can't find class " + sPackageName + "BuildConfig.class, " +
+                    "is your app package set in AndroidManifest.xml equal to applicationId set in build.gradle?");
+        }
     }
 
     public static boolean isQigsawAssembleMode() {
@@ -70,8 +75,6 @@ public class SplitBaseInfoProvider {
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
-            //
-        } catch (ClassNotFoundException e) {
             //
         }
         return false;
@@ -87,8 +90,6 @@ public class SplitBaseInfoProvider {
             //
         } catch (IllegalAccessException e) {
             //
-        } catch (ClassNotFoundException e) {
-            //
         }
         return DEFAULT_VALUE;
     }
@@ -102,8 +103,6 @@ public class SplitBaseInfoProvider {
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
-            //
-        } catch (ClassNotFoundException e) {
             //
         }
         return DEFAULT_VALUE;
@@ -119,8 +118,6 @@ public class SplitBaseInfoProvider {
             //
         } catch (IllegalAccessException e) {
             //
-        } catch (ClassNotFoundException e) {
-            //
         }
         return DEFAULT_SPLIT_INFO_VERSION_VALUE;
     }
@@ -134,8 +131,6 @@ public class SplitBaseInfoProvider {
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
-            //
-        } catch (ClassNotFoundException e) {
             //
         }
         return null;

@@ -31,7 +31,6 @@ public class QigsawApplication extends Application {
                 .logger(new SampleLogger())
                 .verifySignature(true)
                 .loadReporter(new SampleSplitLoadReporter(this))
-                .manifestPackageName(base.getPackageName())
                 .installReporter(new SampleSplitInstallReporter(this))
                 .updateReporter(new SampleSplitUpdateReporter(this))
                 .obtainUserConfirmationDialogClass(SampleObtainUserConfirmationDialog.class)
