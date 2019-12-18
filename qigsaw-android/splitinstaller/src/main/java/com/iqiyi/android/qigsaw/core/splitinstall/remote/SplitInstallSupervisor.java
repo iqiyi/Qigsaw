@@ -31,9 +31,16 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.RestrictTo;
 
-import com.iqiyi.android.qigsaw.core.splitdownload.DownloadRequest;
+import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.ProcessUtil;
+import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitinstall.SplitPendingUninstallManager;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -45,6 +52,41 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public abstract class SplitInstallSupervisor {
+
+    private static final String TAG = "SplitInstallSupervisor";
+
+    public final void startUninstall(Context context) {
+        SplitPendingUninstallManager pendingUninstallManager = new SplitPendingUninstallManager();
+        List<String> uninstallSplits = pendingUninstallManager.readPendingUninstallSplits();
+        SplitInfoManager manager = SplitInfoManagerService.getInstance();
+        List<SplitInfo> realUninstallSplits = null;
+        if (uninstallSplits != null && manager != null) {
+            List<SplitInfo> uninstallSplitInfos = manager.getSplitInfos(context, uninstallSplits);
+            if (uninstallSplitInfos != null) {
+                ProcessUtil.killAllOtherProcess(context);
+                realUninstallSplits = new ArrayList<>(uninstallSplitInfos.size());
+                for (SplitInfo uninstall : uninstallSplitInfos) {
+                    File installedMarkFile = SplitPathManager.require().getSplitMarkFile(uninstall);
+                    boolean ret = FileUtil.deleteFileSafely(installedMarkFile);
+                    if (ret) {
+                        realUninstallSplits.add(uninstall);
+                    }
+                }
+            }
+        }
+        if (realUninstallSplits != null && !realUninstallSplits.isEmpty()) {
+            SplitInstallService.getHandler(context.getPackageName()).post(new SplitStartUninstallTask(realUninstallSplits));
+        } else {
+            SplitLog.d(TAG, "No splits need to uninstall!");
+        }
+        SplitInfoManager infoManager = SplitInfoManagerService.getInstance();
+        if (infoManager != null) {
+            Collection<SplitInfo> allSplitInfos = infoManager.getAllSplitInfo(context);
+            if (allSplitInfos != null) {
+                SplitInstallService.getHandler(context.getPackageName()).post(new SplitDeleteRedundantVersionTask(allSplitInfos));
+            }
+        }
+    }
 
     public abstract void startInstall(List<Bundle> moduleNames, Callback callback) throws RemoteException;
 

@@ -131,7 +131,7 @@ final class SplitLibExtractor implements Closeable {
                     libFiles.add(extractedLib);
                     continue;
                 } else {
-                    FileUtil.safeDeleteFile(extractedLib);
+                    FileUtil.deleteFileSafely(extractedLib);
                     if (extractedLib.exists()) {
                         SplitLog.w(TAG, "Failed to delete corrupted lib file '" + extractedLib.getPath() + "'");
                     }
@@ -163,7 +163,7 @@ final class SplitLibExtractor implements Closeable {
                     isExtractionSuccessful = false;
                 }
                 if (!isExtractionSuccessful) {
-                    FileUtil.safeDeleteFile(extractedLib);
+                    FileUtil.deleteFileSafely(extractedLib);
                     if (extractedLib.exists()) {
                         SplitLog.w(TAG, "Failed to delete extracted lib that has been corrupted'" + extractedLib.getPath() + "'");
                     }
@@ -171,7 +171,7 @@ final class SplitLibExtractor implements Closeable {
                     libFiles.add(extractedLib);
                 }
             }
-            FileUtil.safeDeleteFile(tmp);
+            FileUtil.deleteFileSafely(tmp);
             if (!isExtractionSuccessful) {
                 throw new IOException("Could not create lib file " + extractedLib.getAbsolutePath() + ")");
             }

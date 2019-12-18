@@ -117,21 +117,22 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     @Override
     public void loadInstalledSplits() {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
-        if (manager != null) {
-            Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
-            if (splitInfoList != null) {
-                List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList);
-                if (!splitFileIntents.isEmpty()) {
-                    createSplitLoadTask(splitFileIntents, null).run();
-                } else {
-                    SplitLog.w(TAG, "There are no installed splits!");
-                }
-            } else {
-                SplitLog.w(TAG, "Failed to get Split-Info list!");
-            }
-        } else {
-            SplitLog.w(TAG, "Failed to get SplitInfoManager instance!");
+        if (manager == null) {
+            SplitLog.w(TAG, "Failed to get SplitInfoManager instance, have you invoke Qigsaw#install(...) method?");
+            return;
         }
+        Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
+        if (splitInfoList == null) {
+            SplitLog.w(TAG, "Failed to get Split-Info list!");
+            return;
+        }
+        //main process start to uninstall splits, other processes don't load pending uninstall splits.
+        List<Intent> splitFileIntents = createInstalledSplitFileIntents(splitInfoList);
+        if (splitFileIntents.isEmpty()) {
+            SplitLog.w(TAG, "There are no installed splits!");
+            return;
+        }
+        createSplitLoadTask(splitFileIntents, null).run();
     }
 
     private boolean isInjectPathClassloaderNeeded() {

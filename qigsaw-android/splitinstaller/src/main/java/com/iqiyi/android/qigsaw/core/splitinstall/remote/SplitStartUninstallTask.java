@@ -22,46 +22,35 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitinstall;
-
-import android.app.IntentService;
-import android.content.Intent;
-import android.support.annotation.Nullable;
-import android.support.annotation.RestrictTo;
+package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitinstall.SplitPendingUninstallManager;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
+import java.util.List;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+final class SplitStartUninstallTask implements Runnable {
 
-@RestrictTo(LIBRARY_GROUP)
-public class SplitCleanService extends IntentService {
+    private static final String TAG = "SplitStartUninstallTask";
 
-    public SplitCleanService() {
-        super("qigsaw_split_clean");
+    private final List<SplitInfo> uninstallSplits;
+
+    SplitStartUninstallTask(List<SplitInfo> uninstallSplits) {
+        this.uninstallSplits = uninstallSplits;
     }
 
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
-        try {
-            doClean();
-        } catch (Exception e) {
-            //ignored
+    public void run() {
+        for (SplitInfo info : uninstallSplits) {
+            SplitLog.d(TAG, "split %s need to be uninstalled, try to delete its files", info.getSplitName());
+            File splitRootDir = SplitPathManager.require().getSplitRootDir(info);
+            FileUtil.deleteDir(splitRootDir);
         }
+        boolean result = new SplitPendingUninstallManager().deletePendingUninstallSplitsRecord();
+        SplitLog.d(TAG, "%s to delete record file of pending uninstall splits!", result ? "Succeed" : "Failed");
     }
-
-    private void doClean() {
-        SplitPathManager.require().clearCache();
-    }
-
 }

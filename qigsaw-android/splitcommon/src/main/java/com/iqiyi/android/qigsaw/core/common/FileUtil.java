@@ -66,6 +66,22 @@ public class FileUtil {
         }
     }
 
+    public static boolean deleteFileSafely(File file) {
+        if (file == null || !file.exists()) {
+            return true;
+        }
+        boolean isDeleteSuccessful = false;
+        int numAttempts = 0;
+        while (numAttempts < SplitConstants.MAX_RETRY_ATTEMPTS && !isDeleteSuccessful) {
+            numAttempts++;
+            if (file.delete()) {
+                isDeleteSuccessful = true;
+            }
+        }
+        SplitLog.d(TAG, "%s to delete file: " + file.getAbsolutePath(), isDeleteSuccessful ? "Succeed" : "Failed");
+        return isDeleteSuccessful;
+    }
+
     public static void copyFile(File source, File dest) throws IOException {
         copyFile(new FileInputStream(source), new FileOutputStream(dest));
     }
@@ -156,24 +172,6 @@ public class FileUtil {
         return file != null && file.exists() && file.canRead() && file.isFile() && file.length() > 0;
     }
 
-    public static boolean safeDeleteFile(File file) {
-        if (file == null) {
-            return true;
-        }
-
-        if (file.exists()) {
-            SplitLog.i(TAG, "safeDeleteFile, try to delete path: " + file.getPath());
-
-            boolean deleted = file.delete();
-            if (!deleted) {
-                SplitLog.e(TAG, "Failed to delete file, try to delete when exit. path: " + file.getPath());
-                file.deleteOnExit();
-            }
-            return deleted;
-        }
-        return true;
-    }
-
     public static boolean deleteDir(File file) {
         return deleteDir(file, true);
     }
@@ -183,7 +181,7 @@ public class FileUtil {
             return false;
         }
         if (file.isFile()) {
-            safeDeleteFile(file);
+            deleteFileSafely(file);
         } else if (file.isDirectory()) {
             File[] files = file.listFiles();
             if (files != null) {
@@ -191,7 +189,7 @@ public class FileUtil {
                     deleteDir(subFile);
                 }
                 if (deleteRootDir) {
-                    safeDeleteFile(file);
+                    deleteFileSafely(file);
                 }
             }
         }

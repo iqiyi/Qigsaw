@@ -60,9 +60,15 @@ public final class SplitApkInstaller {
         }
     }
 
-
     @Nullable
     public static SplitInstallSupervisor getSplitInstallSupervisor() {
         return sSplitApkInstallerRef.get();
+    }
+
+    public static void startUninstallSplits(Context context) {
+        if (sSplitApkInstallerRef.get() == null) {
+            throw new RuntimeException("Have you install SplitApkInstaller?");
+        }
+        sSplitApkInstallerRef.get().startUninstall(context);
     }
 }

@@ -12,6 +12,7 @@
     <string name="install_all_features_now">Install all features now</string>
     <string name="load_all_features_deferred">Load all features deferred</string>
     <string name="install_all_deferred">Install deferred</string>
+    <string name="uninstall_all_deferred">Uninstall deferred</string>
     <string name="request_uninstall">Request module uninstall</string>
     <string name="title_aiapps">Module Title</string>
 

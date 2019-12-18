@@ -74,7 +74,7 @@ package com.iqiyi.android.qigsaw.core.splitinstall;
     int DOWNLOAD_FAILED = -10;
 
     /**
-     * Can't uninstall splits so far.
+     * Can't uninstall splits under AAB mode.
      */
     int UNINSTALLATION_UNSUPPORTED = -98;
 

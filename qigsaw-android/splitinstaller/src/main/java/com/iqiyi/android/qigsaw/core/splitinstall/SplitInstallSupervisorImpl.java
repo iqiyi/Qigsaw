@@ -50,6 +50,7 @@ import com.iqiyi.android.qigsaw.core.splitinstall.remote.SplitInstallSupervisor;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -75,6 +76,8 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     private final boolean verifySignature;
 
+    private final List<String> dynamicFeatures;
+
     SplitInstallSupervisorImpl(Context appContext,
                                SplitInstallSessionManager sessionManager,
                                Downloader userDownloader,
@@ -89,6 +92,11 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         this.obtainUserConfirmationActivityClass = obtainUserConfirmationActivityClass;
         this.splitInstaller = new SplitInstallerImpl(appContext, verifySignature);
         this.verifySignature = verifySignature;
+        String[] dynamicFeaturesArray = SplitBaseInfoProvider.getDynamicFeatures();
+        this.dynamicFeatures = dynamicFeaturesArray == null ? null : Arrays.asList(dynamicFeaturesArray);
+        if (dynamicFeatures == null) {
+            SplitLog.w(TAG, "Can't read dynamicFeatures from SplitBaseInfoProvider");
+        }
     }
 
     @Override
@@ -112,20 +120,6 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         }
     }
 
-    private Set<String> getAllDependencies(List<String> moduleNames, List<SplitInfo> needInstallSplits) {
-        Set<String> splitDependencies = new ArraySet<>(0);
-        for (SplitInfo info : needInstallSplits) {
-            List<String> dependencies = info.getDependencies();
-            if (dependencies != null) {
-                splitDependencies.addAll(dependencies);
-            }
-        }
-        if (!splitDependencies.isEmpty()) {
-            splitDependencies.removeAll(moduleNames);
-        }
-        return splitDependencies;
-    }
-
     @Override
     public void deferredInstall(List<Bundle> moduleNames, Callback callback) {
         List<String> moduleNameList = unBundleModuleNames(moduleNames);
@@ -146,8 +140,29 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
 
     @Override
     public void deferredUninstall(List<Bundle> moduleNames, Callback callback) {
-        //don't support now.
-        callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.UNINSTALLATION_UNSUPPORTED));
+        if (!getInstalledSplitForAAB().isEmpty()) {
+            callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.UNINSTALLATION_UNSUPPORTED));
+            return;
+        }
+        List<String> moduleNameList = unBundleModuleNames(moduleNames);
+        int errorCode = checkInternalErrorCode();
+        if (errorCode != SplitInstallInternalErrorCode.NO_ERROR) {
+            callback.onError(bundleErrorCode(errorCode));
+            return;
+        }
+        if (!isRequestInvalid(moduleNameList)) {
+            callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.INVALID_REQUEST));
+            return;
+        }
+        SplitPendingUninstallManager uninstallInfoManager = new SplitPendingUninstallManager();
+        boolean result = uninstallInfoManager.recordPendingUninstallSplits(moduleNameList);
+        if (result) {
+            SplitLog.w(TAG, "Succeed to record pending uninstall splits %s!", moduleNameList.toString());
+            callback.onDeferredUninstall(null);
+        } else {
+            SplitLog.w(TAG, "Failed to record pending uninstall splits!");
+            callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.INTERNAL_ERROR));
+        }
     }
 
     @Override
@@ -222,6 +237,20 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         return false;
     }
 
+    private Set<String> getAllDependencies(List<String> moduleNames, List<SplitInfo> needInstallSplits) {
+        Set<String> splitDependencies = new ArraySet<>(0);
+        for (SplitInfo info : needInstallSplits) {
+            List<String> dependencies = info.getDependencies();
+            if (dependencies != null) {
+                splitDependencies.addAll(dependencies);
+            }
+        }
+        if (!splitDependencies.isEmpty()) {
+            splitDependencies.removeAll(moduleNames);
+        }
+        return splitDependencies;
+    }
+
     private boolean isAllSplitsBuiltIn(List<SplitInfo> needInstallSplits) {
         for (SplitInfo info : needInstallSplits) {
             if (!info.isBuiltIn()) {
@@ -247,7 +276,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private int checkRequestErrorCode(List<String> moduleNames) {
-        if (isRequestInvalid(moduleNames)) {
+        if (!isRequestInvalid(moduleNames)) {
             return SplitInstallInternalErrorCode.INVALID_REQUEST;
         }
         if (!isModuleAvailable(moduleNames)) {
@@ -395,14 +424,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     }
 
     private boolean isRequestInvalid(List<String> moduleNames) {
-        List<String> allSplitNames = new ArrayList<>();
-        SplitInfoManager manager = SplitInfoManagerService.getInstance();
-        assert manager != null;
-        Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(appContext);
-        for (SplitInfo info : splitInfoList) {
-            allSplitNames.add(info.getSplitName());
-        }
-        return !allSplitNames.containsAll(moduleNames);
+        return dynamicFeatures != null && dynamicFeatures.containsAll(moduleNames);
     }
 
     private boolean isModuleAvailable(List<String> moduleNames) {

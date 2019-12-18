@@ -252,7 +252,7 @@ final class SplitInstallerImpl extends SplitInstaller {
      */
     private void deleteCorruptedFiles(List<File> files) {
         for (File file : files) {
-            FileUtil.safeDeleteFile(file);
+            FileUtil.deleteFileSafely(file);
         }
     }
 

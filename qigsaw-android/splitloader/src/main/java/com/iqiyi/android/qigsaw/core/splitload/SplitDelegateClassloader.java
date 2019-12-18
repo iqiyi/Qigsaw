@@ -105,7 +105,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
             SplitLoadManagerService.getInstance().loadInstalledSplits();
             ret = findClassInSplits(name, null);
             if (ret != null) {
-                SplitLog.i(TAG, "Class %s is found in Splits after loading all installed splits.");
+                SplitLog.i(TAG, "Class %s is found in Splits after loading all installed splits.", name);
                 return ret;
             }
             SplitLog.w(TAG, "Split component %s is still not found after installing all installed splits, return a %s to avoid crash", name, fakeComponent.getSimpleName());

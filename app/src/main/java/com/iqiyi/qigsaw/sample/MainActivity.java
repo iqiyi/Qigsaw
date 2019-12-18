@@ -82,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         findViewById(R.id.btn_load_native).setOnClickListener(this);
         findViewById(R.id.btn_install_all_now).setOnClickListener(this);
         findViewById(R.id.btn_install_all_deferred).setOnClickListener(this);
+        findViewById(R.id.btn_uninstall_all_deferred).setOnClickListener(this);
         buttonGroups = findViewById(R.id.button_groups);
         progressbarGroups = findViewById(R.id.progress_bar_groups);
         progressText = findViewById(R.id.progress_text);
@@ -121,6 +122,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn_install_all_deferred:
                 installAllFeaturesDeferred();
+                break;
+            case R.id.btn_uninstall_all_deferred:
+                uninstallAllFeaturesDeferred();
                 break;
             default:
                 break;
@@ -224,6 +228,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onSuccess(Void aVoid) {
                 toastAndLog("Deferred installation " + modules);
+            }
+        });
+    }
+
+    private void uninstallAllFeaturesDeferred() {
+
+        final List<String> modules = Arrays.asList(moduleJava, moduleAssets, moduleNative);
+
+        installManager.deferredUninstall(modules).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                toastAndLog("Deferred uninstallation " + modules);
             }
         });
     }

@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
 import java.io.File;
@@ -37,8 +38,6 @@ import java.nio.channels.FileLock;
 import java.util.Properties;
 
 final class SplitInfoVersionDataStorageImpl implements SplitInfoVersionDataStorage {
-
-    private static final int MAX_EXTRACT_ATTEMPTS = 3;
 
     private static final String NEW_VERSION = "newVersion";
 
@@ -111,7 +110,7 @@ final class SplitInfoVersionDataStorageImpl implements SplitInfoVersionDataStora
         int numAttempts = 0;
         String oldVer = null;
         String newVer = null;
-        while (numAttempts < MAX_EXTRACT_ATTEMPTS && !isReadPatchSuccessful) {
+        while (numAttempts < SplitConstants.MAX_RETRY_ATTEMPTS && !isReadPatchSuccessful) {
             numAttempts++;
             Properties properties = new Properties();
             FileInputStream inputStream = null;
@@ -158,7 +157,7 @@ final class SplitInfoVersionDataStorageImpl implements SplitInfoVersionDataStora
             parentFile.mkdirs();
         }
 
-        while (numAttempts < MAX_EXTRACT_ATTEMPTS && !isWritePatchSuccessful) {
+        while (numAttempts < SplitConstants.MAX_RETRY_ATTEMPTS && !isWritePatchSuccessful) {
             numAttempts++;
 
             Properties newProperties = new Properties();

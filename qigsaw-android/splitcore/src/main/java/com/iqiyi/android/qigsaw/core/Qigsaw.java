@@ -124,7 +124,6 @@ public class Qigsaw {
 
     private void onCreated() {
         AABExtension.getInstance().onApplicationCreate();
-        SplitLoadManagerService.getInstance().loadInstalledSplitsWhenAppLaunches();
         //only work in main process!
         if (context.getPackageName().equals(currentProcessName)) {
             SplitApkInstaller.install(
@@ -132,6 +131,7 @@ public class Qigsaw {
                     downloader,
                     splitConfiguration.obtainUserConfirmationDialogClass,
                     splitConfiguration.verifySignature);
+            SplitApkInstaller.startUninstallSplits(context);
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
 
                 @Override
@@ -141,6 +141,7 @@ public class Qigsaw {
                 }
             });
         }
+        SplitLoadManagerService.getInstance().loadInstalledSplitsWhenAppLaunches();
     }
 
     public static void onApplicationCreated() {

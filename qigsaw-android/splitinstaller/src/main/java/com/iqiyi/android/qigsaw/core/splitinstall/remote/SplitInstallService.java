@@ -86,7 +86,7 @@ public final class SplitInstallService extends Service {
         return mBinder;
     }
 
-    private Handler getHandler(String packageName) {
+    static Handler getHandler(String packageName) {
         Handler handler;
         synchronized (sHandlerMap) {
             if (!sHandlerMap.containsKey(packageName)) {

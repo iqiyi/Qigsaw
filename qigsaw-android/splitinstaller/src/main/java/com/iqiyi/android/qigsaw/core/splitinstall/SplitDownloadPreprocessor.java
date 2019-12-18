@@ -179,13 +179,13 @@ final class SplitDownloadPreprocessor implements Closeable {
             }
             SplitLog.i(TAG, "Copy built-in split " + (isCopySuccessful ? "succeeded" : "failed") + " '" + splitApk.getAbsolutePath() + "': length " + splitApk.length());
             if (!isCopySuccessful) {
-                FileUtil.safeDeleteFile(splitApk);
+                FileUtil.deleteFileSafely(splitApk);
                 if (splitApk.exists()) {
                     SplitLog.w(TAG, "Failed to delete copied split apk which has been corrupted'" + splitApk.getPath() + "'");
                 }
             }
         }
-        FileUtil.safeDeleteFile(tmp);
+        FileUtil.deleteFileSafely(tmp);
         if (!isCopySuccessful) {
             throw new IOException(String.format("Failed to copy built-in file %s to path %s", splitFileName, splitApk.getPath()));
         }
