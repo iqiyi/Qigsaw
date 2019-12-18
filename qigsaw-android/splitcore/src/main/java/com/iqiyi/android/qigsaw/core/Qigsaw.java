@@ -104,7 +104,7 @@ public class Qigsaw {
     }
 
     private void onBaseContextAttached() {
-        SplitBaseInfoProvider.setPackageName(splitConfiguration.manifestPackageName == null ? context.getPackageName() : splitConfiguration.manifestPackageName);
+        SplitBaseInfoProvider.setPackageName(context.getPackageName());
         SplitLoadReporterManager.install(splitConfiguration.loadReporter == null ? new DefaultSplitLoadReporter(context) : splitConfiguration.loadReporter);
         SplitInstallReporterManager.install(splitConfiguration.installReporter == null ? new DefaultSplitInstallReporter(context) : splitConfiguration.installReporter);
         SplitUpdateReporterManager.install(splitConfiguration.updateReporter == null ? new DefaultSplitUpdateReporter(context) : splitConfiguration.updateReporter);
