@@ -40,8 +40,6 @@ public class SplitConfiguration {
 
     final String[] forbiddenWorkProcesses;
 
-    final String manifestPackageName;
-
     final SplitInstallReporter installReporter;
 
     final SplitLoadReporter loadReporter;
@@ -62,7 +60,6 @@ public class SplitConfiguration {
         }
         this.splitLoadMode = builder.splitLoadMode;
         this.forbiddenWorkProcesses = builder.forbiddenWorkProcesses;
-        this.manifestPackageName = builder.manifestPackageName;
         this.installReporter = builder.installReporter;
         this.loadReporter = builder.loadReporter;
         this.updateReporter = builder.updateReporter;
@@ -78,8 +75,6 @@ public class SplitConfiguration {
         private String[] workProcesses;
 
         private String[] forbiddenWorkProcesses;
-
-        private String manifestPackageName;
 
         private SplitInstallReporter installReporter;
 
@@ -130,15 +125,6 @@ public class SplitConfiguration {
             if (forbiddenWorkProcesses.length > 0) {
                 this.forbiddenWorkProcesses = forbiddenWorkProcesses;
             }
-            return this;
-        }
-
-        /**
-         * If the package name you declared in app manifest does not match applicationId in app/build.gradle,
-         * you have to set it.
-         */
-        public Builder manifestPackageName(@NonNull String manifestPackageName) {
-            this.manifestPackageName = manifestPackageName;
             return this;
         }
 
