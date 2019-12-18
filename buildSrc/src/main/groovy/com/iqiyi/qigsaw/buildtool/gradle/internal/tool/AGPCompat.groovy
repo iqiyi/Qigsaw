@@ -51,7 +51,7 @@ class AGPCompat {
         return packageApplicationTask.outputDirectory
     }
 
-    static String getMergedManifestBaseDirCompat(Task processManifestTask) {
+    private static String getMergedManifestDirCompat(Task processManifestTask) {
         String manifestOutputBaseDir
         try {
             manifestOutputBaseDir = processManifestTask.manifestOutputDirectory.asFile.get()
@@ -62,6 +62,10 @@ class AGPCompat {
             throw new GradleException("Can't read 'manifestOutputDirectory' form " + processManifestTask == null ? null : processManifestTask.class.name)
         }
         return manifestOutputBaseDir
+    }
+
+    static File getMergedManifestFileCompat(Task processManifestTask) {
+        return new File(getMergedManifestDirCompat(processManifestTask), ANDROIDMANIFEST_DOT_XML)
     }
 
     static File getMergeJniLibsDirCompat(Task mergeJniLibsTask, def versionAGP) {
@@ -159,23 +163,12 @@ class AGPCompat {
         return task
     }
 
-
     static Task getAssemble(ApplicationVariant variant) {
         try {
             return variant.assembleProvider.get()
         } catch (Exception e) {
             return variant.assemble
         }
-    }
-
-    static Task getPackageApplication(ApplicationVariant variant) {
-        Task packageApplicationTask
-        try {
-            packageApplicationTask = variant.getPackageApplicationProvider().get()
-        } catch (Exception e) {
-            packageApplicationTask = variant.packageApplication
-        }
-        return packageApplicationTask
     }
 
     static Task getGenerateBuildConfigTask(Project project, String variantName) {

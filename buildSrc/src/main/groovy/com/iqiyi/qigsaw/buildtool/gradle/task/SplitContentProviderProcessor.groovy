@@ -24,14 +24,16 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFile
-import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFileManager
+import com.android.build.gradle.api.ApplicationVariant
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import org.dom4j.Document
 import org.dom4j.Element
 import org.dom4j.Node
 import org.dom4j.io.OutputFormat
 import org.dom4j.io.SAXReader
 import org.dom4j.io.XMLWriter
+import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.internal.Pair
 
 class SplitContentProviderProcessor {
@@ -40,8 +42,11 @@ class SplitContentProviderProcessor {
 
     final SAXReader saxReader
 
-    SplitContentProviderProcessor(String variantName) {
+    final List<Project> dfProjects
+
+    SplitContentProviderProcessor(String variantName, List<Project> dfProjects) {
         this.variantName = variantName
+        this.dfProjects = dfProjects
         this.saxReader = new SAXReader()
     }
 
@@ -86,19 +91,23 @@ class SplitContentProviderProcessor {
 
     private List<Pair<String, Node>> getSplitProviderNode() {
         List<Pair<String, Node>> splitProviderNodes = new ArrayList<>()
-        Set<SplitOutputFile> splitOutputFiles = SplitOutputFileManager.getInstance().getOutputFiles()
-        for (SplitOutputFile splitOutputFile : splitOutputFiles) {
-            if (!splitOutputFile.variantName.equals(variantName)) {
-                continue
-            }
-            File splitManifest = splitOutputFile.splitManifest
-            if (splitManifest != null && splitManifest.exists()) {
-                Document splitManifestDoc = saxReader.read(splitManifest)
-                Element splitRootEle = splitManifestDoc.getRootElement()
-                List<? extends Node> providers = splitRootEle.selectNodes("//provider")
-                if (providers != null && !providers.empty) {
-                    for (Node provideNode : providers) {
-                        splitProviderNodes.add(Pair.of(splitOutputFile.splitProject.name, provideNode))
+        for (Project dfProject : dfProjects) {
+            def dfAndroid = dfProject.extensions.android
+            File splitManifestFile = null
+            dfAndroid.applicationVariants.all { ApplicationVariant variant ->
+                String dfVariantName = variant.name.capitalize()
+                if (dfVariantName.equals(variantName)) {
+                    Task processManifestTask = AGPCompat.getProcessManifestTask(dfProject, dfVariantName)
+                    splitManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
+                    if (splitManifestFile.exists()) {
+                        Document splitManifestDoc = saxReader.read(splitManifestFile)
+                        Element splitRootEle = splitManifestDoc.getRootElement()
+                        List<? extends Node> providers = splitRootEle.selectNodes("//provider")
+                        if (providers != null && !providers.empty) {
+                            for (Node provideNode : providers) {
+                                splitProviderNodes.add(Pair.of(dfProject.name, provideNode))
+                            }
+                        }
                     }
                 }
             }

@@ -25,16 +25,18 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
+import com.android.build.gradle.api.ApplicationVariant
 import com.google.common.collect.ImmutableSet
-import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFile
-import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFileManager
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TopoSort
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.tasks.TaskAction
 
 class QigsawAssembleTask extends DefaultTask {
@@ -42,6 +44,8 @@ class QigsawAssembleTask extends DefaultTask {
     String qigsawId
 
     String variantName
+
+    String flavorName
 
     File assetsDir
 
@@ -53,21 +57,27 @@ class QigsawAssembleTask extends DefaultTask {
 
     List<String> dfClassPaths
 
+    List<Project> dfProjects
+
     List<File> qigsawIntermediates = new ArrayList<>()
 
     void initArgs(String qigsawId,
                   String variantName,
+                  String flavorName,
                   File assetsDir,
                   File mergeJniLib,
                   File packageOutputDir,
                   File baseManifestFile,
+                  List<String> dfProjects,
                   List<String> dfClassPaths) {
         this.qigsawId = qigsawId
         this.variantName = variantName
+        this.flavorName = flavorName
         this.assetsDir = assetsDir
         this.mergeJniLibDir = mergeJniLib
         this.packageOutputDir = packageOutputDir
         this.baseManifestFile = baseManifestFile
+        this.dfProjects = dfProjects
         this.dfClassPaths = dfClassPaths
     }
 
@@ -86,17 +96,31 @@ class QigsawAssembleTask extends DefaultTask {
 
     void makeSplitInfoFileInternal() {
         Map<String, SplitInfo> splitInfoMap = new HashMap<>()
-        Set<SplitOutputFile> splitOutputFiles = SplitOutputFileManager.getInstance().getOutputFiles()
-        for (SplitOutputFile splitOutputFile : splitOutputFiles) {
-            if (!splitOutputFile.variantName.equals(variantName)) {
-                continue
+        for (Project dfProject : dfProjects) {
+            def dfAndroid = dfProject.extensions.android
+            File splitManifestFile = null
+            File splitApkFile = null
+            String splitName = dfProject.name
+            String dfFlavorName = null
+            dfAndroid.applicationVariants.all { ApplicationVariant variant ->
+                String dfVariantName = variant.name.capitalize()
+                dfFlavorName = variant.flavorName
+                if (dfVariantName.equals(variantName)) {
+                    variant.outputs.each {
+                        splitApkFile = it.outputFile
+                    }
+                    Task processManifestTask = AGPCompat.getProcessManifestTask(dfProject, dfVariantName)
+                    splitManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
+                }
             }
-            Project splitProject = splitOutputFile.splitProject
-            String splitName = splitProject.name
-            File splitManifest = splitOutputFile.splitManifest
-            File splitApk = splitOutputFile.splitApk
-            if (splitApk == null || splitManifest == null) {
-                throw new RuntimeException("Can not find output files of " + splitName + " " + splitApk + " " + splitManifest)
+            if (splitApkFile == null || splitManifestFile == null) {
+                if ((flavorName != null && flavorName.length() > 0) && (dfFlavorName == null || dfFlavorName.length() == 0)) {
+                    throw new GradleException("Qigsaw Error: Your app project has flavor ${flavorName}, " +
+                            "dynamic feature project ${splitName} need set the same flavor config")
+                } else {
+                    throw new GradleException("Qigsaw Error: Can't find output files of project ${splitName}," +
+                            " merged_manifest: ${splitManifestFile}, output_apk: ${splitApkFile}")
+                }
             }
             List<String> allDependencies = SplitDependencyStatistics.getInstance().getDependencies(splitName, variantName)
             List<String> dfDependencies = new ArrayList<>()
@@ -110,9 +134,9 @@ class QigsawAssembleTask extends DefaultTask {
             println("dynamic feature ${splitName} has dependencies: ${dfDependencies.toString()}")
             SplitApkProcessor splitProcessor = new SplitApkProcessorImpl(project, variantName)
             //sign split apk if needed
-            File splitSignedApk = splitProcessor.signSplitAPKIfNeed(splitApk)
+            File splitSignedApk = splitProcessor.signSplitAPKIfNeed(splitApkFile)
             //create split info
-            SplitInfo splitInfo = splitProcessor.createSplitInfo(splitName, splitProject.extensions.android, dfDependencies, splitManifest, splitSignedApk)
+            SplitInfo splitInfo = splitProcessor.createSplitInfo(splitName, dfAndroid, dfDependencies, splitManifestFile, splitSignedApk)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
         //get Abis that have been merged
