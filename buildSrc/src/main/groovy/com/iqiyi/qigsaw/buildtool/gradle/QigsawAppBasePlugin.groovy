@@ -49,7 +49,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         if (versionAGP < VersionNumber.parse("3.2.0")) {
             throw new GradleException('generateQigsawApk: Android Gradle Version is required 3.2.0 at least!')
         }
-        SplitOutputFileManager.getInstance().clear()
         SplitDependencyStatistics.getInstance().clear()
         //extends from AppExtension
         def android = project.extensions.android
@@ -80,13 +79,14 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 dfProjects.add(dfProject)
                 dfNames.add(dfProject.name)
             }
+            commonInfoCreatorTransform.initArgs(dfProjects)
+
             String qigsawId = getQigsawId(project, versionName)
             String splitInfoVersion = versionName + "_" + project.extensions.qigsawSplit.splitInfoVersion
             //config qigsaw tasks
-            android.getApplicationVariants().all { variant ->
+            android.getApplicationVariants().all { ApplicationVariant variant ->
 
-                ApplicationVariant appVariant = variant
-                String variantName = appVariant.name.capitalize()
+                String variantName = variant.name.capitalize()
                 //inject same value for qigsaw
                 Task generateBuildConfigTask = AGPCompat.getGenerateBuildConfigTask(project, variantName)
                 QigsawBuildConfigGenerator generator = new QigsawBuildConfigGenerator(generateBuildConfigTask)
@@ -106,12 +106,9 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                 Task mergeJniLibsTask = AGPCompat.getMergeJniLibsTask(project, variantName)
 
-                Task assembleTask = AGPCompat.getAssemble(appVariant)
+                Task assembleTask = AGPCompat.getAssemble(variant)
 
-                //read processManifest output dir.
-                String manifestOutputBaseDir = AGPCompat.getMergedManifestBaseDirCompat(processManifestTask)
-
-                File baseManifestFile = new File(manifestOutputBaseDir, AGPCompat.ANDROIDMANIFEST_DOT_XML)
+                File baseManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
 
                 File mergeAssetsDir = new File(AGPCompat.getMergeAssetsBaseDirCompat(mergeAssetsTask))
 
@@ -124,10 +121,12 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawAssembleTask.initArgs(
                         qigsawId,
                         variantName,
+                        variant.flavorName,
                         mergeAssetsDir,
                         mergeJniLibsDir,
                         packageOutputDir,
                         baseManifestFile,
+                        dfProjects,
                         dfClassPaths)
 
                 qigsawAssembleTask.setGroup(QIGSAW)
@@ -135,10 +134,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 //set task dependency
                 if (hasQigsawTask) {
                     //config auto-proguard
-                    boolean proguardEnable = appVariant.getBuildType().isMinifyEnabled()
+                    boolean proguardEnable = variant.getBuildType().isMinifyEnabled()
                     if (proguardEnable) {
                         QigsawProguardConfigTask proguardConfigTask = project.tasks.create("qigsawProcess${variantName}Proguard", QigsawProguardConfigTask)
-                        proguardConfigTask.applicationVariant = appVariant
+                        proguardConfigTask.applicationVariant = variant
                         proguardConfigTask.packageName = packageName
                         Task r8Task = AGPCompat.getR8Task(project, variantName)
                         Task proguardTask = AGPCompat.getProguardTask(project, variantName)
@@ -152,20 +151,22 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         proguardConfigTask.mustRunAfter processManifestTask
                     }
                     //remove tinker auto-proguard configuration for 'class * extends android.app.Application', because qigsaw support load split application.
-                    boolean multiDexEnabled = appVariant.variantData.variantConfiguration.isMultiDexEnabled()
+                    boolean multiDexEnabled = variant.variantData.variantConfiguration.isMultiDexEnabled()
                     if (multiDexEnabled) {
                         def multidexTask = AGPCompat.getMultiDexTask(project, variantName)
                         if (multidexTask != null) {
-                            removeRulesAboutMultiDex(multidexTask, appVariant)
+                            removeRulesAboutMultiDex(multidexTask, variant)
                         }
                     }
 
                     dfProjects.each { Project dfProject ->
-                        if (dfProject.extensions.hasProperty("android") != null) {
+                        try {
                             configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask)
-                        } else {
+                            println("dynamic feature project ${dfProject.name} has been evaluated!")
+                        } catch (Throwable ignored) {
                             dfProject.afterEvaluate {
                                 configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask)
+                                println("dynamic feature project ${dfProject.name} has not been evaluated!")
                             }
                         }
                     }
@@ -189,7 +190,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                                         }
                                     }
                                 }
-                                DexReMergeHandler handler = new DexReMergeHandler(project, appVariant)
+                                DexReMergeHandler handler = new DexReMergeHandler(project, variant)
                                 handler.reMerge(dexFiles)
                                 def endTime = new Date()
                                 println endTime.getTime() - startTime.getTime() + "ms"
@@ -200,7 +201,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         qigsawAssembleTask.deleteIntermediates()
                     }
                     processManifestTask.doLast {
-                        SplitContentProviderProcessor providerProcessor = new SplitContentProviderProcessor(variantName)
+                        SplitContentProviderProcessor providerProcessor = new SplitContentProviderProcessor(variantName, dfProjects)
                         File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(processManifestTask)
                         //3.2.x has no bundle_manifest dir
                         File bundleManifestFile = bundleManifestDir == null ? null : new File(bundleManifestDir, AGPCompat.ANDROIDMANIFEST_DOT_XML)
@@ -211,13 +212,15 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         }
     }
 
-
     private static void configQigsawAssembleTaskDependencies(Project dfProject, String baseVariantName, Task mergeJniLibsTask) {
         dfProject.extensions.android.applicationVariants.all { ApplicationVariant variant ->
             if (baseVariantName.equals(variant.name.capitalize())) {
                 Task dfAssembleTask = AGPCompat.getAssemble(variant)
                 println("${dfProject.name} assemble${baseVariantName} has been depended!")
                 mergeJniLibsTask.dependsOn dfAssembleTask
+                AnalyzeDependenciesTask analyzeDependenciesTask = dfProject.tasks.create("analyzeDependencies${variant.name.capitalize()}", AnalyzeDependenciesTask)
+                analyzeDependenciesTask.initArgs(variant.name.capitalize())
+                dfAssembleTask.finalizedBy analyzeDependenciesTask
             }
         }
     }

@@ -25,15 +25,15 @@
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
 import com.android.build.api.transform.*
+import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.google.common.collect.ImmutableSet
-import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFile
-import com.iqiyi.qigsaw.buildtool.gradle.SplitOutputFileManager
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
@@ -42,8 +42,14 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
 
     Project project
 
+    List<Project> dfProjects
+
     ComponentInfoTransform(Project project) {
         this.project = project
+    }
+
+    void initArgs(List<Project> dfProjects) {
+        this.dfProjects = dfProjects
     }
 
     @Override
@@ -76,24 +82,28 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
         super.transform(transformInvocation)
         transformInvocation.getOutputProvider().deleteAll()
-
-        Set<SplitOutputFile> splitOutputFiles = SplitOutputFileManager.getInstance().getOutputFiles()
-        if (splitOutputFiles.isEmpty()) {
-            project.logger.error("can't get manifest files from DynamicFeatureManifestManager!")
+        if (dfProjects == null) {
+            project.logger.error("Have you invoke ComponentInfoTransform#initArgs(...)?")
             return
         }
         String variantName = transformInvocation.context.variantName.capitalize()
+
         Map<String, List> addFieldMap = new HashMap<>()
-        for (SplitOutputFile splitOutputFile : splitOutputFiles) {
-            if (!variantName.equals(splitOutputFile.variantName)) {
-                continue
+        for (Project dfProject : dfProjects) {
+            def dfAndroid = dfProject.extensions.android
+            String splitName = dfProject.name
+            File splitManifestFile = null
+            dfAndroid.applicationVariants.all { ApplicationVariant variant ->
+                String dfVariantName = variant.name.capitalize()
+                if (dfVariantName.equals(variantName)) {
+                    Task processManifestTask = AGPCompat.getProcessManifestTask(dfProject, dfVariantName)
+                    splitManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
+                }
             }
-            String splitName = splitOutputFile.splitProject.name
-            File splitManifest = splitOutputFile.splitManifest
-            if (splitManifest == null || !splitManifest.exists()) {
-                throw new GradleException("can't get manifest file of project ${splitName} from DynamicFeatureManifestManager!")
+            if (splitManifestFile == null || !splitManifestFile.exists()) {
+                throw new GradleException("can't get manifest file of project ${splitName}!")
             }
-            ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
+            ManifestReader manifestReader = new ManifestReaderImpl(splitManifestFile)
             List<String> activities = new ArrayList<>()
             List<String> services = new ArrayList<>()
             List<String> receivers = new ArrayList<>()
@@ -125,6 +135,8 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
             addFieldMap.put(splitName + "_SERVICES", services)
             addFieldMap.put(splitName + "_RECEIVERS", receivers)
             addFieldMap.put(splitName + "_PROVIDERS", providers)
+
+
         }
 
         def dest = prepareToCreateClass(transformInvocation)
