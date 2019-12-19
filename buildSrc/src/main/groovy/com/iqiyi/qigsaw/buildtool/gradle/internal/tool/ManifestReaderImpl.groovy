@@ -44,21 +44,6 @@ class ManifestReaderImpl implements ManifestReader {
     }
 
     @Override
-    String readPackageName() {
-        return manifest.'@package'
-    }
-
-    @Override
-    String readVersionCode() {
-        return manifest.'@android:versionCode'
-    }
-
-    @Override
-    String readVersionName() {
-        return manifest.'@android:versionName'
-    }
-
-    @Override
     Set<ComponentInfo> readActivities() {
         ImmutableSet.Builder activities = ImmutableSet.builder()
         manifest.application.activity.each {

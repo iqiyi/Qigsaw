@@ -109,7 +109,7 @@ public class Qigsaw {
         SplitInstallReporterManager.install(splitConfiguration.installReporter == null ? new DefaultSplitInstallReporter(context) : splitConfiguration.installReporter);
         SplitUpdateReporterManager.install(splitConfiguration.updateReporter == null ? new DefaultSplitUpdateReporter(context) : splitConfiguration.updateReporter);
         //init SplitLoadManager and hook PatchCLassLoader.
-        boolean qigsawMode = SplitBaseInfoProvider.isQigsawAssembleMode();
+        boolean qigsawMode = SplitBaseInfoProvider.isQigsawMode();
         SplitLoadManagerService.install(
                 context,
                 currentProcessName,

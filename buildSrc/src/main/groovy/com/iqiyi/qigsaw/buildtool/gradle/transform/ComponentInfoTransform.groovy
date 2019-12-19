@@ -135,8 +135,6 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
             addFieldMap.put(splitName + "_SERVICES", services)
             addFieldMap.put(splitName + "_RECEIVERS", receivers)
             addFieldMap.put(splitName + "_PROVIDERS", providers)
-
-
         }
 
         def dest = prepareToCreateClass(transformInvocation)

@@ -25,6 +25,10 @@
 package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.build.gradle.api.ApplicationVariant
+import com.android.builder.internal.ClassFieldImpl
+import com.iqiyi.qigsaw.buildtool.gradle.compiling.DexReMergeHandler
+import com.iqiyi.qigsaw.buildtool.gradle.compiling.FixedMainDexList
+import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitContentProviderProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
@@ -55,19 +59,12 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         //create ComponentInfo.class to record Android Component of dynamic features.
         ComponentInfoTransform commonInfoCreatorTransform = new ComponentInfoTransform(project)
         android.registerTransform(commonInfoCreatorTransform)
-
         project.afterEvaluate {
             //if AAPT2 is disable, package id of plugin resources can not be customized.
             if (!AGPCompat.isAapt2EnabledCompat(project)) {
                 throw new GradleException('generateQigsawApk: AAPT2 required')
             }
             boolean hasQigsawTask = hasQigsawTask(project)
-            String versionName = android.defaultConfig.versionName
-            String packageName = android.defaultConfig.applicationId
-            if (versionName == null || packageName == null) {
-                throw new GradleException("Can't read versionName: ${versionName} or packageName: ${packageName} from  app project ${project.name}")
-            }
-
             def dynamicFeatures = android.dynamicFeatures
             List<String> dfClassPaths = new ArrayList<>()
             List<Project> dfProjects = new ArrayList<>()
@@ -80,23 +77,14 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 dfNames.add(dfProject.name)
             }
             commonInfoCreatorTransform.initArgs(dfProjects)
-
-            String qigsawId = getQigsawId(project, versionName)
-            String splitInfoVersion = versionName + "_" + project.extensions.qigsawSplit.splitInfoVersion
             //config qigsaw tasks
             android.getApplicationVariants().all { ApplicationVariant variant ->
-
-                String variantName = variant.name.capitalize()
-                //inject same value for qigsaw
-                Task generateBuildConfigTask = AGPCompat.getGenerateBuildConfigTask(project, variantName)
-                QigsawBuildConfigGenerator generator = new QigsawBuildConfigGenerator(generateBuildConfigTask)
-                generator.injectFields("DEFAULT_SPLIT_INFO_VERSION", splitInfoVersion)
-                generator.injectFields("QIGSAW_ID", qigsawId)
-                generator.injectFields("DYNAMIC_FEATURES", dfNames)
-                if (hasQigsawTask) {
-                    //inject filed to point out, base apk is built by qigsaw command.
-                    generator.injectFields("ASSEMBLE_MODE", "qigsaw")
+                String versionName = variant.versionName
+                String applicationId = variant.applicationId
+                if (versionName == null || applicationId == null) {
+                    throw new GradleException("Can't read versionName: ${versionName} or applicationId: ${applicationId} from  app project ${project.name}")
                 }
+                String variantName = variant.name.capitalize()
                 //get tasks of Android Gradle Plugin
                 Task processManifestTask = AGPCompat.getProcessManifestTask(project, variantName)
 
@@ -108,6 +96,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                 Task assembleTask = AGPCompat.getAssemble(variant)
 
+                Task generateBuildConfigTask = AGPCompat.getGenerateBuildConfigTask(project, variantName)
+
                 File baseManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
 
                 File mergeAssetsDir = new File(AGPCompat.getMergeAssetsBaseDirCompat(mergeAssetsTask))
@@ -116,7 +106,21 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                 File packageOutputDir = AGPCompat.getPackageApplicationDirCompat(packageTask)
 
-                QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName.capitalize()}", QigsawAssembleTask)
+                //create QigsawConfig.java
+                GenerateQigsawConfig generateQigsawConfigTask = project.tasks.create("generate${variantName}QigsawConfig", GenerateQigsawConfig)
+                generateQigsawConfigTask.setApplicationId(applicationId)
+                generateQigsawConfigTask.setSourceOutputDir(variant.variantData.scope.buildConfigSourceOutputDir)
+                String qigsawId = getQigsawId(project, versionName)
+                String splitInfoVersion = versionName + "_" + project.extensions.qigsawSplit.splitInfoVersion
+                generateQigsawConfigTask.initArgs(hasQigsawTask, qigsawId, versionName, splitInfoVersion, dfNames)
+
+                generateBuildConfigTask.finalizedBy generateQigsawConfigTask
+                //to avoid incremental build of task generateBuildConfig
+                generateBuildConfigTask.items.add(new ClassFieldImpl("boolean", "QIGSAW_MODE", hasQigsawTask ? "Boolean.parseBoolean(\"true\")" : "false"))
+                generateBuildConfigTask.dependsOn processManifestTask
+
+                QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName}", QigsawAssembleTask)
+                qigsawAssembleTask.outputDir = project.mkdir(QIGSAW_INTERMEDIATES + "split_info" + File.separator + variantName.uncapitalize())
 
                 qigsawAssembleTask.initArgs(
                         qigsawId,
@@ -138,7 +142,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     if (proguardEnable) {
                         QigsawProguardConfigTask proguardConfigTask = project.tasks.create("qigsawProcess${variantName}Proguard", QigsawProguardConfigTask)
                         proguardConfigTask.applicationVariant = variant
-                        proguardConfigTask.packageName = packageName
+                        proguardConfigTask.applicationId = applicationId
                         Task r8Task = AGPCompat.getR8Task(project, variantName)
                         Task proguardTask = AGPCompat.getProguardTask(project, variantName)
                         if (proguardTask != null) {
@@ -170,6 +174,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
                     }
+
                     qigsawAssembleTask.dependsOn(mergeJniLibsTask)
 
                     mergeJniLibsTask.dependsOn(mergeAssetsTask)
@@ -198,7 +203,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         }
                     }
                     packageTask.doLast {
-                        qigsawAssembleTask.deleteIntermediates()
+                        qigsawAssembleTask.afterPackageApp()
                     }
                     processManifestTask.doLast {
                         SplitContentProviderProcessor providerProcessor = new SplitContentProviderProcessor(variantName, dfProjects)
