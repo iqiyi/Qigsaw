@@ -27,6 +27,8 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
 import com.google.common.collect.ImmutableSet
+import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitApkProcessorImpl
+import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitDetailsCreatorImpl
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
@@ -37,6 +39,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 class QigsawAssembleTask extends DefaultTask {
@@ -60,6 +63,9 @@ class QigsawAssembleTask extends DefaultTask {
     List<Project> dfProjects
 
     List<File> qigsawIntermediates = new ArrayList<>()
+
+    @OutputDirectory
+    File outputDir
 
     void initArgs(String qigsawId,
                   String variantName,
@@ -86,8 +92,15 @@ class QigsawAssembleTask extends DefaultTask {
         makeSplitInfoFileInternal()
     }
 
-    void deleteIntermediates() {
+    void afterPackageApp() {
         qigsawIntermediates.each {
+            if (it.name.endsWith(SdkConstants.DOT_JSON)) {
+                File packageDirJsonFile = new File(packageOutputDir, it.name)
+                if (packageDirJsonFile.exists()) {
+                    packageDirJsonFile.delete()
+                }
+                FileUtils.copyFile(it, packageDirJsonFile)
+            }
             if (it.exists()) {
                 it.delete()
             }
@@ -185,7 +198,7 @@ class QigsawAssembleTask extends DefaultTask {
                 qigsawId,
                 copyToAssets,
                 getProject(),
-                packageOutputDir,
+                outputDir,
                 fixedAbis == null || fixedAbis.isEmpty() ? null : fixedAbis,
         )
         Map<String, TopoSort.Node> nodeMap = new HashMap<>()

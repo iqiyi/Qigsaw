@@ -30,12 +30,6 @@ interface ManifestReader {
 
     ComponentInfo readApplicationName()
 
-    String readPackageName()
-
-    String readVersionCode()
-
-    String readVersionName()
-
     Set<ComponentInfo> readActivities()
 
     Set<ComponentInfo> readServices()

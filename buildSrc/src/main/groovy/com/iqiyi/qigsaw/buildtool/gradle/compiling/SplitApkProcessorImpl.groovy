@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.task
+package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.apksig.ApkSigner
 import com.android.apksig.ApkVerifier

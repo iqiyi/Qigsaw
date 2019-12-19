@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.task
+package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.annotations.NonNull
 import com.android.annotations.Nullable

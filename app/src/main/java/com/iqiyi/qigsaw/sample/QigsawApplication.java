@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
 import android.support.multidex.MultiDex;
+import android.util.Log;
 
 import com.iqiyi.android.qigsaw.core.SplitConfiguration;
 import com.iqiyi.android.qigsaw.core.Qigsaw;
@@ -18,12 +19,16 @@ public class QigsawApplication extends Application {
 
 //    private static final String[] forbiddenWorkProcesses = {":qigsaw"};
 
+    private static final String TAG = "QigsawApplication";
+
     private static final String[] workProcesses = {":qigsaw"};
 
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         MultiDex.install(base);
+        //Using QigsawConfig.java to get same info about splits, for example
+        Log.d(TAG, String.format("There are %d splits in your app!", QigsawConfig.DYNAMIC_FEATURES.length));
         SplitConfiguration configuration = SplitConfiguration.newBuilder()
                 .splitLoadMode(SplitLoad.MULTIPLE_CLASSLOADER)
                 .workProcesses(workProcesses)

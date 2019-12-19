@@ -62,7 +62,7 @@ class QigsawProguardConfigTask extends DefaultTask {
 
     def applicationVariant
 
-    String packageName
+    String applicationId
 
     QigsawProguardConfigTask() {
 
@@ -93,7 +93,7 @@ class QigsawProguardConfigTask extends DefaultTask {
         } else {
             project.logger.error("applymapping file ${applyMappingPath} is not null, just ignore!")
         }
-        fw.write(PROGUARD_CONFIG_SETTINGS + "-keep class ${packageName}.BuildConfig{\n *;\n }\n")
+        fw.write(PROGUARD_CONFIG_SETTINGS + "-keep class ${applicationId}.QigsawConfig{\n *;\n }\n")
         fw.close()
         applicationVariant.getBuildType().buildType.proguardFiles(file)
         def files = applicationVariant.buildType.proguardFiles
