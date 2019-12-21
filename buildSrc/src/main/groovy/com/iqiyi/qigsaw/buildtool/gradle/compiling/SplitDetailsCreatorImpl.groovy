@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.task
+package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
@@ -32,6 +32,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
+import com.iqiyi.qigsaw.buildtool.gradle.task.AppliedSplitJsonFileGetter
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploader
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploaderInstance
 import org.gradle.api.Project
@@ -47,7 +48,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
 
     String splitDetailsFilePrefix
 
-    File packageOutputDir
+    File outputDir
 
     String qigsawId
 
@@ -58,12 +59,12 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
     SplitDetailsCreatorImpl(String qigsawId,
                             boolean copyToAssets,
                             Project appProject,
-                            File packageOutputDir,
+                            File outputDir,
                             Set<String> abiFilters) {
         this.qigsawId = qigsawId
         this.copyToAssets = copyToAssets
         this.appProject = appProject
-        this.packageOutputDir = packageOutputDir
+        this.outputDir = outputDir
         this.appVersionName = appProject.extensions.android.defaultConfig.versionName
         this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
         this.abiFilters = abiFilters
@@ -101,13 +102,13 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
     private File createNewSplitInfoJsonFile(SplitDetails splitDetails) {
         Gson gson = new Gson()
         String splitDetailsStr = gson.toJson(splitDetails)
-        if (packageOutputDir != null) {
-            if (!packageOutputDir.exists()) {
-                packageOutputDir.mkdirs()
+        if (outputDir != null) {
+            if (!outputDir.exists()) {
+                outputDir.mkdirs()
             }
             String splitInfoVersion = appProject.extensions.qigsawSplit.splitInfoVersion
             String fileName = splitDetailsFilePrefix + splitInfoVersion + JSON_SUFFIX
-            File splitDetailsFile = new File(packageOutputDir, fileName)
+            File splitDetailsFile = new File(outputDir, fileName)
             if (splitDetailsFile.exists()) {
                 splitDetailsFile.delete()
             }

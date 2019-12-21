@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.task
+package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.build.gradle.api.ApplicationVariant
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat

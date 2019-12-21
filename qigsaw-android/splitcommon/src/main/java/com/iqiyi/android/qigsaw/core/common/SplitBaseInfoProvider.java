@@ -35,7 +35,7 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 @RestrictTo(LIBRARY_GROUP)
 public class SplitBaseInfoProvider {
 
-    private static final String CLASS_BuildConfig = ".BuildConfig";
+    private static final String CLASS_QigsawConfig = ".QigsawConfig";
 
     private static final String VERSION_NAME = "VERSION_NAME";
 
@@ -45,7 +45,7 @@ public class SplitBaseInfoProvider {
 
     private static final String QIGSAW_ID = "QIGSAW_ID";
 
-    private static final String ASSEMBLE_MODE = "ASSEMBLE_MODE";
+    private static final String QIGSAW_MODE = "QIGSAW_MODE";
 
     private static final String DEFAULT_VALUE = "unknown";
 
@@ -57,21 +57,19 @@ public class SplitBaseInfoProvider {
         sPackageName = packageName;
     }
 
-    private static Class getCommonInfoClass() {
+    private static Class getQigsawConfigClass() {
         try {
-            return Class.forName(sPackageName + CLASS_BuildConfig);
+            return Class.forName(sPackageName + CLASS_QigsawConfig);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Qigsaw Error: Can't find class " + sPackageName + "BuildConfig.class, " +
-                    "is your app package set in AndroidManifest.xml equal to applicationId set in build.gradle?");
+            throw new RuntimeException("Qigsaw Error: Can't find class " + sPackageName + "QigsawConfig.class!");
         }
     }
 
-    public static boolean isQigsawAssembleMode() {
+    public static boolean isQigsawMode() {
         try {
-            Field field = getCommonInfoClass().getField(ASSEMBLE_MODE);
+            Field field = getQigsawConfigClass().getField(QIGSAW_MODE);
             field.setAccessible(true);
-            field.get(null);
-            return true;
+            return (boolean) field.get(null);
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
@@ -83,7 +81,7 @@ public class SplitBaseInfoProvider {
     @NonNull
     public static String getVersionName() {
         try {
-            Field field = getCommonInfoClass().getField(VERSION_NAME);
+            Field field = getQigsawConfigClass().getField(VERSION_NAME);
             field.setAccessible(true);
             return (String) field.get(null);
         } catch (NoSuchFieldException e) {
@@ -97,7 +95,7 @@ public class SplitBaseInfoProvider {
     @NonNull
     public static String getQigsawId() {
         try {
-            Field field = getCommonInfoClass().getField(QIGSAW_ID);
+            Field field = getQigsawConfigClass().getField(QIGSAW_ID);
             field.setAccessible(true);
             return (String) field.get(null);
         } catch (NoSuchFieldException e) {
@@ -111,7 +109,7 @@ public class SplitBaseInfoProvider {
     @NonNull
     public static String getDefaultSplitInfoVersion() {
         try {
-            Field field = getCommonInfoClass().getField(DEFAULT_SPLIT_INFO_VERSION);
+            Field field = getQigsawConfigClass().getField(DEFAULT_SPLIT_INFO_VERSION);
             field.setAccessible(true);
             return (String) field.get(null);
         } catch (NoSuchFieldException e) {
@@ -125,7 +123,7 @@ public class SplitBaseInfoProvider {
     @Nullable
     public static String[] getDynamicFeatures() {
         try {
-            Field field = getCommonInfoClass().getField(DYNAMIC_FEATURES);
+            Field field = getQigsawConfigClass().getField(DYNAMIC_FEATURES);
             field.setAccessible(true);
             return (String[]) field.get(null);
         } catch (NoSuchFieldException e) {

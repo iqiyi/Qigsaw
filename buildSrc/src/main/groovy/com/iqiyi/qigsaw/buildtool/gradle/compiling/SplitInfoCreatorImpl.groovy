@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.task
+package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.build.gradle.AppExtension
 import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
