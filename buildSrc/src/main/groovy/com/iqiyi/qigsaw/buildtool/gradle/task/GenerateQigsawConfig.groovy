@@ -2,21 +2,28 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.QigsawConfigGenerator
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 class GenerateQigsawConfig extends DefaultTask {
 
+    @Input
     String qigsawId
 
+    @Input
     String versionName
 
+    @Input
     boolean qigsawMode
 
+    @Input
     String defaultSplitInfoVersion
 
+    @Input
     List<String> dfNames
 
+    @Input
     String applicationId
 
     @OutputDirectory
