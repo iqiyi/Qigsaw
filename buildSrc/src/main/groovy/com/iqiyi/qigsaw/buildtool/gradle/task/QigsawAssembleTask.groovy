@@ -74,7 +74,7 @@ class QigsawAssembleTask extends DefaultTask {
                   File mergeJniLib,
                   File packageOutputDir,
                   File baseManifestFile,
-                  List<String> dfProjects,
+                  List<Project> dfProjects,
                   List<String> dfClassPaths) {
         this.qigsawId = qigsawId
         this.variantName = variantName
