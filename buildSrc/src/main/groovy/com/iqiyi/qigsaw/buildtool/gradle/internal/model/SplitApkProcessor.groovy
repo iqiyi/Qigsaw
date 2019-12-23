@@ -24,13 +24,18 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
-import com.android.build.gradle.AppExtension
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
 interface SplitApkProcessor {
 
     File signSplitAPKIfNeed(File splitApk)
 
-    SplitInfo createSplitInfo(String splitName, AppExtension splitExtension, List<String> dfDependencies, File splitManifest, File splitSignedApk)
+    SplitInfo createSplitInfo(String splitName,
+                              String versionName,
+                              Integer versionCode,
+                              int minApiLevel,
+                              List<String> dfDependencies,
+                              File splitManifest,
+                              File splitSignedApk)
 
 }
