@@ -15,7 +15,7 @@ class GenerateQigsawConfig extends DefaultTask {
 
     String defaultSplitInfoVersion
 
-    List<String> dynamicFeatures
+    List<String> dfNames
 
     String applicationId
 
@@ -26,12 +26,12 @@ class GenerateQigsawConfig extends DefaultTask {
                   String qigsawId,
                   String versionName,
                   String defaultSplitInfoVersion,
-                  List<String> dynamicFeatures) {
+                  List<String> dfNames) {
         this.qigsawMode = qigsawMode
         this.qigsawId = qigsawId
         this.versionName = versionName
         this.defaultSplitInfoVersion = defaultSplitInfoVersion
-        this.dynamicFeatures = dynamicFeatures
+        this.dfNames = dfNames
     }
 
     void setSourceOutputDir(File sourceOutputDir) {
@@ -49,9 +49,10 @@ class GenerateQigsawConfig extends DefaultTask {
         if (qigsawConfigFile.exists()) {
             qigsawConfigFile.delete()
         }
-        List<String> jointList = new ArrayList<>()
-        for (String dfName : dynamicFeatures) {
-            jointList.add("\"" + dfName + "\"")
+
+        List<String> dfNameJoinList = new ArrayList<>()
+        for (String dfName : dfNames) {
+            dfNameJoinList.add("\"" + dfName + "\"")
         }
         generator
                 .addField(
@@ -61,7 +62,7 @@ class GenerateQigsawConfig extends DefaultTask {
                 .addField("String", "QIGSAW_ID", '"' + qigsawId + '"')
                 .addField("String", "VERSION_NAME", '"' + versionName + '"')
                 .addField("String", "DEFAULT_SPLIT_INFO_VERSION", '"' + defaultSplitInfoVersion + '"')
-                .addField("String[]", "DYNAMIC_FEATURES", "{" + jointList.join(",") + "}")
+                .addField("String[]", "DYNAMIC_FEATURES", "{" + dfNameJoinList.join(",") + "}")
         generator.generate()
     }
 }

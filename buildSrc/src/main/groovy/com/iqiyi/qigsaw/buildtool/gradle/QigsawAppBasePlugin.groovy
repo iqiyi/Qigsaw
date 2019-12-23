@@ -38,6 +38,8 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.util.VersionNumber
 
+import java.text.SimpleDateFormat
+
 class QigsawAppBasePlugin extends QigsawPlugin {
 
     public static final String QIGSAW_INTERMEDIATES = "build/intermediates/qigsaw/"
@@ -115,10 +117,14 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 generateQigsawConfigTask.initArgs(hasQigsawTask, qigsawId, versionName, splitInfoVersion, dfNames)
 
                 generateBuildConfigTask.finalizedBy generateQigsawConfigTask
-                //to avoid incremental build of task generateBuildConfig
-                generateBuildConfigTask.items.add(new ClassFieldImpl("boolean", "QIGSAW_MODE", hasQigsawTask ? "Boolean.parseBoolean(\"true\")" : "false"))
                 generateBuildConfigTask.dependsOn processManifestTask
 
+                if (hasQigsawTask) {
+                    //to avoid incremental build of task generateBuildConfig
+                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                    generateBuildConfigTask.items.add("just record what time you call qigsaw build command.")
+                    generateBuildConfigTask.items.add(new ClassFieldImpl("String", "QIGSAW_BUILD_TIME", "\"${df.format(new Date())}\""))
+                }
                 QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName}", QigsawAssembleTask)
                 qigsawAssembleTask.outputDir = project.mkdir(QIGSAW_INTERMEDIATES + "split_info" + File.separator + variantName.uncapitalize())
 
