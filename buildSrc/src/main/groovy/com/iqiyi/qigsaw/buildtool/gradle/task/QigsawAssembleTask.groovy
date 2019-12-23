@@ -50,6 +50,8 @@ class QigsawAssembleTask extends DefaultTask {
 
     String flavorName
 
+    String appVersionName
+
     File assetsDir
 
     File mergeJniLibDir
@@ -70,6 +72,7 @@ class QigsawAssembleTask extends DefaultTask {
     void initArgs(String qigsawId,
                   String variantName,
                   String flavorName,
+                  String appVersionName,
                   File assetsDir,
                   File mergeJniLib,
                   File packageOutputDir,
@@ -79,6 +82,7 @@ class QigsawAssembleTask extends DefaultTask {
         this.qigsawId = qigsawId
         this.variantName = variantName
         this.flavorName = flavorName
+        this.appVersionName = appVersionName
         this.assetsDir = assetsDir
         this.mergeJniLibDir = mergeJniLib
         this.packageOutputDir = packageOutputDir
@@ -115,6 +119,9 @@ class QigsawAssembleTask extends DefaultTask {
             File splitApkFile = null
             String splitName = dfProject.name
             String dfFlavorName = null
+            String dfVersionName = null
+            Integer dfVersionCode = 0
+            int minApiLevel = dfAndroid.defaultConfig.minSdkVersion.apiLevel
             dfAndroid.applicationVariants.all { ApplicationVariant variant ->
                 String dfVariantName = variant.name.capitalize()
                 dfFlavorName = variant.flavorName
@@ -124,7 +131,12 @@ class QigsawAssembleTask extends DefaultTask {
                     }
                     Task processManifestTask = AGPCompat.getProcessManifestTask(dfProject, dfVariantName)
                     splitManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
+                    dfVersionName = variant.versionName
+                    dfVersionCode = variant.versionCode
                 }
+            }
+            if (dfFlavorName == null) {
+                throw new RuntimeException("dynamic feature ${splitName} 'versionName' is not set!")
             }
             if (splitApkFile == null || splitManifestFile == null) {
                 if ((flavorName != null && flavorName.length() > 0) && (dfFlavorName == null || dfFlavorName.length() == 0)) {
@@ -149,7 +161,10 @@ class QigsawAssembleTask extends DefaultTask {
             //sign split apk if needed
             File splitSignedApk = splitProcessor.signSplitAPKIfNeed(splitApkFile)
             //create split info
-            SplitInfo splitInfo = splitProcessor.createSplitInfo(splitName, dfAndroid, dfDependencies, splitManifestFile, splitSignedApk)
+            SplitInfo splitInfo = splitProcessor.createSplitInfo(
+                    splitName, dfVersionName,
+                    dfVersionCode, minApiLevel,
+                    dfDependencies, splitManifestFile, splitSignedApk)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
         //get Abis that have been merged
@@ -196,6 +211,7 @@ class QigsawAssembleTask extends DefaultTask {
         fixedAbis = sortAbis(fixedAbis)
         SplitJsonFileCreator detailsCreator = new SplitDetailsCreatorImpl(
                 qigsawId,
+                appVersionName,
                 copyToAssets,
                 getProject(),
                 outputDir,

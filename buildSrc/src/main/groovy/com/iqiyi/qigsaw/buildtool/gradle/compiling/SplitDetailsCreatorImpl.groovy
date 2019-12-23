@@ -57,6 +57,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
     boolean copyToAssets
 
     SplitDetailsCreatorImpl(String qigsawId,
+                            String appVersionName,
                             boolean copyToAssets,
                             Project appProject,
                             File outputDir,
@@ -65,7 +66,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
         this.copyToAssets = copyToAssets
         this.appProject = appProject
         this.outputDir = outputDir
-        this.appVersionName = appProject.extensions.android.defaultConfig.versionName
+        this.appVersionName = appVersionName
         this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
         this.abiFilters = abiFilters
     }
@@ -153,7 +154,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
                 appProject.logger.error("SplitApkUploader has not been implemented, just make split " + splitInfo.splitName + " built-in")
             } else {
                 String uploadedUrl = uploader.uploadSync(appProject, splitInfo.splitApk, splitInfo.splitName)
-                println("Split ${splitName} apk file has been uploaded, see ${uploadedUrl}")
+                println("Split ${splitInfo.splitName} apk file has been uploaded, see ${uploadedUrl}")
                 if (uploadedUrl != null && uploadedUrl.startsWith("http")) {
                     splitInfo.url = uploadedUrl
                     return

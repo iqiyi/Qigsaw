@@ -24,7 +24,6 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
-import com.android.build.gradle.AppExtension
 import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoCreator
@@ -40,7 +39,11 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
 
     final String splitName
 
-    final AppExtension splitExtension
+    final String versionName
+
+    final Integer versionCode
+
+    final int minApiLevel
 
     final String variantName
 
@@ -52,36 +55,32 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
 
     SplitInfoCreatorImpl(Project appProject,
                          String variantName,
-                         AppExtension splitExtension,
                          String splitName,
+                         String versionName,
+                         Integer versionCode,
+                         int minApiLevel,
+                         List<String> dfDependencies,
                          File splitApk,
-                         File splitManifestFile,
-                         List<String> dfDependencies) {
+                         File splitManifestFile) {
         this.appProject = appProject
         this.variantName = variantName
-        this.splitExtension = splitExtension
         this.splitName = splitName
+        this.versionName = versionName
+        this.versionCode = versionCode
+        this.minApiLevel = minApiLevel
+        this.dfDependencies = dfDependencies
         this.splitApk = splitApk
         this.splitManifestFile = splitManifestFile
-        this.dfDependencies = dfDependencies
     }
 
     @Override
     SplitInfo create() {
-        String versionName = splitExtension.defaultConfig.versionName
-        if (versionName == null) {
-            throw new RuntimeException("Dynamic feature ${splitName} version name is not set!")
-        }
-        Integer versionCode = splitExtension.defaultConfig.versionCode
-        if (versionCode == null) {
-            versionCode = 0
-        }
         String md5 = FileUtils.getMD5(splitApk)
         SplitInfo splitInfo = new SplitInfo(
                 splitName,
                 splitApk,
                 md5,
-                splitExtension.defaultConfig.minSdkVersion.apiLevel,
+                minApiLevel,
                 versionName + "@" + versionCode,
         )
         splitInfo.dependencies = dfDependencies.isEmpty() ? null : dfDependencies
