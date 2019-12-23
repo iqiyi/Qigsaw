@@ -25,7 +25,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.build.gradle.api.ApplicationVariant
-import com.android.builder.internal.ClassFieldImpl
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.DexReMergeHandler
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.FixedMainDexList
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitContentProviderProcessor
@@ -37,8 +36,6 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.util.VersionNumber
-
-import java.text.SimpleDateFormat
 
 class QigsawAppBasePlugin extends QigsawPlugin {
 
@@ -107,7 +104,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File mergeJniLibsDir = AGPCompat.getMergeJniLibsDirCompat(mergeJniLibsTask, versionAGP)
 
                 File packageOutputDir = AGPCompat.getPackageApplicationDirCompat(packageTask)
-
                 //create QigsawConfig.java
                 GenerateQigsawConfig generateQigsawConfigTask = project.tasks.create("generate${variantName}QigsawConfig", GenerateQigsawConfig)
                 generateQigsawConfigTask.setApplicationId(applicationId)
@@ -115,19 +111,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 String qigsawId = getQigsawId(project, versionName)
                 String splitInfoVersion = versionName + "_" + project.extensions.qigsawSplit.splitInfoVersion
                 generateQigsawConfigTask.initArgs(hasQigsawTask, qigsawId, versionName, splitInfoVersion, dfNames)
-
                 generateBuildConfigTask.finalizedBy generateQigsawConfigTask
                 generateBuildConfigTask.dependsOn processManifestTask
 
-                if (hasQigsawTask) {
-                    //to avoid incremental build of task generateBuildConfig
-                    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-                    generateBuildConfigTask.items.add("just record what time you call qigsaw build command.")
-                    generateBuildConfigTask.items.add(new ClassFieldImpl("String", "QIGSAW_BUILD_TIME", "\"${df.format(new Date())}\""))
-                }
                 QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName}", QigsawAssembleTask)
                 qigsawAssembleTask.outputDir = project.mkdir(QIGSAW_INTERMEDIATES + "split_info" + File.separator + variantName.uncapitalize())
-
                 qigsawAssembleTask.initArgs(
                         qigsawId,
                         variantName,
@@ -148,7 +136,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     if (proguardEnable) {
                         QigsawProguardConfigTask proguardConfigTask = project.tasks.create("qigsawProcess${variantName}Proguard", QigsawProguardConfigTask)
                         proguardConfigTask.applicationVariant = variant
-                        proguardConfigTask.applicationId = applicationId
                         Task r8Task = AGPCompat.getR8Task(project, variantName)
                         Task proguardTask = AGPCompat.getProguardTask(project, variantName)
                         if (proguardTask != null) {
