@@ -87,18 +87,23 @@ class SplitApkProcessorImpl implements SplitApkProcessor {
 
     @Override
     SplitInfo createSplitInfo(String splitName,
-                              AppExtension splitExtension,
+                              String versionName,
+                              Integer versionCode,
+                              int minApiLevel,
                               List<String> dfDependencies,
                               File splitManifest,
                               File splitSignedApk) {
         SplitInfoCreator infoCreator = new SplitInfoCreatorImpl(
                 baseProject,
                 variantName,
-                splitExtension,
                 splitName,
+                versionName,
+                versionCode,
+                minApiLevel,
+                dfDependencies,
                 splitSignedApk,
-                splitManifest,
-                dfDependencies)
+                splitManifest
+        )
         SplitInfo splitInfo = infoCreator.create()
         return splitInfo
     }

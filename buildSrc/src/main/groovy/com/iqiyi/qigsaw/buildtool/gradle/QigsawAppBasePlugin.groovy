@@ -120,6 +120,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         qigsawId,
                         variantName,
                         variant.flavorName,
+                        versionName,
                         mergeAssetsDir,
                         mergeJniLibsDir,
                         packageOutputDir,
@@ -127,6 +128,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         dfProjects,
                         dfClassPaths)
 
+                generateQigsawConfigTask.setGroup(QIGSAW)
                 qigsawAssembleTask.setGroup(QIGSAW)
 
                 //set task dependency
