@@ -35,6 +35,8 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 @RestrictTo(LIBRARY_GROUP)
 public class SplitBaseInfoProvider {
 
+    private static final String TAG = "SplitBaseInfoProvider";
+
     private static final String CLASS_QigsawConfig = ".QigsawConfig";
 
     private static final String VERSION_NAME = "VERSION_NAME";
@@ -49,7 +51,7 @@ public class SplitBaseInfoProvider {
 
     private static final String DEFAULT_VALUE = "unknown";
 
-    private static final String DEFAULT_SPLIT_INFO_VERSION_VALUE = "1.0.0";
+    private static final String DEFAULT_SPLIT_INFO_VERSION_VALUE = "unknown_1.0.0";
 
     private static String sPackageName;
 
@@ -57,11 +59,12 @@ public class SplitBaseInfoProvider {
         sPackageName = packageName;
     }
 
-    private static Class getQigsawConfigClass() {
+    private static Class getQigsawConfigClass() throws ClassNotFoundException {
         try {
             return Class.forName(sPackageName + CLASS_QigsawConfig);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Qigsaw Error: Can't find class " + sPackageName + "QigsawConfig.class!");
+            SplitLog.w(TAG, "Qigsaw Warning: Can't find class " + sPackageName + ".QigsawConfig.class!");
+            throw e;
         }
     }
 
@@ -73,6 +76,8 @@ public class SplitBaseInfoProvider {
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
+            //
+        } catch (ClassNotFoundException e) {
             //
         }
         return false;
@@ -88,6 +93,8 @@ public class SplitBaseInfoProvider {
             //
         } catch (IllegalAccessException e) {
             //
+        } catch (ClassNotFoundException e) {
+            //
         }
         return DEFAULT_VALUE;
     }
@@ -101,6 +108,8 @@ public class SplitBaseInfoProvider {
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
+            //
+        } catch (ClassNotFoundException e) {
             //
         }
         return DEFAULT_VALUE;
@@ -116,6 +125,8 @@ public class SplitBaseInfoProvider {
             //
         } catch (IllegalAccessException e) {
             //
+        } catch (ClassNotFoundException e) {
+            //
         }
         return DEFAULT_SPLIT_INFO_VERSION_VALUE;
     }
@@ -129,6 +140,8 @@ public class SplitBaseInfoProvider {
         } catch (NoSuchFieldException e) {
             //
         } catch (IllegalAccessException e) {
+            //
+        } catch (ClassNotFoundException e) {
             //
         }
         return null;
