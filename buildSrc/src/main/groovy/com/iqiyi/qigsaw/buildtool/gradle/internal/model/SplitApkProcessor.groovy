@@ -36,6 +36,8 @@ interface SplitApkProcessor {
                               int minApiLevel,
                               List<String> dfDependencies,
                               File splitManifest,
-                              File splitSignedApk)
+                              File splitSignedApk,
+                              boolean releaseSplitApk,
+                              List<String> restrictWorkProcessesForSplits)
 
 }

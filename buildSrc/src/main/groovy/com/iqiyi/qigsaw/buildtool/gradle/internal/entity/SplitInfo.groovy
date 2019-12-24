@@ -26,7 +26,6 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.entity;
 
 class SplitInfo {
 
-
     SplitInfo(String splitName,
               File splitApk,
               String md5,
@@ -40,12 +39,28 @@ class SplitInfo {
         this.version = version
     }
 
+    void copySplitInfo(SplitInfo origin) {
+        this.splitName = origin.splitName
+        this.url = origin.url
+        this.builtIn = origin.builtIn
+        this.size = origin.size
+        this.applicationName = origin.applicationName
+        this.version = origin.version
+        this.md5 = origin.md5
+        this.workProcesses = origin.workProcesses
+        this.minSdkVersion = origin.minSdkVersion
+        this.dexNumber = origin.dexNumber
+        this.nativeLibraries = origin.nativeLibraries
+        this.dependencies = origin.dependencies
+        this.abiFilters = origin.abiFilters
+    }
+
     final transient File splitApk
 
     /**
      * The name of split apk
      */
-    final String splitName
+    String splitName
 
     /**
      * Download link of split apk
@@ -60,7 +75,7 @@ class SplitInfo {
     /**
      * size of split apk file
      */
-    final long size
+    long size
 
     /**
      * application name in split AndroidManifest.xml

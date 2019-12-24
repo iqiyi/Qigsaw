@@ -92,7 +92,9 @@ class SplitApkProcessorImpl implements SplitApkProcessor {
                               int minApiLevel,
                               List<String> dfDependencies,
                               File splitManifest,
-                              File splitSignedApk) {
+                              File splitSignedApk,
+                              boolean releaseSplitApk,
+                              List<String> restrictWorkProcessesForSplits) {
         SplitInfoCreator infoCreator = new SplitInfoCreatorImpl(
                 baseProject,
                 variantName,
@@ -102,7 +104,9 @@ class SplitApkProcessorImpl implements SplitApkProcessor {
                 minApiLevel,
                 dfDependencies,
                 splitSignedApk,
-                splitManifest
+                splitManifest,
+                releaseSplitApk,
+                restrictWorkProcessesForSplits
         )
         SplitInfo splitInfo = infoCreator.create()
         return splitInfo

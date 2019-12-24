@@ -29,6 +29,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.compiling.DexReMergeHandler
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.FixedMainDexList
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitContentProviderProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
+import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
 import com.iqiyi.qigsaw.buildtool.gradle.transform.ComponentInfoTransform
@@ -109,15 +110,17 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 generateQigsawConfigTask.setApplicationId(applicationId)
                 generateQigsawConfigTask.setSourceOutputDir(variant.variantData.scope.buildConfigSourceOutputDir)
                 String qigsawId = getQigsawId(project, versionName)
-                String splitInfoVersion = versionName + "_" + project.extensions.qigsawSplit.splitInfoVersion
+                String splitInfoVersion = versionName + "_" + QigsawSplitExtensionHelper.getSplitInfoVersion(project)
                 generateQigsawConfigTask.initArgs(hasQigsawTask, qigsawId, versionName, splitInfoVersion, dfNames)
                 generateBuildConfigTask.finalizedBy generateQigsawConfigTask
                 generateBuildConfigTask.dependsOn processManifestTask
 
                 QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName}", QigsawAssembleTask)
                 qigsawAssembleTask.outputDir = project.mkdir(QIGSAW_INTERMEDIATES + "split_info" + File.separator + variantName.uncapitalize())
+
                 qigsawAssembleTask.initArgs(
                         qigsawId,
+                        splitInfoVersion,
                         variantName,
                         variant.flavorName,
                         versionName,

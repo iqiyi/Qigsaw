@@ -28,5 +28,5 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
 interface SplitJsonFileCreator {
 
-    File createSplitDetailsJsonFile(List<SplitInfo> splits)
+    File createSplitJsonFile(List<SplitInfo> splits)
 }
