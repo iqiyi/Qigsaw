@@ -64,7 +64,7 @@ public class SplitLibraryLoaderHelper {
                 for (SplitInfo.LibInfo.Lib lib : libs) {
                     if (lib.getName().equals(System.mapLibraryName(libraryName))) {
                         if (context instanceof Application) {
-                            String libPath = SplitPathManager.require().getSplitDir(info).getAbsolutePath() + File.separator + lib.getName();
+                            String libPath = SplitPathManager.require().getSplitLibDir(info).getAbsolutePath() + File.separator + lib.getName();
                             try {
                                 System.load(libPath);
                                 return true;
