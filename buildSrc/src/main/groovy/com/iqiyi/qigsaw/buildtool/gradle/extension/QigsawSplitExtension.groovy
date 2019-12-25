@@ -28,15 +28,17 @@ class QigsawSplitExtension {
 
     final static String DEFAULT_SPLIT_INFO_VERSION = "1.0.0"
 
+    final static String EMPTY = ""
+
     /**
      * Specifies the last old apk's mapping file for proguard to applymapping
      */
-    String applyMapping
+    String applyMapping = EMPTY
 
     /**
      * the old apk path
      */
-    String oldApk
+    String oldApk = EMPTY
 
     /**
      * Specifies the version of json file of split-info, default value is 1.0.0
@@ -52,7 +54,7 @@ class QigsawSplitExtension {
      * Restrict splits working process, if you do not assign split name, this split will work on
      * all processes, otherwise only work processes declared in its manifest.
      */
-    List<String> restrictWorkProcessesForSplits
+    List<String> restrictWorkProcessesForSplits = Collections.emptyList()
 
     @Override
     String toString() {

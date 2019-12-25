@@ -25,40 +25,23 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import org.gradle.api.Project
 
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 class AppliedSplitJsonFileGetter {
 
-    Project project
+    final String oldApkPath
 
-    String splitDetailsFilePrefix
+    final String splitDetailsFilePrefix
 
-    AppliedSplitJsonFileGetter(Project project, String splitDetailsFilePrefix) {
-        this.project = project
+    AppliedSplitJsonFileGetter(String oldApkPath, String splitDetailsFilePrefix) {
+        this.oldApkPath = oldApkPath
         this.splitDetailsFilePrefix = splitDetailsFilePrefix
     }
 
-    File getSplitJsonFileFromQigsawOldApk() {
-        String oldApkPath = project.extensions.qigsawSplit.oldApk
-        if (oldApkPath == null) return null
-        File oldApk = new File(oldApkPath)
-        if (oldApk.exists() && oldApk.length() > 0) {
-            return extractSplitJsonFileInOldApk(oldApk)
-        }
-        return null
-    }
-
-    File getSplitJsonFileFromTinkerOldApk() {
-        String oldApkPath = null
-        try {
-            oldApkPath = project.extensions.tinkerPatch.oldApk
-        } catch (Exception ignored) {
-
-        }
-        if (oldApkPath == null) return null
+    File getSplitJsonFileFromOldApk() {
+        if (oldApkPath.length() == 0) return null
         File oldApk = new File(oldApkPath)
         if (oldApk.exists() && oldApk.length() > 0) {
             return extractSplitJsonFileInOldApk(oldApk)

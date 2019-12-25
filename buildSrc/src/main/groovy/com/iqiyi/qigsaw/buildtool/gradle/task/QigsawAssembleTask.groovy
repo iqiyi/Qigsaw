@@ -28,7 +28,8 @@ import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
 import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitApkProcessorImpl
-import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitDetailsCreatorImpl
+import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitJsonFileCreatorImpl
+import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
@@ -39,12 +40,29 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 class QigsawAssembleTask extends DefaultTask {
 
+    @Input
     String qigsawId
+
+    @Input
+    String splitInfoVersion
+
+    @Input
+    String oldApkPath
+
+    @Input
+    boolean releaseSplitApk
+
+    @Input
+    List<String> restrictWorkProcessesForSplits
+
+    @Input
+    List<String> dfClassPaths
 
     String variantName
 
@@ -60,8 +78,6 @@ class QigsawAssembleTask extends DefaultTask {
 
     File baseManifestFile
 
-    List<String> dfClassPaths
-
     List<Project> dfProjects
 
     List<File> qigsawIntermediates = new ArrayList<>()
@@ -69,7 +85,14 @@ class QigsawAssembleTask extends DefaultTask {
     @OutputDirectory
     File outputDir
 
+    QigsawAssembleTask() {
+        this.oldApkPath = QigsawSplitExtensionHelper.getOldApk(project)
+        this.releaseSplitApk = QigsawSplitExtensionHelper.getReleaseSplitApk(project)
+        this.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(project)
+    }
+
     void initArgs(String qigsawId,
+                  String splitInfoVersion,
                   String variantName,
                   String flavorName,
                   String appVersionName,
@@ -80,6 +103,7 @@ class QigsawAssembleTask extends DefaultTask {
                   List<Project> dfProjects,
                   List<String> dfClassPaths) {
         this.qigsawId = qigsawId
+        this.splitInfoVersion = splitInfoVersion
         this.variantName = variantName
         this.flavorName = flavorName
         this.appVersionName = appVersionName
@@ -92,8 +116,8 @@ class QigsawAssembleTask extends DefaultTask {
     }
 
     @TaskAction
-    void makeSplitInfoFile() {
-        makeSplitInfoFileInternal()
+    void makeSplitJsonFile() {
+        makeSplitJsonFileInternal()
     }
 
     void afterPackageApp() {
@@ -111,7 +135,7 @@ class QigsawAssembleTask extends DefaultTask {
         }
     }
 
-    void makeSplitInfoFileInternal() {
+    void makeSplitJsonFileInternal() {
         Map<String, SplitInfo> splitInfoMap = new HashMap<>()
         for (Project dfProject : dfProjects) {
             def dfAndroid = dfProject.extensions.android
@@ -164,7 +188,8 @@ class QigsawAssembleTask extends DefaultTask {
             SplitInfo splitInfo = splitProcessor.createSplitInfo(
                     splitName, dfVersionName,
                     dfVersionCode, minApiLevel,
-                    dfDependencies, splitManifestFile, splitSignedApk)
+                    dfDependencies, splitManifestFile,
+                    splitSignedApk, releaseSplitApk, restrictWorkProcessesForSplits)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
         //get Abis that have been merged
@@ -209,9 +234,11 @@ class QigsawAssembleTask extends DefaultTask {
             }
         }
         fixedAbis = sortAbis(fixedAbis)
-        SplitJsonFileCreator detailsCreator = new SplitDetailsCreatorImpl(
+        SplitJsonFileCreator detailsCreator = new SplitJsonFileCreatorImpl(
                 qigsawId,
                 appVersionName,
+                splitInfoVersion,
+                oldApkPath,
                 copyToAssets,
                 getProject(),
                 outputDir,
@@ -242,7 +269,7 @@ class QigsawAssembleTask extends DefaultTask {
             splits.add(info)
         }
         splits.addAll(splitInfoMap.values())
-        File splitJsonFile = detailsCreator.createSplitDetailsJsonFile(splits)
+        File splitJsonFile = detailsCreator.createSplitJsonFile(splits)
         copySplitJsonFileAndSplitAPKs(splits, splitJsonFile, abiDirNames, copyToAssets)
     }
 

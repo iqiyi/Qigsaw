@@ -25,7 +25,9 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
+import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 
 class QigsawProguardConfigTask extends DefaultTask {
@@ -62,8 +64,11 @@ class QigsawProguardConfigTask extends DefaultTask {
 
     def applicationVariant
 
-    QigsawProguardConfigTask() {
+    @Input
+    final String applyMappingPath
 
+    QigsawProguardConfigTask() {
+        applyMappingPath = QigsawSplitExtensionHelper.getApplyMapping(project)
     }
 
     @TaskAction
@@ -78,8 +83,7 @@ class QigsawProguardConfigTask extends DefaultTask {
 
         // Write our recommended proguard settings to this file
         FileWriter fw = new FileWriter(file.path)
-        String applyMappingPath = project.extensions.qigsawSplit.applyMapping
-        if (applyMappingPath != null) {
+        if (applyMappingPath.length() != 0) {
             File mappingFile = new File(applyMappingPath)
             if (mappingFile.exists() && mappingFile.isFile() && mappingFile.length() > 0) {
                 project.logger.debug("try add applymapping ${mappingFile.path} to build the package")
