@@ -10,6 +10,12 @@
     <init>(...);
 }
 
+# ${yourApplicationId}.QigsawConfig, QigsawVersion >= 1.2.2
+-keep class com.iqiyi.qigsaw.sample.QigsawConfig {
+    *;
+}
+
+# ${yourPackageNameInManifest}.BuildConfig QigsawVersion < 1.2.2
 -keep class com.iqiyi.qigsaw.sample.BuildConfig {
     *;
 }
