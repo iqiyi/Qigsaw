@@ -25,64 +25,63 @@
 package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.SdkConstants
-import com.android.build.gradle.api.ApplicationVariant
 import com.google.gson.Gson
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.task.AppliedSplitJsonFileGetter
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploader
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploaderInstance
 import org.gradle.api.Project
-import org.gradle.api.Task
 
-class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
+class SplitJsonFileCreatorImpl implements SplitJsonFileCreator {
 
     final static String JSON_SUFFIX = SdkConstants.DOT_JSON
 
-    Project appProject
+    final static String QIGSAWPREFIX = "qigsaw_"
 
-    String appVersionName
+    final String qigsawId
 
-    String splitDetailsFilePrefix
+    final String appVersionName
 
-    File outputDir
+    final String splitInfoVersion
 
-    String qigsawId
+    final String oldApkPath
 
-    Set<String> abiFilters
+    final Project appProject
 
-    boolean copyToAssets
+    final File outputDir
 
-    SplitDetailsCreatorImpl(String qigsawId,
-                            String appVersionName,
-                            boolean copyToAssets,
-                            Project appProject,
-                            File outputDir,
-                            Set<String> abiFilters) {
+    final Set<String> abiFilters
+
+    final boolean copyToAssets
+
+    SplitJsonFileCreatorImpl(String qigsawId,
+                             String appVersionName,
+                             String splitInfoVersion,
+                             String oldApkPath,
+                             boolean copyToAssets,
+                             Project appProject,
+                             File outputDir,
+                             Set<String> abiFilters) {
         this.qigsawId = qigsawId
+        this.appVersionName = appVersionName
+        this.splitInfoVersion = splitInfoVersion
+        this.oldApkPath = oldApkPath
         this.copyToAssets = copyToAssets
         this.appProject = appProject
         this.outputDir = outputDir
-        this.appVersionName = appVersionName
-        this.splitDetailsFilePrefix = "qigsaw_" + appVersionName + "_"
         this.abiFilters = abiFilters
     }
 
     @Override
-    File createSplitDetailsJsonFile(List<SplitInfo> splits) {
-        AppliedSplitJsonFileGetter fileGetter = new AppliedSplitJsonFileGetter(appProject, splitDetailsFilePrefix)
-        File splitInfoJsonFromTinker = fileGetter.getSplitJsonFileFromTinkerOldApk()
-        if (splitInfoJsonFromTinker != null) {
-            return createAppliedSplitInfoJsonFile(splitInfoJsonFromTinker, splits)
+    File createSplitJsonFile(List<SplitInfo> splits) {
+        AppliedSplitJsonFileGetter fileGetter = new AppliedSplitJsonFileGetter(oldApkPath, QIGSAWPREFIX + appVersionName)
+        File splitInfoJsonFromOldApk = fileGetter.getSplitJsonFileFromOldApk()
+        if (splitInfoJsonFromOldApk != null) {
+            return createAppliedSplitInfoJsonFile(splitInfoJsonFromOldApk, splits)
         }
-        File splitInfoJsonFromQigsaw = fileGetter.getSplitJsonFileFromQigsawOldApk()
-        if (splitInfoJsonFromQigsaw != null) {
-            return createAppliedSplitInfoJsonFile(splitInfoJsonFromQigsaw, splits)
-        }
-
         for (SplitInfo info : splits) {
             uploadSplitAPKIfNeed(info)
         }
@@ -107,8 +106,7 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
             if (!outputDir.exists()) {
                 outputDir.mkdirs()
             }
-            String splitInfoVersion = appProject.extensions.qigsawSplit.splitInfoVersion
-            String fileName = splitDetailsFilePrefix + splitInfoVersion + JSON_SUFFIX
+            String fileName = QIGSAWPREFIX + splitInfoVersion + JSON_SUFFIX
             File splitDetailsFile = new File(outputDir, fileName)
             if (splitDetailsFile.exists()) {
                 splitDetailsFile.delete()
@@ -192,13 +190,10 @@ class SplitDetailsCreatorImpl implements SplitJsonFileCreator {
                 for (SplitInfo appliedInfo : appliedSplitDetails.splits) {
                     if (info.splitName.equals(appliedInfo.splitName)) {
                         if (info.version.equals(appliedInfo.version)) {
-                            if (info.md5.equals(appliedInfo.md5)) {
-                                info.url = appliedInfo.url
-                            } else {
-                                uploadSplitAPKIfNeed(info)
-                                appProject.logger.error(String.format("Split %s md5 has been changed, but version is not changed!!!!", info.splitName))
-                            }
+                            appProject.logger.error("Built-in split ${info.splitName} version ${info.version} is not changed, using old splitInfo ${appliedInfo.toString()}!")
+                            info.copySplitInfo(appliedInfo)
                         } else {
+                            appProject.logger.error("Split ${info.splitName} version ${info.version} is changed, it need to be updated!")
                             info.builtIn = false
                             updateSplits.add(info.splitName)
                             uploadSplitAPKIfNeed(info)

@@ -53,6 +53,10 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
 
     final List<String> dfDependencies
 
+    final boolean releaseSplitApk
+
+    final List<String> restrictWorkProcessesForSplits
+
     SplitInfoCreatorImpl(Project appProject,
                          String variantName,
                          String splitName,
@@ -61,7 +65,9 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
                          int minApiLevel,
                          List<String> dfDependencies,
                          File splitApk,
-                         File splitManifestFile) {
+                         File splitManifestFile,
+                         boolean releaseSplitApk,
+                         List<String> restrictWorkProcessesForSplits) {
         this.appProject = appProject
         this.variantName = variantName
         this.splitName = splitName
@@ -71,6 +77,8 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
         this.dfDependencies = dfDependencies
         this.splitApk = splitApk
         this.splitManifestFile = splitManifestFile
+        this.releaseSplitApk = releaseSplitApk
+        this.restrictWorkProcessesForSplits = restrictWorkProcessesForSplits
     }
 
     @Override
@@ -85,7 +93,6 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
         )
         splitInfo.dependencies = dfDependencies.isEmpty() ? null : dfDependencies
         ManifestReader manifestReader = new ManifestReaderImpl(splitManifestFile)
-        boolean releaseSplitApk = appProject.extensions.qigsawSplit.releaseSplitApk
         splitInfo.builtIn = !manifestReader.readOnDemand() || !releaseSplitApk
         List<String> processes = new ArrayList<>()
         Set<ComponentInfo> activities = manifestReader.readActivities()
@@ -112,9 +119,7 @@ class SplitInfoCreatorImpl implements SplitInfoCreator {
                 processes.add(it.process)
             }
         }
-        List<String> restrictWorkProcessesForSplits = appProject.extensions.qigsawSplit.restrictWorkProcessesForSplits
-
-        if (restrictWorkProcessesForSplits != null && !restrictWorkProcessesForSplits.empty) {
+        if (!restrictWorkProcessesForSplits.empty) {
             if (restrictWorkProcessesForSplits.contains(splitName)) {
                 splitInfo.workProcesses = processes.isEmpty() ? null : processes
             }
