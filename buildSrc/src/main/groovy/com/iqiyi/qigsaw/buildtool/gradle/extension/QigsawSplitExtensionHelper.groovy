@@ -7,25 +7,21 @@ class QigsawSplitExtensionHelper {
     static String getSplitInfoVersion(Project project) {
         try {
             return project.extensions.qigsawSplit.splitInfoVersion
-        } catch (Throwable e) {
+        } catch (Throwable ignored) {
             return QigsawSplitExtension.DEFAULT_SPLIT_INFO_VERSION
         }
     }
 
     static String getOldApk(Project project) {
         try {
-            String oldApk = project.extensions.tinkerPatch.oldApk
+            String oldApk = project.extensions.qigsawSplit.oldApk
             if (oldApk != null && new File(oldApk).exists()) {
                 return oldApk
             }
         } catch (Throwable ignored) {
 
         }
-        try {
-            return project.extensions.qigsawSplit.oldApk
-        } catch (Throwable ignored) {
-            return QigsawSplitExtension.EMPTY
-        }
+        return QigsawSplitExtension.EMPTY
     }
 
     static boolean getReleaseSplitApk(Project project) {
@@ -46,9 +42,13 @@ class QigsawSplitExtensionHelper {
 
     static String getApplyMapping(Project project) {
         try {
-            return project.extensions.qigsawSplit.applyMapping
+            String mapping = project.extensions.qigsawSplit.applyMapping
+            if (mapping != null && new File(mapping).exists()) {
+                return mapping
+            }
         } catch (Throwable ignored) {
-            return QigsawSplitExtension.EMPTY
+
         }
+        return QigsawSplitExtension.EMPTY
     }
 }

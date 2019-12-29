@@ -25,9 +25,12 @@
 package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
-interface SplitJsonFileCreator {
+interface SplitDetailsProcessor {
 
-    File createSplitJsonFile(SplitDetails splitDetails, String splitInfoVersion)
+    SplitDetails processSplitDetails(SplitDetails rawSplitDetails, Map<String, SplitInfo> splitInfoMap)
+
+    void uploadSplitApkIfNeed(String builtInUrlPrefix, boolean updateMode, SplitInfo splitInfo) throws Exception
 
 }

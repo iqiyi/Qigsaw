@@ -26,9 +26,15 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.entity
 
 class SplitDetails {
 
+    transient boolean updateMode
+
+    transient boolean updateModeButNoVersionChanged
+
     String qigsawId
 
     String appVersionName
+
+    String builtInUrlPrefix
 
     List<SplitInfo> splits
 
@@ -36,24 +42,61 @@ class SplitDetails {
 
     Set<String> abiFilters
 
-    SplitDetails(String qigsawId,
-                 String appVersionName,
-                 Set<String> abiFilters,
-                 List<SplitInfo> splits,
-                 List<String> updateSplits) {
-        this.qigsawId = qigsawId
-        this.appVersionName = appVersionName
-        this.abiFilters = abiFilters
-        this.splits = splits
-        this.updateSplits = updateSplits
+    static Builder newBuilder() {
+        return new Builder()
+    }
+
+    SplitDetails(Builder builder) {
+        this.qigsawId = builder.qigsawId
+        this.appVersionName = builder.appVersionName
+        this.abiFilters = builder.abiFilters
+        this.builtInUrlPrefix = builder.builtInUrlPrefix
     }
 
     @Override
     String toString() {
         """| qigsawId = ${qigsawId}
            | appVersionName = ${appVersionName}
+           | builtInUrlPrefix = ${builtInUrlPrefix}
+           | abiFilters = ${abiFilters}
+           | updateSplits = ${updateSplits}
            | splits = \n${splits}
-           | updateSplits = \n${updateSplits}
         """.stripMargin()
+    }
+
+
+    static class Builder {
+
+        private String qigsawId
+
+        private String appVersionName
+
+        private Set<String> abiFilters
+
+        private String builtInUrlPrefix
+
+        Builder qigsawId(String qigsawId) {
+            this.qigsawId = qigsawId
+            return this
+        }
+
+        Builder builtInUrlPrefix(String builtInUrlPrefix) {
+            this.builtInUrlPrefix = builtInUrlPrefix
+            return this
+        }
+
+        Builder appVersionName(String appVersionName) {
+            this.appVersionName = appVersionName
+            return this
+        }
+
+        Builder abiFilters(Set<String> abiFilters) {
+            this.abiFilters == null || abiFilters.isEmpty() ? null : abiFilters
+            return this
+        }
+
+        SplitDetails build() {
+            return new SplitDetails(this)
+        }
     }
 }

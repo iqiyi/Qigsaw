@@ -22,12 +22,24 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
+import org.gradle.api.Project
+import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 
-interface SplitJsonFileCreator {
+class QigsawLogger {
 
-    File createSplitJsonFile(SplitDetails splitDetails, String splitInfoVersion)
+    static final String LOG_PREFIX = "Qigsaw Build Message: "
+
+    private static final Logger BUILD_LOGGER = Logging.getLogger(Project.class)
+
+    static void e(String msg) {
+        BUILD_LOGGER.error("${LOG_PREFIX}${msg}")
+    }
+
+    static void w(String msg) {
+        BUILD_LOGGER.warn("${LOG_PREFIX}${msg}")
+    }
 
 }
