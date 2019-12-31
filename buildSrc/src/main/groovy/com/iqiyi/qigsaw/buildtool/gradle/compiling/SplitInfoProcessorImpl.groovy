@@ -51,7 +51,8 @@ class SplitInfoProcessorImpl implements SplitInfoProcessor {
         ManifestReader manifestReader = new ManifestReaderImpl(SplitManifestFile)
         rawSplitInfo.md5 = FileUtils.getMD5(splitApkFile)
         rawSplitInfo.size = splitApkFile.length()
-        rawSplitInfo.applicationName = manifestReader.readApplicationName().name
+        String splitApplicationName = manifestReader.readApplicationName().name
+        rawSplitInfo.applicationName = (splitApplicationName == null || splitApplicationName.length() == 0 ? null : splitApplicationName)
         rawSplitInfo.builtIn = !manifestReader.readOnDemand() || !releaseSplitApk
         List<String> splitProcesses = new ArrayList<>()
         Set<ComponentInfo> activities = manifestReader.readActivities()

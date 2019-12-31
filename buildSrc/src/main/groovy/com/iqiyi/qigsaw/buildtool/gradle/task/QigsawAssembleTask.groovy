@@ -68,6 +68,9 @@ class QigsawAssembleTask extends DefaultTask {
     @Input
     List<String> dfClassPaths
 
+    @Input
+    Set<String> abiFilters
+
     String variantName
 
     String flavorName
@@ -105,6 +108,7 @@ class QigsawAssembleTask extends DefaultTask {
                   String appVersionName,
                   File assetsDir,
                   File mergeJniLib,
+                  Set<String> abiFilters,
                   List<Project> dfProjects,
                   List<String> dfClassPaths) {
         this.qigsawId = qigsawId
@@ -114,6 +118,7 @@ class QigsawAssembleTask extends DefaultTask {
         this.appVersionName = appVersionName
         this.assetsDir = assetsDir
         this.mergeJniLibDir = mergeJniLib
+        this.abiFilters = abiFilters
         this.dfProjects = dfProjects
         this.dfClassPaths = dfClassPaths
     }
@@ -196,7 +201,6 @@ class QigsawAssembleTask extends DefaultTask {
             }
             abiDirNames = builder.build()
         }
-        Set<String> abiFilters = project.android.defaultConfig.ndk.abiFilters
         //check need copy splits to asset dir.
         if (abiFilters == null) {
             if (abiDirNames != null && abiDirNames.size() == 1) {
@@ -253,23 +257,35 @@ class QigsawAssembleTask extends DefaultTask {
             outputJsonFile.delete()
         }
         FileUtils.copyFile(splitJsonFile, outputJsonFile)
-        if (copyToAssets) {
-            for (SplitInfo info : splits) {
-                File assetsSplitApk = new File(assetsDir, info.splitName + SdkConstants.DOT_ZIP)
-                if (assetsSplitApk.exists()) {
-                    assetsSplitApk.delete()
+        //delete old split apk files
+        splits.each { SplitInfo info ->
+            File assetsSplitApk = new File(assetsDir, info.splitName + SdkConstants.DOT_ZIP)
+            if (assetsSplitApk.exists()) {
+                assetsSplitApk.delete()
+            }
+        }
+        if (abiDirNames != null) {
+            abiDirNames.each {
+                splits.each { SplitInfo info ->
+                    File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
+                    if (jniSplitApk.exists()) {
+                        jniSplitApk.delete()
+                    }
                 }
+            }
+        }
+        //copy new split apk files to target dir.
+        if (copyToAssets) {
+            splits.each { SplitInfo info ->
+                File assetsSplitApk = new File(assetsDir, info.splitName + SdkConstants.DOT_ZIP)
                 if (info.builtIn) {
                     FileUtils.copyFile(info.splitApk, assetsSplitApk)
                 }
             }
         } else {
             abiDirNames.each {
-                for (SplitInfo info : splits) {
+                splits.each { SplitInfo info ->
                     File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
-                    if (jniSplitApk.exists()) {
-                        jniSplitApk.delete()
-                    }
                     if (info.builtIn) {
                         FileUtils.copyFile(info.splitApk, jniSplitApk)
                     }

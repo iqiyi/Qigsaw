@@ -99,7 +99,11 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
             resetSplitApkForSplitInfo(builtInUrlPrefix, splitInfo)
         }
         splitInfo.builtIn = true
-        splitInfo.url = "${builtInUrlPrefix}${splitInfo.splitName + SdkConstants.DOT_ZIP}"
+        if (builtInUrlPrefix.equals("assets://")) {
+            splitInfo.url = "${builtInUrlPrefix}${splitInfo.splitName + SdkConstants.DOT_ZIP}"
+        } else {
+            splitInfo.url = "${builtInUrlPrefix}libsplit_${splitInfo.splitName + SdkConstants.DOT_NATIVE_LIBS}"
+        }
     }
 
     void resetSplitApkForSplitInfo(String builtInUrlPrefix, SplitInfo splitInfo) {
