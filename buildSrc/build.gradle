@@ -20,9 +20,9 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "com.android.tools.build:gradle:${AGP_VERSION}"
     implementation 'javassist:javassist:3.12.1.GA'
-    implementation 'commons-io:commons-io:2.5'
     implementation 'com.google.code.gson:gson:2.8.2'
     implementation 'org.dom4j:dom4j:2.0.2'
+    implementation 'org.codehaus.plexus:plexus-utils:3.1.0'
     implementation gradleApi()
 }
 

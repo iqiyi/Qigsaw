@@ -40,6 +40,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -71,11 +72,12 @@ class QigsawAssembleTask extends DefaultTask {
     @Input
     Set<String> abiFilters
 
-    String variantName
+    @Input
+    String appVersionName
 
     String flavorName
 
-    String appVersionName
+    String variantName
 
     File assetsDir
 
@@ -94,6 +96,9 @@ class QigsawAssembleTask extends DefaultTask {
 
     @InputDirectory
     File oldApkOutputDir
+
+    @InputDirectory
+    File splitDependenciesOutputDir
 
     QigsawAssembleTask() {
         this.oldApkPath = QigsawSplitExtensionHelper.getOldApk(project)
@@ -159,16 +164,15 @@ class QigsawAssembleTask extends DefaultTask {
                             " merged_manifest: ${splitManifestFile}, output_apk: ${splitApkFile}")
                 }
             }
-            List<String> allDependencies = SplitDependencyStatistics.getInstance().getDependencies(splitName, variantName)
+
             List<String> dfDependencies = new ArrayList<>()
-            if (allDependencies != null) {
-                allDependencies.each {
-                    if (dfClassPaths.contains(it)) {
-                        dfDependencies.add(it.split(":")[1])
-                    }
-                }
+            File dfDependenciesFile = new File(splitDependenciesOutputDir, splitName + SdkConstants.DOT_JSON)
+            if (dfDependenciesFile.exists()) {
+                List<String> splitDependencies = TypeClassFileParser.parseFile(dfDependenciesFile, List.class)
+                dfDependencies.addAll(splitDependencies)
             }
-            println("dynamic feature ${splitName} has dependencies: ${dfDependencies.toString()}")
+
+            QigsawLogger.w("dynamic feature ${splitName} has dependencies: ${dfDependencies.toString()}")
             //sign split apk if in need.
             SplitApkSigner apkSigner = new SplitApkSigner(project, variantName)
             File splitSignedApk = apkSigner.signSplitAPKIfNeed(splitApkFile)

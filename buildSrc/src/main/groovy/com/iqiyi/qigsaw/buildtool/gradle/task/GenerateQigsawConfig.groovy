@@ -25,8 +25,9 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.QigsawConfigGenerator
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitDetailsParser
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
@@ -97,7 +98,7 @@ class GenerateQigsawConfig extends DefaultTask {
         }
         File oldSplitJsonFile = new File(oldApkOutputDir, QigsawProcessOldApkTask.OUTPUT_NAME)
         if (oldSplitJsonFile.exists()) {
-            qigsawId = SplitDetailsParser.readSplitDetails(oldSplitJsonFile).qigsawId
+            qigsawId = TypeClassFileParser.parseFile(oldSplitJsonFile, SplitDetails.class).qigsawId
             if (qigsawId == null) {
                 throw new GradleException("Can't read qigsaw id from old apk!")
             }

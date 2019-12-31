@@ -40,6 +40,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.transform.ComponentInfoTransform
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.util.VersionNumber
 
 class QigsawAppBasePlugin extends QigsawPlugin {
@@ -58,6 +59,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
     public static final String QIGSAW_INTERMEDIATES_SPLIT_EXTRACTION = "${QIGSAW_INTERMEDIATES}split_extraction/"
 
+    public static final String QIGSAW_INTERMEDIATES_SPLIT_DEPENDENCIES = "${QIGSAW_INTERMEDIATES}split_dependencies/"
+
     @Override
     void apply(Project project) {
         //create qigsaw extension.
@@ -69,7 +72,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         if (versionAGP < VersionNumber.parse("3.2.0")) {
             throw new GradleException('generateQigsawApk: Android Gradle Version is required 3.2.0 at least!')
         }
-        SplitDependencyStatistics.getInstance().clear()
         //extends from AppExtension
         def android = project.extensions.android
         //create ComponentInfo.class to record Android Component of dynamic features.
@@ -118,6 +120,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File qigsawAssembleOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_INFO + variantName.uncapitalize())
                 File splitApkOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_APK + variantName.uncapitalize())
                 File splitManifestOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_MANIFEST + variantName.uncapitalize())
+                File splitDependenciesOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_DEPENDENCIES + variantName.uncapitalize())
+
                 //compat fot tinker
                 String oldApk = TinkerHelper.getOldApk(project)
                 if (oldApk == null) {
@@ -144,6 +148,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawAssembleTask.splitApkOutputDir = splitApkOutputDir
                 qigsawAssembleTask.splitManifestOutputDir = splitManifestOutputDir
                 qigsawAssembleTask.oldApkOutputDir = oldApkOutputDir
+                qigsawAssembleTask.splitDependenciesOutputDir = splitDependenciesOutputDir
 
                 Set<String> abiFilters = android.defaultConfig.ndk.abiFilters
                 if (abiFilters == null) {
@@ -176,11 +181,13 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     }
                     dfProjects.each { Project dfProject ->
                         try {
-                            configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask, splitApkOutputDir, splitManifestOutputDir)
+                            configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask, dfClassPaths,
+                                    splitApkOutputDir, splitManifestOutputDir, splitDependenciesOutputDir)
                             println("dynamic feature project ${dfProject.name} has been evaluated!")
                         } catch (Throwable ignored) {
                             dfProject.afterEvaluate {
-                                configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask, splitApkOutputDir, splitManifestOutputDir)
+                                configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask, dfClassPaths,
+                                        splitApkOutputDir, splitManifestOutputDir, splitDependenciesOutputDir)
                                 println("dynamic feature project ${dfProject.name} has not been evaluated!")
                             }
                         }
@@ -256,7 +263,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
     }
 
     private static void configQigsawAssembleTaskDependencies(Project dfProject, String baseVariantName,
-                                                             Task mergeJniLibsTask, File splitApkOutputDir, File splitManifestOutputDir) {
+                                                             Task mergeJniLibsTask, List<String> dfClassPaths,
+                                                             File splitApkOutputDir, File splitManifestOutputDir, File splitDependenciesOutputDir) {
         dfProject.extensions.android.applicationVariants.all { ApplicationVariant variant ->
             String variantName = variant.name.capitalize()
             if (baseVariantName.equals(variantName)) {
@@ -266,9 +274,16 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 }
                 Task dfAssembleTask = AGPCompat.getAssemble(variant)
                 mergeJniLibsTask.dependsOn dfAssembleTask
+
+                List<String> splitDependencies = new ArrayList<>()
+                Configuration configuration = dfProject.configurations."${variantName.uncapitalize()}CompileClasspath"
+                configuration.incoming.dependencies.each {
+                    splitDependencies.add("${it.group}:${it.name}:${it.version}")
+                }
                 AnalyzeDependenciesTask analyzeDependenciesTask = dfProject.tasks.create("analyzeDependencies${variantName}", AnalyzeDependenciesTask)
-                analyzeDependenciesTask.initArgs(variant.name.capitalize())
-                dfAssembleTask.finalizedBy analyzeDependenciesTask
+                analyzeDependenciesTask.initArgs(variant.name.capitalize(), splitDependencies, dfClassPaths)
+                analyzeDependenciesTask.outputDir = splitDependenciesOutputDir
+                dfAssembleTask.dependsOn analyzeDependenciesTask
                 Task dfProcessManifestTask = AGPCompat.getProcessManifestTask(dfProject, variantName)
                 //copy split output files
                 dfAssembleTask.doLast {

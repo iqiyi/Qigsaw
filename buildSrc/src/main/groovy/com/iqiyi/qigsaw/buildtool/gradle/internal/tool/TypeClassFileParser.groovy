@@ -25,13 +25,12 @@
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.google.gson.Gson
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 
-class SplitDetailsParser {
+class TypeClassFileParser {
 
-    static SplitDetails readSplitDetails(File apkFile) {
-        String str = readInputStreamContent(new FileInputStream(apkFile))
-        return parseSplitDetails(str)
+    static Object parseFile(File file, Class typeClass) {
+        String str = readInputStreamContent(new FileInputStream(file))
+        return parseTypeClass(str, typeClass)
     }
 
     private static String readInputStreamContent(InputStream is) throws IOException {
@@ -46,8 +45,8 @@ class SplitDetailsParser {
         return stringBuffer.toString()
     }
 
-    private static SplitDetails parseSplitDetails(String splitDetailsStr) {
+    private static Object parseTypeClass(String splitDetailsStr, Class typeClass) {
         Gson gson = new Gson()
-        return gson.fromJson(splitDetailsStr, SplitDetails)
+        return gson.fromJson(splitDetailsStr, typeClass)
     }
 }
