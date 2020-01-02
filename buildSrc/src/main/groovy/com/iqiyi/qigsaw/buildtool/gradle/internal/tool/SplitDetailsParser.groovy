@@ -22,22 +22,32 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+import com.google.gson.Gson
+import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 
-interface SplitApkProcessor {
+class SplitDetailsParser {
 
-    File signSplitAPKIfNeed(File splitApk)
+    static SplitDetails readSplitDetails(File apkFile) {
+        String str = readInputStreamContent(new FileInputStream(apkFile))
+        return parseSplitDetails(str)
+    }
 
-    SplitInfo createSplitInfo(String splitName,
-                              String versionName,
-                              Integer versionCode,
-                              int minApiLevel,
-                              List<String> dfDependencies,
-                              File splitManifest,
-                              File splitSignedApk,
-                              boolean releaseSplitApk,
-                              List<String> restrictWorkProcessesForSplits)
+    private static String readInputStreamContent(InputStream is) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(is))
+        StringBuilder stringBuffer = new StringBuilder()
+        String str
+        while ((str = br.readLine()) != null) {
+            stringBuffer.append(str)
+        }
+        FileUtils.closeQuietly(is)
+        FileUtils.closeQuietly(br)
+        return stringBuffer.toString()
+    }
 
+    private static SplitDetails parseSplitDetails(String splitDetailsStr) {
+        Gson gson = new Gson()
+        return gson.fromJson(splitDetailsStr, SplitDetails)
+    }
 }
