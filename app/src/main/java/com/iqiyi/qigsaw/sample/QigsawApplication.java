@@ -14,6 +14,7 @@ import com.iqiyi.android.qigsaw.core.SplitActivityLifecycleCallbacks;
 import com.iqiyi.android.qigsaw.core.SplitConfiguration;
 import com.iqiyi.android.qigsaw.core.Qigsaw;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
+import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;
 import com.iqiyi.qigsaw.sample.downloader.SampleDownloader;
 import com.iqiyi.qigsaw.sample.reporter.SampleLogger;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitInstallReporter;
@@ -46,51 +47,49 @@ public class QigsawApplication extends Application {
                 .obtainUserConfirmationDialogClass(SampleObtainUserConfirmationDialog.class)
                 .build();
         Qigsaw.install(this, new SampleDownloader(), configuration);
-
-        Qigsaw.registerSplitActivityLifecycleCallbacks(new SplitActivityLifecycleCallbacks() {
-
-            @Override
-            public void onSplitActivityCreated(@NonNull String splitName, @NonNull Activity activity, @Nullable Bundle savedInstanceState) {
-
-            }
-
-            @Override
-            public void onSplitActivityStarted(@NonNull String splitName, @NonNull Activity activity) {
-
-            }
-
-            @Override
-            public void onSplitActivityResumed(@NonNull String splitName, @NonNull Activity activity) {
-
-            }
-
-            @Override
-            public void onSplitActivityPaused(@NonNull String splitName, @NonNull Activity activity) {
-
-            }
-
-            @Override
-            public void onSplitActivityStopped(@NonNull String splitName, @NonNull Activity activity) {
-
-            }
-
-            @Override
-            public void onSplitActivitySaveInstanceState(@NonNull String splitName, @NonNull Activity activity, @NonNull Bundle outState) {
-
-            }
-
-            @Override
-            public void onSplitActivityDestroyed(@NonNull String splitName, @NonNull Activity activity) {
-
-            }
-            
-        });
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         Qigsaw.onApplicationCreated();
+        Qigsaw.registerSplitActivityLifecycleCallbacks(new SplitActivityLifecycleCallbacks() {
+
+            @Override
+            public void onSplitActivityCreated(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+
+            }
+
+            @Override
+            public void onSplitActivityStarted(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivityResumed(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivityPaused(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivityStopped(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivitySaveInstanceState(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity, @NonNull Bundle outState) {
+
+            }
+
+            @Override
+            public void onSplitActivityDestroyed(@NonNull SplitBriefInfo briefInfo, @NonNull Activity activity) {
+
+            }
+        });
     }
 
     @Override
