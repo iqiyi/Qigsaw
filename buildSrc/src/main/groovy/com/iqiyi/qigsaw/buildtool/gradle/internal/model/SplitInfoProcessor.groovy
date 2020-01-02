@@ -26,8 +26,10 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.model
 
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 
-interface SplitInfoCreator {
+interface SplitInfoProcessor {
 
-    SplitInfo create()
-
+    SplitInfo processSplitInfo(File splitApkFile,
+                               File SplitManifestFile,
+                               boolean releaseSplitApk,
+                               List<String> restrictWorkProcessesForSplits)
 }

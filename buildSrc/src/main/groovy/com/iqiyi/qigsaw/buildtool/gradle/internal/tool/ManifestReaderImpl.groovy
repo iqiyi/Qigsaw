@@ -37,7 +37,6 @@ class ManifestReaderImpl implements ManifestReader {
     }
 
     @Override
-
     ComponentInfo readApplicationName() {
         String name = manifest.application.'@android:name'
         return new ComponentInfo(name)

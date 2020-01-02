@@ -107,10 +107,10 @@ class FileUtils {
         }
     }
 
-
     static void copyFile(File source, File dest)
             throws IOException {
         copyFile(new FileInputStream(source), new FileOutputStream(dest))
+        QigsawLogger.w("Succeed to copy ${source.absolutePath} to ${dest.absolutePath}")
     }
 
     static void closeQuietly(Closeable obj) {

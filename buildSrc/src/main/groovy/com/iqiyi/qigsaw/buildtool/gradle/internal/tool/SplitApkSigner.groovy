@@ -22,36 +22,31 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.compiling
+package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.android.apksig.ApkSigner
 import com.android.apksig.ApkVerifier
-import com.android.build.gradle.AppExtension
 import com.android.build.gradle.internal.dsl.SigningConfig
 import com.android.ide.common.signing.CertificateInfo
 import com.android.ide.common.signing.KeystoreHelper
 import com.google.common.base.Preconditions
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoCreator
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitApkProcessor
 import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
 
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
-class SplitApkProcessorImpl implements SplitApkProcessor {
+class SplitApkSigner {
 
     final Project baseProject
 
     final String variantName
 
-    SplitApkProcessorImpl(Project project, String variantName) {
+    SplitApkSigner(Project project, String variantName) {
         this.baseProject = project
         this.variantName = variantName
     }
 
-    @Override
     File signSplitAPKIfNeed(File splitApk) {
         ApkVerifier apkVerifier = new ApkVerifier.Builder(splitApk).build()
         if (!apkVerifier.verify().verified) {
@@ -85,30 +80,4 @@ class SplitApkProcessorImpl implements SplitApkProcessor {
         return splitApk
     }
 
-    @Override
-    SplitInfo createSplitInfo(String splitName,
-                              String versionName,
-                              Integer versionCode,
-                              int minApiLevel,
-                              List<String> dfDependencies,
-                              File splitManifest,
-                              File splitSignedApk,
-                              boolean releaseSplitApk,
-                              List<String> restrictWorkProcessesForSplits) {
-        SplitInfoCreator infoCreator = new SplitInfoCreatorImpl(
-                baseProject,
-                variantName,
-                splitName,
-                versionName,
-                versionCode,
-                minApiLevel,
-                dfDependencies,
-                splitSignedApk,
-                splitManifest,
-                releaseSplitApk,
-                restrictWorkProcessesForSplits
-        )
-        SplitInfo splitInfo = infoCreator.create()
-        return splitInfo
-    }
 }

@@ -24,10 +24,11 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 class QigsawProguardConfigTask extends DefaultTask {
@@ -61,8 +62,10 @@ class QigsawProguardConfigTask extends DefaultTask {
             "-keep class com.iqiyi.android.qigsaw.core.extension.ComponentInfo{\n *;\n }\n" +
             "-keep class com.iqiyi.android.qigsaw.core.splitlib.**{\n *;\n }\n"
 
-
     def applicationVariant
+
+    @OutputDirectory
+    File outputDir
 
     @Input
     final String applyMappingPath
@@ -71,34 +74,35 @@ class QigsawProguardConfigTask extends DefaultTask {
         applyMappingPath = QigsawSplitExtensionHelper.getApplyMapping(project)
     }
 
+    File getOutputProguardFile() {
+        return new File(outputDir, PROGUARD_CONFIG_NAME)
+    }
+
     @TaskAction
     void updateQigsawProguardConfig() {
-        String proguardFilePath = QigsawAppBasePlugin.QIGSAW_INTERMEDIATES + "mapping" + File.separator + applicationVariant.name
-        project.mkdir(proguardFilePath)
-        def file = project.file(proguardFilePath + File.separator + PROGUARD_CONFIG_NAME)
-        project.logger.debug("try update qigsaw proguard file with ${file}")
-
-        // Create the directory if it doesnt exist already
-        file.getParentFile().mkdirs()
-
+        if (outputDir.exists()) {
+            outputDir.deleteDir()
+        }
+        outputDir.mkdirs()
+        File file = new File(outputDir, PROGUARD_CONFIG_NAME)
+        QigsawLogger.w("try update qigsaw proguard file with ${file}")
         // Write our recommended proguard settings to this file
         FileWriter fw = new FileWriter(file.path)
         if (applyMappingPath.length() != 0) {
             File mappingFile = new File(applyMappingPath)
             if (mappingFile.exists() && mappingFile.isFile() && mappingFile.length() > 0) {
-                project.logger.debug("try add applymapping ${mappingFile.path} to build the package")
+                QigsawLogger.w("try add applymapping ${mappingFile.path} to build the package")
                 fw.write("-applymapping " + applyMappingPath)
                 fw.write("\n")
             } else {
-                project.logger.error("applymapping file ${applyMappingPath} is not valid, just ignore!")
+                QigsawLogger.e("applymapping file ${applyMappingPath} is not valid, just ignore!")
             }
         } else {
-            project.logger.error("applymapping file ${applyMappingPath} is not null, just ignore!")
+            QigsawLogger.e("applymapping file ${applyMappingPath} is not null, just ignore!")
         }
         fw.write(PROGUARD_CONFIG_SETTINGS + "-keep class ${applicationVariant.applicationId}.QigsawConfig{\n *;\n }\n")
         fw.close()
-        applicationVariant.getBuildType().buildType.proguardFiles(file)
         def files = applicationVariant.buildType.proguardFiles
-        project.logger.info("now proguard files are ${files}")
+        QigsawLogger.w("now proguard files are ${files}")
     }
 }

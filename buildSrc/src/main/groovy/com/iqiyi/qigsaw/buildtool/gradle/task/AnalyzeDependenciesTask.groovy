@@ -41,8 +41,7 @@ class AnalyzeDependenciesTask extends DefaultTask {
         List<String> dependencies = new ArrayList<>(0)
         configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
             def identifier = it.module.id
-            String classPath = "${identifier.group}:${identifier.name}:${identifier.version}"
-            dependencies.add(classPath)
+            dependencies.add(identifier.name)
         }
         SplitDependencyStatistics.getInstance().putDependencies(project.name, variantName, dependencies)
     }

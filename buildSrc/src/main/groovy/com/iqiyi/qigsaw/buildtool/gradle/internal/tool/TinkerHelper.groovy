@@ -22,12 +22,21 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
+import org.gradle.api.Project
 
-interface SplitJsonFileCreator {
+class TinkerHelper {
 
-    File createSplitJsonFile(SplitDetails splitDetails, String splitInfoVersion)
+    static String getOldApk(Project project) {
+        try {
+            String oldApk = project.extensions.tinkerPatch.oldApk
+            if (oldApk != null && new File(oldApk).exists()) {
+                return oldApk
+            }
+        } catch (Throwable ignored) {
 
+        }
+        return null
+    }
 }
