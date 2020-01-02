@@ -28,12 +28,15 @@ import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 
+import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitinstall.SplitApkInstaller;
 import com.iqiyi.android.qigsaw.core.splitinstall.protocol.ISplitInstallServiceCallback;
 
 import java.util.List;
 
 abstract class DefaultTask implements Runnable, SplitInstallSupervisor.Callback {
+
+    private static final String TAG = "Split:DefaultTask";
 
     final ISplitInstallServiceCallback mCallback;
 
@@ -54,7 +57,8 @@ abstract class DefaultTask implements Runnable, SplitInstallSupervisor.Callback 
             }
         } else {
             try {
-                mCallback.onError(SplitInstallSupervisor.bundleErrorCode(-99));
+                mCallback.onError(SplitInstallSupervisor.bundleErrorCode(-101));
+                SplitLog.w(TAG, "Have you call Qigsaw#onApplicationCreated method?");
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
