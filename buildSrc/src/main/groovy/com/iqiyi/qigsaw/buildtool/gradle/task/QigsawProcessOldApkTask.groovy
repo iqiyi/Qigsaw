@@ -29,7 +29,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitDetailsParser
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
@@ -77,7 +77,7 @@ class QigsawProcessOldApkTask extends DefaultTask {
         outputDir.mkdirs()
         if (oldApk.length() != 0 && hasQigsawTask) {
             File oldSplitJsonFile = extractSplitJsonFileFromOldApk()
-            SplitDetails splitDetails = SplitDetailsParser.readSplitDetails(oldSplitJsonFile)
+            SplitDetails splitDetails = TypeClassFileParser.parseFile(oldSplitJsonFile, SplitDetails.class)
             if (splitDetails == null) {
                 throw new GradleException("Qigsaw Error: Can't read qigsaw split json file in old apk ${oldApk}")
             }

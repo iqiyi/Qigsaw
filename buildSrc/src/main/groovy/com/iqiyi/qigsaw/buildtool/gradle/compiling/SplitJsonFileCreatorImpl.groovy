@@ -25,7 +25,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.SdkConstants
-import com.google.gson.Gson
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
@@ -54,26 +53,9 @@ class SplitJsonFileCreatorImpl implements SplitJsonFileCreator {
             FileUtils.copyFile(new File(oldApkOutputDir, QigsawProcessOldApkTask.OUTPUT_NAME), dest)
             return dest
         }
-        if (!createNewSplitInfoJsonFile(splitDetails, dest)) {
+        if (!FileUtils.createFileForTypeClass(splitDetails, dest)) {
             throw new GradleException("Failed to create split json file ${dest.absolutePath}")
         }
         return dest
     }
-
-    private static boolean createNewSplitInfoJsonFile(SplitDetails splitDetails, File dest) {
-        try {
-            Gson gson = new Gson()
-            String splitDetailsStr = gson.toJson(splitDetails)
-            dest.createNewFile()
-            BufferedOutputStream osm = new BufferedOutputStream(new FileOutputStream(dest))
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(osm))
-            writer.write(splitDetailsStr)
-            writer.close()
-            osm.close()
-        } catch (Throwable e) {
-            return false
-        }
-        return true
-    }
-
 }
