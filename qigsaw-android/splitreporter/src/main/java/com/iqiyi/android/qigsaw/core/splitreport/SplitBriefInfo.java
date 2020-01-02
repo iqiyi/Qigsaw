@@ -26,6 +26,7 @@ package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 
 @Keep
@@ -38,10 +39,24 @@ public class SplitBriefInfo {
     public final boolean builtIn;
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    public SplitBriefInfo(String splitName, String version, boolean builtIn) {
+    public SplitBriefInfo(@NonNull String splitName, @NonNull String version, boolean builtIn) {
         this.splitName = splitName;
         this.version = version;
         this.builtIn = builtIn;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        if (!(obj instanceof SplitBriefInfo)) {
+            return false;
+        }
+        SplitBriefInfo briefInfo = (SplitBriefInfo) obj;
+        if (splitName.equals(briefInfo.splitName)
+                && version.equals(briefInfo.version)
+                && (builtIn == briefInfo.builtIn)) {
+            return true;
+        }
+        return super.equals(obj);
     }
 
     @NonNull
