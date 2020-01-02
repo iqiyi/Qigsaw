@@ -31,7 +31,10 @@ import android.text.TextUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 final class AABExtensionManagerImpl implements AABExtensionManager {
 
@@ -42,6 +45,8 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     private List<String> splitServices;
 
     private List<String> splitReceivers;
+
+    private Map<String, List<String>> splitActivitiesMap;
 
     AABExtensionManagerImpl(SplitComponentInfoProvider infoProvider) {
         this.infoProvider = infoProvider;
@@ -93,9 +98,24 @@ final class AABExtensionManagerImpl implements AABExtensionManager {
     }
 
     @Override
+    public Map<String, List<String>> getSplitActivitiesMap() {
+        if (splitActivitiesMap == null) {
+            splitActivitiesMap = infoProvider.getSplitActivitiesMap();
+        }
+        return splitActivitiesMap;
+    }
+
+    @Override
     public boolean isSplitActivity(String name) {
         if (splitActivities == null) {
-            splitActivities = infoProvider.getSplitActivities();
+            Collection<List<String>> values = getSplitActivitiesMap().values();
+            List<String> allSplitActivities = new ArrayList<>(0);
+            if (!values.isEmpty()) {
+                for (List<String> activities : values) {
+                    allSplitActivities.addAll(activities);
+                }
+            }
+            splitActivities = allSplitActivities;
         }
         return splitActivities.contains(name);
     }

@@ -1,11 +1,16 @@
 package com.iqiyi.qigsaw.sample;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.multidex.MultiDex;
 import android.util.Log;
 
+import com.iqiyi.android.qigsaw.core.SplitActivityLifecycleCallbacks;
 import com.iqiyi.android.qigsaw.core.SplitConfiguration;
 import com.iqiyi.android.qigsaw.core.Qigsaw;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
@@ -41,6 +46,45 @@ public class QigsawApplication extends Application {
                 .obtainUserConfirmationDialogClass(SampleObtainUserConfirmationDialog.class)
                 .build();
         Qigsaw.install(this, new SampleDownloader(), configuration);
+
+        Qigsaw.registerSplitActivityLifecycleCallbacks(new SplitActivityLifecycleCallbacks() {
+
+            @Override
+            public void onSplitActivityCreated(@NonNull String splitName, @NonNull Activity activity, @Nullable Bundle savedInstanceState) {
+
+            }
+
+            @Override
+            public void onSplitActivityStarted(@NonNull String splitName, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivityResumed(@NonNull String splitName, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivityPaused(@NonNull String splitName, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivityStopped(@NonNull String splitName, @NonNull Activity activity) {
+
+            }
+
+            @Override
+            public void onSplitActivitySaveInstanceState(@NonNull String splitName, @NonNull Activity activity, @NonNull Bundle outState) {
+
+            }
+
+            @Override
+            public void onSplitActivityDestroyed(@NonNull String splitName, @NonNull Activity activity) {
+
+            }
+            
+        });
     }
 
     @Override

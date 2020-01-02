@@ -27,6 +27,9 @@ package com.iqiyi.android.qigsaw.core.extension;
 import android.app.Application;
 import android.content.Context;
 
+import java.util.List;
+import java.util.Map;
+
 interface AABExtensionManager {
 
     /**
@@ -44,6 +47,8 @@ interface AABExtensionManager {
      * @param splitApplication application instance of split.
      */
     void activeApplication(Application splitApplication, Context appContext) throws AABExtensionException;
+
+    Map<String, List<String>> getSplitActivitiesMap();
 
     boolean isSplitActivity(String name);
 

@@ -159,6 +159,22 @@ public class Qigsaw {
         }
     }
 
+    public static void registerSplitActivityLifecycleCallbacks(SplitActivityLifecycleCallbacks callback) {
+        Context context = Qigsaw.instance().context;
+        if (!(context instanceof Application)) {
+            throw new RuntimeException("If you want to monitor lifecycle of split activity, Application context must be required for Qigsaw#install(...)!");
+        }
+        ((Application) context).registerActivityLifecycleCallbacks(callback);
+    }
+
+    public static void unregisterSplitActivityLifecycleCallbacks(SplitActivityLifecycleCallbacks callback) {
+        Context context = Qigsaw.instance().context;
+        if (!(context instanceof Application)) {
+            throw new RuntimeException("If you want to monitor lifecycle of split activity, Application context must be required for Qigsaw#install(...)!");
+        }
+        ((Application) context).unregisterActivityLifecycleCallbacks(callback);
+    }
+
     /**
      * Update split info version. If new split does not equal to current version, qigsaw would update it.
      *
