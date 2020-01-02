@@ -26,6 +26,7 @@ package com.iqiyi.android.qigsaw.core.extension;
 
 import android.app.Application;
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.common.SplitAABInfoProvider;
@@ -148,6 +149,20 @@ public class AABExtension {
             return FakeReceiver.class;
         }
         return null;
+    }
+
+    public String getSplitNameForActivityName(@NonNull String activityClassName) {
+        String ret = null;
+        Map<String, List<String>> splitActivitiesMap = extensionManager.getSplitActivitiesMap();
+        for (Map.Entry<String, List<String>> entry : splitActivitiesMap.entrySet()) {
+            String splitName = entry.getKey();
+            List<String> activities = entry.getValue();
+            if (activities != null && activities.contains(activityClassName)) {
+                ret = splitName;
+                break;
+            }
+        }
+        return ret;
     }
 
     private Set<String> getSplitNames() {
