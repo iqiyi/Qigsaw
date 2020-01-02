@@ -25,30 +25,17 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.Intent;
 import android.support.annotation.Nullable;
 
-import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.util.List;
 
 /**
  * Interface definition for loading installed splits.
  */
 abstract class SplitLoader {
-
-    private static final String TAG = "SplitLoader";
-
-    /**
-     * private field in {@link android.app.LoadedApk}
-     */
-    private Field mSplitResDirsField;
-
-    private Object mPackageInfo;
 
     final Context context;
 
@@ -83,63 +70,8 @@ abstract class SplitLoader {
     final void loadResources(String splitResDir) throws SplitLoadException {
         try {
             SplitCompatResourcesLoader.loadResources(context, context.getResources(), splitResDir);
-            Context base = getBaseContext();
-            try {
-                installSplitResourceDir(base, splitResDir);
-            } catch (Throwable ignored) {
-
-            }
         } catch (Throwable throwable) {
             throw new SplitLoadException(SplitLoadError.LOAD_RES_FAILED, throwable);
         }
     }
-
-    private Field getFieldSplitResDirsInPackageInfo(Object packageInfo) {
-        try {
-            mSplitResDirsField = HiddenApiReflection.findField(packageInfo, "mSplitResDirs");
-        } catch (NoSuchFieldException e) {
-            SplitLog.w(TAG, "Failed to reflect 'mSplitResDirs' field!");
-        }
-        return mSplitResDirsField;
-    }
-
-    private Context getBaseContext() {
-        Context ctx = context;
-        while (ctx instanceof ContextWrapper) {
-            ctx = ((ContextWrapper) ctx).getBaseContext();
-        }
-        return ctx;
-    }
-
-    private void installSplitResourceDir(Context baseContext, String splitResDir) throws Throwable {
-        Object packageInfo = getPackageInfo(baseContext);
-        if (packageInfo != null) {
-            Field mSplitResDirsField = getFieldSplitResDirsInPackageInfo(packageInfo);
-            if (mSplitResDirsField != null) {
-                String[] splitResDirs = (String[]) mSplitResDirsField.get(packageInfo);
-                if (splitResDirs == null) {
-                    mSplitResDirsField.set(packageInfo, new String[]{splitResDir});
-                } else {
-                    int splitSourceDirsLength = splitResDirs.length;
-                    String[] combined = new String[splitSourceDirsLength + 1];
-                    String[] expanded = new String[]{splitResDir};
-                    System.arraycopy(splitResDirs, 0, combined, 0, splitResDirs.length);
-                    System.arraycopy(expanded, 0, combined, splitResDirs.length, expanded.length);
-                    mSplitResDirsField.set(packageInfo, combined);
-                }
-            }
-        }
-    }
-
-    private Object getPackageInfo(Context baseContext) {
-        if (mPackageInfo == null) {
-            try {
-                mPackageInfo = HiddenApiReflection.findField(baseContext, "mPackageInfo").get(baseContext);
-            } catch (Throwable e) {
-                SplitLog.w(TAG, "Failed to reflect 'mPackageInfo' instance!", e);
-            }
-        }
-        return mPackageInfo;
-    }
-
 }
