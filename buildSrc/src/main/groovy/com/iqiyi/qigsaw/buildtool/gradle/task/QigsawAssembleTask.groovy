@@ -58,9 +58,6 @@ class QigsawAssembleTask extends DefaultTask {
     String splitInfoVersion
 
     @Input
-    String oldApkPath
-
-    @Input
     boolean releaseSplitApk
 
     @Input
@@ -79,8 +76,10 @@ class QigsawAssembleTask extends DefaultTask {
 
     String variantName
 
+    @OutputDirectory
     File assetsDir
 
+    @OutputDirectory
     File mergeJniLibDir
 
     List<Project> dfProjects
@@ -101,7 +100,6 @@ class QigsawAssembleTask extends DefaultTask {
     File splitDependenciesOutputDir
 
     QigsawAssembleTask() {
-        this.oldApkPath = QigsawSplitExtensionHelper.getOldApk(project)
         this.releaseSplitApk = QigsawSplitExtensionHelper.getReleaseSplitApk(project)
         this.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(project)
     }
@@ -186,7 +184,7 @@ class QigsawAssembleTask extends DefaultTask {
                     .build()
 
             SplitInfoProcessor infoProcessor = new SplitInfoProcessorImpl(rawSplitInfo,
-                    new File(project.buildDir, QigsawAppBasePlugin.QIGSAW_INTERMEDIATES_SPLIT_EXTRACTION))
+                    new File(project.buildDir, "${QigsawAppBasePlugin.QIGSAW_INTERMEDIATES_SPLIT_EXTRACTION}/${variantName.uncapitalize()}/${splitName}"))
             SplitInfo splitInfo = infoProcessor.processSplitInfo(
                     splitSignedApk,
                     splitManifestFile,
@@ -206,7 +204,8 @@ class QigsawAssembleTask extends DefaultTask {
             abiDirNames = builder.build()
         }
         //check need copy splits to asset dir.
-        if (abiFilters == null) {
+        QigsawLogger.w("> Task :${getName()} abiFilters -> ${abiFilters}")
+        if (abiFilters.empty) {
             if (abiDirNames != null && abiDirNames.size() == 1) {
                 copyToAssets = false
             }
@@ -217,9 +216,10 @@ class QigsawAssembleTask extends DefaultTask {
                 }
             }
         }
+        QigsawLogger.w("> Task :${getName()} abiDirNames -> ${abiDirNames}")
         //fix abiFilters
         Set<String> fixedAbis
-        if (abiFilters == null) {
+        if (abiFilters.empty) {
             fixedAbis = abiDirNames
         } else {
             if (abiDirNames != null) {
@@ -249,10 +249,10 @@ class QigsawAssembleTask extends DefaultTask {
         SplitJsonFileCreator fileCreator = new SplitJsonFileCreatorImpl(outputDir, oldApkOutputDir)
         File splitJsonFile = fileCreator.createSplitJsonFile(splitDetails, splitInfoVersion)
 
-        copySplitJsonFileAndSplitAPKs(splitDetails.splits, splitJsonFile, abiDirNames, copyToAssets)
+        copySplitJsonFileAndSplitAPKs(splitDetails.splits, splitJsonFile, fixedAbis, copyToAssets)
     }
 
-    void copySplitJsonFileAndSplitAPKs(List<SplitInfo> splits, File splitJsonFile, Set<String> abiDirNames, boolean copyToAssets) {
+    void copySplitJsonFileAndSplitAPKs(List<SplitInfo> splits, File splitJsonFile, Set<String> fixedAbis, boolean copyToAssets) {
         if (!this.assetsDir.exists()) {
             this.assetsDir.mkdirs()
         }
@@ -268,8 +268,8 @@ class QigsawAssembleTask extends DefaultTask {
                 assetsSplitApk.delete()
             }
         }
-        if (abiDirNames != null) {
-            abiDirNames.each {
+        if (fixedAbis != null) {
+            fixedAbis.each {
                 splits.each { SplitInfo info ->
                     File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
                     if (jniSplitApk.exists()) {
@@ -287,7 +287,7 @@ class QigsawAssembleTask extends DefaultTask {
                 }
             }
         } else {
-            abiDirNames.each {
+            fixedAbis.each {
                 splits.each { SplitInfo info ->
                     File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
                     if (info.builtIn) {

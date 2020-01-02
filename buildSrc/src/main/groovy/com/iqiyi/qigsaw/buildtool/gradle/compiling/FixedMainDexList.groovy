@@ -24,10 +24,9 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
-
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.scope.VariantScope
-import org.gradle.api.Project
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 
 class FixedMainDexList {
 
@@ -39,32 +38,31 @@ class FixedMainDexList {
 
     final VariantScope variantScope
 
-    FixedMainDexList(Project project, ApplicationVariant variant) {
+    FixedMainDexList(ApplicationVariant variant) {
         this.variantScope = variant.variantData.scope
     }
 
     void execute() {
         File multiDexKeepProguard = getDexKeepProguardFile()
-
         if (multiDexKeepProguard == null) {
             return
         }
+        QigsawLogger.w(">Task FixedMainDex -> " + multiDexKeepProguard.absolutePath)
         println(multiDexKeepProguard.path)
         boolean needUpdate = false
         boolean ignoreToCloseParenthesis = false
         StringBuilder sb = new StringBuilder()
         multiDexKeepProguard.eachLine {
-            println it
             if (it.trim().startsWith("-keep")) {
                 ignoreToCloseParenthesis = shouldRemove(it)
             }
-            if(!ignoreToCloseParenthesis){
+            if (!ignoreToCloseParenthesis) {
                 sb.append(it).append("\n")
-            }else{
+            } else {
                 needUpdate = true
             }
         }
-        if(needUpdate){
+        if (needUpdate) {
             FileWriter multiDexWriter = new FileWriter(multiDexKeepProguard)
             try {
                 multiDexWriter.write(sb.toString())
@@ -89,7 +87,7 @@ class FixedMainDexList {
     File getDexKeepProguardFile() {
         File multiDexKeepProguard = null
         try {
-            multiDexKeepProguard = this.variantScope.getManifestKeepListProguardFile()
+            multiDexKeepProguard = variantScope.getManifestKeepListProguardFile()
         } catch (Throwable ignore) {
             try {
                 def buildableArtifact = this.variantScope.getArtifacts().getFinalArtifactFiles(
@@ -105,13 +103,15 @@ class FixedMainDexList {
             }
             if (multiDexKeepProguard == null) {
                 try {
-                    multiDexKeepProguard = this.variantScope.getManifestKeepListFile()
+                    multiDexKeepProguard = variantScope.getManifestKeepListFile()
                 } catch (Throwable e) {
-                    project.logger.error("can't find getManifestKeepListFile method, exception:${e}")
+                    QigsawLogger.e("can't find getManifestKeepListFile method, exception:${e}")
                 }
             }
         }
+        if (multiDexKeepProguard == null) {
+            QigsawLogger.e("can't get multiDexKeepProguard file")
+        }
         return multiDexKeepProguard
     }
-
 }

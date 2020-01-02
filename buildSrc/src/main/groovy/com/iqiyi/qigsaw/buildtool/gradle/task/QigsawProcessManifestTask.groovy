@@ -34,6 +34,7 @@ import org.dom4j.io.XMLWriter
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.Pair
 
@@ -46,6 +47,7 @@ class QigsawProcessManifestTask extends DefaultTask {
     @InputDirectory
     File splitManifestOutputDir
 
+    @InputFile
     File mergedManifestFile
 
     File bundleManifestFile
@@ -55,7 +57,6 @@ class QigsawProcessManifestTask extends DefaultTask {
     }
 
     void initArgs(String variantName,
-                  File mergedManifestFile,
                   File bundleManifestFile) {
         this.variantName = variantName
         this.mergedManifestFile = mergedManifestFile
