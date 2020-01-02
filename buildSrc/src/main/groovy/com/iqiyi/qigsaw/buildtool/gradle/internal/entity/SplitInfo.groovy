@@ -82,42 +82,6 @@ class SplitInfo {
 
     List<String> dependencies
 
-    static class LibInfo {
-
-        String abi
-
-        List<Lib> jniLibs
-
-        @Override
-        String toString() {
-            """|\nabi = ${abi}
-               | jniLibs = ${jniLibs}
-            """.stripMargin()
-        }
-
-        static class Lib {
-
-            String name
-
-            String md5
-
-            long size
-
-            @Override
-            String toString() {
-                """|\nname = ${name}
-                   | md5 = ${md5}
-                   | size = ${size}
-                """.stripMargin()
-            }
-        }
-    }
-
-
-    static Builder newBuilder() {
-        return new Builder()
-    }
-
     SplitInfo(Builder builder) {
         this.splitApk = builder.splitApkFile
         this.splitName = builder.splitName
@@ -141,6 +105,42 @@ class SplitInfo {
         this.dependencies = origin.dependencies
     }
 
+    static Builder newBuilder() {
+        return new Builder()
+    }
+
+    static class LibInfo {
+
+        String abi
+
+        List<Lib> jniLibs
+
+        @Override
+        String toString() {
+            """|\nabi = ${abi}
+               | jniLibs = ${jniLibs}
+
+            """.stripMargin()
+        }
+
+        static class Lib {
+
+            String name
+
+            String md5
+
+            long size
+
+            @Override
+            String toString() {
+                """|\nname = ${name}
+                   | md5 = ${md5}
+                   | size = ${size}
+
+                """.stripMargin()
+            }
+        }
+    }
 
     @Override
     String toString() {
@@ -156,8 +156,8 @@ class SplitInfo {
            | workProcesses = ${workProcesses}
            | dependencies = ${dependencies}
            | nativeLibraries = ${nativeLibraries}
-        """.stripMargin()
 
+        """.stripMargin()
     }
 
     static class Builder {
@@ -172,12 +172,10 @@ class SplitInfo {
 
         List<String> dependencies
 
-
         Builder splitApkFile(File splitApkFile) {
             this.splitApkFile = splitApkFile
             return this
         }
-
 
         Builder splitName(String splitName) {
             this.splitName = splitName
@@ -202,6 +200,5 @@ class SplitInfo {
         SplitInfo build() {
             return new SplitInfo(this)
         }
-
     }
 }
