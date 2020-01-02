@@ -177,13 +177,19 @@ class AGPCompat {
     }
 
     static Task getR8Task(Project project, String variantName) {
-        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
-        return project.tasks.findByName(r8TaskName)
+        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        Task r8TransformTask = project.tasks.findByName(r8TransformTaskName)
+        return r8TransformTask
     }
 
     static Task getMultiDexTask(Project project, String variantName) {
-        String multiDexTaskName = "transformClassesWithMultidexlistFor${variantName}"
-        return project.tasks.findByName(multiDexTaskName)
+        String multiDexTaskName = "multiDexList${variantName}"
+        String multiDexTaskTransformName = "transformClassesWithMultidexlistFor${variantName}"
+        def multiDexTask = project.tasks.findByName(multiDexTaskName)
+        if (multiDexTask == null) {
+            multiDexTask = project.tasks.findByName(multiDexTaskTransformName)
+        }
+        return multiDexTask
     }
 
     static Task getProguardTask(Project project, String variantName) {

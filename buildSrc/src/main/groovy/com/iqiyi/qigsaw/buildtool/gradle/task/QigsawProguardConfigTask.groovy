@@ -25,6 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
@@ -62,16 +63,23 @@ class QigsawProguardConfigTask extends DefaultTask {
             "-keep class com.iqiyi.android.qigsaw.core.extension.ComponentInfo{\n *;\n }\n" +
             "-keep class com.iqiyi.android.qigsaw.core.splitlib.**{\n *;\n }\n"
 
-    def applicationVariant
-
     @OutputDirectory
     File outputDir
 
-    @Input
-    final String applyMappingPath
+    String applyMappingPath
 
-    QigsawProguardConfigTask() {
-        applyMappingPath = QigsawSplitExtensionHelper.getApplyMapping(project)
+    @Input
+    String mappingFileMD5 = ""
+
+    @Input
+    String applicationId
+
+    void initArgs(String applicationId) {
+        this.applicationId = applicationId
+        this.applyMappingPath = QigsawSplitExtensionHelper.getApplyMapping(project)
+        if (applyMappingPath.length() > 0) {
+            mappingFileMD5 = FileUtils.getMD5(new File(applyMappingPath))
+        }
     }
 
     File getOutputProguardFile() {
@@ -100,9 +108,8 @@ class QigsawProguardConfigTask extends DefaultTask {
         } else {
             QigsawLogger.e("applymapping file ${applyMappingPath} is not null, just ignore!")
         }
-        fw.write(PROGUARD_CONFIG_SETTINGS + "-keep class ${applicationVariant.applicationId}.QigsawConfig{\n *;\n }\n")
+        fw.write(PROGUARD_CONFIG_SETTINGS + "-keep class ${applicationId}.QigsawConfig{\n *;\n }\n")
         fw.close()
-        def files = applicationVariant.buildType.proguardFiles
-        QigsawLogger.w("now proguard files are ${files}")
     }
 }
+

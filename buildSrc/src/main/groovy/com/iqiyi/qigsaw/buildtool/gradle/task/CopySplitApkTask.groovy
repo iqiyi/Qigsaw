@@ -22,30 +22,33 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle
+package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import org.gradle.api.Plugin
-import org.gradle.api.Project
+import com.android.SdkConstants
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 
-abstract class QigsawPlugin implements Plugin<Project> {
+class CopySplitApkTask extends DefaultTask {
 
-    public static final String QIGSAW = "qigsaw"
+    @InputFile
+    File splitApkFile
 
-    public static final String ASSEMBLE = "Assemble"
+    @OutputDirectory
+    File splitApkOutputDir
 
-    public static final String INSTALL = "Install"
-
-    public static final String QIGSAW_ASSEMBLE_TASK_PREFIX = QIGSAW + ASSEMBLE
-
-    public static final String QIGSAW_INSTALL_TASK_PREFIX = QIGSAW + INSTALL
-
-    static boolean hasQigsawTask(Project project) {
-        List<String> startTaskNames = project.gradle.startParameter.taskNames
-        for (String taskName : startTaskNames) {
-            if (taskName.contains(QIGSAW_ASSEMBLE_TASK_PREFIX) || taskName.contains(QIGSAW_INSTALL_TASK_PREFIX)) {
-                return true
-            }
+    @TaskAction
+    void copySplitApk() {
+        File outputApk = new File(splitApkOutputDir, project.name + SdkConstants.DOT_ANDROID_PACKAGE)
+        if (outputApk.exists()) {
+            outputApk.delete()
         }
-        return false
+        if (!splitApkOutputDir.exists()) {
+            splitApkOutputDir.mkdirs()
+        }
+        FileUtils.copyFile(splitApkFile, outputApk)
     }
+
 }

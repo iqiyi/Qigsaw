@@ -54,11 +54,8 @@ class QigsawProcessOldApkTask extends DefaultTask {
     @OutputDirectory
     File outputDir
 
+    @Input
     String versionName
-
-    QigsawProcessOldApkTask() {
-
-    }
 
     void initArgs(boolean hasQigsawTask, String versionName, String oldApk) {
         this.hasQigsawTask = hasQigsawTask
