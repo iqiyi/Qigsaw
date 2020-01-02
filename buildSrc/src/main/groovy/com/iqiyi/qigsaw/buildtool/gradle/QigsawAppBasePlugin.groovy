@@ -26,6 +26,7 @@ package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
+import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.DexReMergeHandler
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.FixedMainDexList
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
@@ -143,6 +144,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawAssembleTask.splitApkOutputDir = splitApkOutputDir
                 qigsawAssembleTask.splitManifestOutputDir = splitManifestOutputDir
                 qigsawAssembleTask.oldApkOutputDir = oldApkOutputDir
+
+                Set<String> abiFilters = android.defaultConfig.ndk.abiFilters
+                if (abiFilters == null) {
+                    abiFilters = ImmutableSet.builder().build()
+                }
                 qigsawAssembleTask.initArgs(
                         qigsawId,
                         splitInfoVersion,
@@ -151,6 +157,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         versionName,
                         mergeAssetsDir,
                         mergeJniLibsDir,
+                        abiFilters,
                         dfProjects,
                         dfClassPaths)
 

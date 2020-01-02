@@ -91,7 +91,7 @@ class SplitDetails {
         }
 
         Builder abiFilters(Set<String> abiFilters) {
-            this.abiFilters == null || abiFilters.isEmpty() ? null : abiFilters
+            this.abiFilters = (abiFilters == null || abiFilters.isEmpty() ? null : abiFilters)
             return this
         }
 
