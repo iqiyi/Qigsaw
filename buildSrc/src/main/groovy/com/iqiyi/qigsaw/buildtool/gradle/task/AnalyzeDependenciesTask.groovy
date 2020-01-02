@@ -23,26 +23,52 @@
  */
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
+import com.android.SdkConstants
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.Configuration
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 class AnalyzeDependenciesTask extends DefaultTask {
 
     String variantName
 
-    void initArgs(String variantName) {
+    @Input
+    List<String> dfClassPaths
+
+    @Input
+    List<String> splitAllDependencies
+
+    @OutputDirectory
+    File outputDir
+
+    void initArgs(String variantName, List<String> splitAllDependencies, List<String> dfClassPaths) {
         this.variantName = variantName
+        this.splitAllDependencies = splitAllDependencies
+        this.dfClassPaths = dfClassPaths
     }
 
     @TaskAction
     analyzeDependencies() {
-        Configuration configuration = project.configurations."${variantName.uncapitalize()}CompileClasspath"
-        List<String> dependencies = new ArrayList<>(0)
-        configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies.each {
-            def identifier = it.module.id
-            dependencies.add(identifier.name)
+        if (!outputDir.exists()) {
+            outputDir.mkdirs()
         }
-        SplitDependencyStatistics.getInstance().putDependencies(project.name, variantName, dependencies)
+        File splitDependenciesFile = new File(outputDir, project.name + SdkConstants.DOT_JSON)
+        if (splitDependenciesFile.exists()) {
+            splitDependenciesFile.delete()
+        }
+
+        List<String> dfDependencies = new ArrayList<>()
+        splitAllDependencies.each { String name ->
+            if (dfClassPaths.contains(name)) {
+                dfDependencies.add(name.split(":")[1])
+            }
+        }
+        if (!dfDependencies.empty) {
+            FileUtils.createFileForTypeClass(dfDependencies, splitDependenciesFile)
+        }
+        QigsawLogger.e(">Task :AnalyzeDependenciesTask ${project.name} has dependencies ${dfDependencies}")
     }
 }

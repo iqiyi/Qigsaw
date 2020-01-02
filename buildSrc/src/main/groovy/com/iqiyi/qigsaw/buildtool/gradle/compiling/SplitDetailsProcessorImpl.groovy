@@ -29,12 +29,14 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitDetailsProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitDetailsParser
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TopoSort
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
 import com.iqiyi.qigsaw.buildtool.gradle.task.QigsawProcessOldApkTask
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploader
 import com.iqiyi.qigsaw.buildtool.gradle.upload.SplitApkUploaderInstance
+import org.codehaus.plexus.util.dag.DAG
+import org.codehaus.plexus.util.dag.TopologicalSorter
 import org.gradle.api.Project
+
 
 class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
 
@@ -55,7 +57,7 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
         File oldSplitJsonFile = new File(oldApkOutputDir, QigsawProcessOldApkTask.OUTPUT_NAME)
         if (oldSplitJsonFile.exists()) {
             QigsawLogger.w("Old Split json file is exist, try to update splits!")
-            SplitDetails oldSplitDetails = SplitDetailsParser.readSplitDetails(oldSplitJsonFile)
+            SplitDetails oldSplitDetails = TypeClassFileParser.parseFile(oldSplitJsonFile, SplitDetails.class)
             if (!hasSplitVersionChanged(oldSplitDetails.splits, rawSplitDetails.splits)) {
                 QigsawLogger.w("No splits need to be updated, just using old split APKs!")
                 oldSplitDetails.splits.each {
@@ -117,29 +119,22 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
     }
 
     static List<SplitInfo> rearrangeSplits(Map<String, SplitInfo> splitInfoMap) {
-        Map<String, TopoSort.Node> nodeMap = new HashMap<>()
-        TopoSort.Graph graph = new TopoSort.Graph()
         Collection<SplitInfo> allSplits = splitInfoMap.values()
+        DAG dag = new DAG()
         for (SplitInfo info : allSplits) {
-            if (nodeMap.get(info.splitName) == null) {
-                nodeMap.put(info.splitName, new TopoSort.Node(info))
-            }
             if (info.dependencies != null) {
                 for (String dependency : info.dependencies) {
-                    if (nodeMap.get(dependency) == null) {
-                        nodeMap.put(dependency, new TopoSort.Node(splitInfoMap.get(dependency)))
-                    }
-                    graph.addNode(nodeMap.get(info.splitName), nodeMap.get(dependency))
+                    dag.addEdge(info.splitName, dependency)
                 }
             }
         }
-        TopoSort.KahnTopo topo = new TopoSort.KahnTopo(graph)
-        topo.process()
+        List<String> result = TopologicalSorter.sort(dag)
+        QigsawLogger.w("> topological sort result: " + result)
         List<SplitInfo> splits = new ArrayList<>()
-        for (int i = topo.result.size() - 1; i >= 0; i--) {
-            SplitInfo info = topo.result.get(i).val
-            splitInfoMap.remove(info.splitName)
+        result.each {
+            SplitInfo info = splitInfoMap.get(it)
             splits.add(info)
+            splitInfoMap.remove(it)
         }
         splits.addAll(splitInfoMap.values())
         return splits
