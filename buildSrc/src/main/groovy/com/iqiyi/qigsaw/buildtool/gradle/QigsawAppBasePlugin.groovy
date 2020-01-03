@@ -157,6 +157,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 }
                 qigsawAssembleTask.initArgs(
                         qigsawId,
+                        versionAGP,
                         splitInfoVersion,
                         variantName,
                         variant.flavorName,

@@ -48,8 +48,11 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.util.VersionNumber
 
 class QigsawAssembleTask extends DefaultTask {
+
+    static final String CONTENT_JSON_FILE_NAME = "__content__.json"
 
     @Input
     String qigsawId
@@ -72,6 +75,8 @@ class QigsawAssembleTask extends DefaultTask {
     @Input
     String appVersionName
 
+    def versionAGP
+
     String flavorName
 
     String variantName
@@ -81,6 +86,8 @@ class QigsawAssembleTask extends DefaultTask {
 
     @OutputDirectory
     File mergeJniLibDir
+
+    File mergeJniLibInternalDir
 
     List<Project> dfProjects
 
@@ -105,6 +112,7 @@ class QigsawAssembleTask extends DefaultTask {
     }
 
     void initArgs(String qigsawId,
+                  def versionAGP,
                   String splitInfoVersion,
                   String variantName,
                   String flavorName,
@@ -115,6 +123,7 @@ class QigsawAssembleTask extends DefaultTask {
                   List<Project> dfProjects,
                   List<String> dfClassPaths) {
         this.qigsawId = qigsawId
+        this.versionAGP = versionAGP
         this.splitInfoVersion = splitInfoVersion
         this.variantName = variantName
         this.flavorName = flavorName
@@ -128,6 +137,17 @@ class QigsawAssembleTask extends DefaultTask {
 
     @TaskAction
     void makeSplitJsonFile() {
+        if (versionAGP >= VersionNumber.parse("3.5.0")) {
+            mergeJniLibInternalDir = new File(mergeJniLibDir, "lib")
+        }
+        each {
+            File contentJsonFile = new File(mergeJniLibDir, CONTENT_JSON_FILE_NAME)
+            if (contentJsonFile.exists()) {
+                List contents = TypeClassFileParser.parseFile(contentJsonFile, List.class)
+                mergeJniLibInternalDir = new File(mergeJniLibDir, "${(int) (contents.get(0).index)}/lib")
+                QigsawLogger.e("> Task :${name} mergeJniLibs content_json :" + contents.toString())
+            }
+        }
         makeSplitJsonFileInternal()
     }
 
@@ -192,27 +212,29 @@ class QigsawAssembleTask extends DefaultTask {
                     restrictWorkProcessesForSplits)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
-        //get Abis that have been merged
-        File[] abiDirs = mergeJniLibDir.listFiles()
         Set<String> abiDirNames = null
         boolean copyToAssets = true
-        if (abiDirs != null) {
-            ImmutableSet.Builder builder = ImmutableSet.builder()
-            for (File abiDir : abiDirs) {
-                builder.add(abiDir.name)
+        if (mergeJniLibInternalDir != null && mergeJniLibInternalDir.exists()) {
+            //get abi dirs which have been merged
+            File[] abiDirs = mergeJniLibInternalDir.listFiles()
+            if (abiDirs != null) {
+                ImmutableSet.Builder builder = ImmutableSet.builder()
+                for (File abiDir : abiDirs) {
+                    builder.add(abiDir.name)
+                }
+                abiDirNames = builder.build()
             }
-            abiDirNames = builder.build()
-        }
-        //check need copy splits to asset dir.
-        QigsawLogger.w("> Task :${getName()} abiFilters -> ${abiFilters}")
-        if (abiFilters.empty) {
-            if (abiDirNames != null && abiDirNames.size() == 1) {
-                copyToAssets = false
-            }
-        } else {
-            if (abiDirNames != null) {
-                if (abiFilters.size() == 1 && abiDirNames.containsAll(abiFilters)) {
+            //check need copy splits to asset dir.
+            QigsawLogger.w("> Task :${getName()} abiFilters -> ${abiFilters}")
+            if (abiFilters.empty) {
+                if (abiDirNames != null && abiDirNames.size() == 1) {
                     copyToAssets = false
+                }
+            } else {
+                if (abiDirNames != null) {
+                    if (abiFilters.size() == 1 && abiDirNames.containsAll(abiFilters)) {
+                        copyToAssets = false
+                    }
                 }
             }
         }
@@ -271,7 +293,7 @@ class QigsawAssembleTask extends DefaultTask {
         if (fixedAbis != null) {
             fixedAbis.each {
                 splits.each { SplitInfo info ->
-                    File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
+                    File jniSplitApk = new File(mergeJniLibInternalDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
                     if (jniSplitApk.exists()) {
                         jniSplitApk.delete()
                     }
@@ -289,7 +311,7 @@ class QigsawAssembleTask extends DefaultTask {
         } else {
             fixedAbis.each {
                 splits.each { SplitInfo info ->
-                    File jniSplitApk = new File(mergeJniLibDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
+                    File jniSplitApk = new File(mergeJniLibInternalDir, it + File.separator + "libsplit_" + info.splitName + SdkConstants.DOT_NATIVE_LIBS)
                     if (info.builtIn) {
                         FileUtils.copyFile(info.splitApk, jniSplitApk)
                     }
