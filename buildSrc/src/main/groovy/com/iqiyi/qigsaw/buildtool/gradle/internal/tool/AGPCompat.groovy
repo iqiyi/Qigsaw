@@ -71,9 +71,9 @@ class AGPCompat {
     static File getMergeJniLibsDirCompat(Task mergeJniLibsTask, def versionAGP) {
         File mergeJniLibsDir
         if (versionAGP < VersionNumber.parse("3.5.0")) {
-            mergeJniLibsDir = new File(mergeJniLibsTask.outputStream.getRootLocation(), "0${File.separator}lib")
+            mergeJniLibsDir = mergeJniLibsTask.outputStream.getRootLocation()
         } else {
-            mergeJniLibsDir = new File(mergeJniLibsTask.outputDir.asFile.get(), "lib")
+            mergeJniLibsDir = mergeJniLibsTask.outputDir.asFile.get()
         }
         if (mergeJniLibsDir == null) {
             throw new GradleException("Can't read 'outputDir' form " + mergeJniLibsTask == null ? null : mergeJniLibsTask.class.name)
