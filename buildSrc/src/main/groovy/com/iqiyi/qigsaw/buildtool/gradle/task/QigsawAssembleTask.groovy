@@ -26,7 +26,6 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
-import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitDetailsProcessorImpl
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.SplitInfoProcessorImpl
@@ -37,6 +36,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitDetailsProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitJsonFileCreator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
@@ -44,6 +44,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
@@ -137,10 +138,13 @@ class QigsawAssembleTask extends DefaultTask {
 
     @TaskAction
     void makeSplitJsonFile() {
+        Task stripDebugSymbolTask = AGPCompat.getStripDebugSymbolTask(project, variantName)
+        if (!stripDebugSymbolTask.enabled) {
+            QigsawLogger.e("stripDebugSymbol task is not enabled!!")
+        }
         if (versionAGP >= VersionNumber.parse("3.5.0")) {
             mergeJniLibInternalDir = new File(mergeJniLibDir, "lib")
-        }
-        each {
+        } else {
             File contentJsonFile = new File(mergeJniLibDir, CONTENT_JSON_FILE_NAME)
             if (contentJsonFile.exists()) {
                 List contents = TypeClassFileParser.parseFile(contentJsonFile, List.class)
@@ -212,26 +216,24 @@ class QigsawAssembleTask extends DefaultTask {
                     restrictWorkProcessesForSplits)
             splitInfoMap.put(splitInfo.splitName, splitInfo)
         }
-        Set<String> abiDirNames = null
+        Set<String> abiDirNames = new HashSet<>(0)
         boolean copyToAssets = true
         if (mergeJniLibInternalDir != null && mergeJniLibInternalDir.exists()) {
             //get abi dirs which have been merged
             File[] abiDirs = mergeJniLibInternalDir.listFiles()
             if (abiDirs != null) {
-                ImmutableSet.Builder builder = ImmutableSet.builder()
                 for (File abiDir : abiDirs) {
-                    builder.add(abiDir.name)
+                    abiDirNames.add(abiDir.name)
                 }
-                abiDirNames = builder.build()
             }
             //check need copy splits to asset dir.
             QigsawLogger.w("> Task :${getName()} abiFilters -> ${abiFilters}")
             if (abiFilters.empty) {
-                if (abiDirNames != null && abiDirNames.size() == 1) {
+                if (abiDirNames.size() == 1) {
                     copyToAssets = false
                 }
             } else {
-                if (abiDirNames != null) {
+                if (!abiDirNames.empty) {
                     if (abiFilters.size() == 1 && abiDirNames.containsAll(abiFilters)) {
                         copyToAssets = false
                     }
@@ -240,20 +242,18 @@ class QigsawAssembleTask extends DefaultTask {
         }
         QigsawLogger.w("> Task :${getName()} abiDirNames -> ${abiDirNames}")
         //fix abiFilters
-        Set<String> fixedAbis
+        Set<String> fixedAbis = new HashSet<>(0)
         if (abiFilters.empty) {
             fixedAbis = abiDirNames
         } else {
-            if (abiDirNames != null) {
-                ImmutableSet.Builder fixedAbisBuilder = ImmutableSet.builder()
+            if (!abiDirNames.empty) {
                 abiFilters.each {
                     if (abiDirNames.contains(it)) {
-                        fixedAbisBuilder.add(it)
+                        fixedAbis.add(it)
                     }
                 }
-                fixedAbis = fixedAbisBuilder.build()
             } else {
-                fixedAbis = abiFilters
+                fixedAbis.addAll(abiFilters)
             }
         }
         fixedAbis = sortAbis(fixedAbis)
@@ -321,25 +321,25 @@ class QigsawAssembleTask extends DefaultTask {
     }
 
     static Set<String> sortAbis(Set<String> abis) {
-        if (abis == null || abis.isEmpty() || abis.size() == 1) {
+        if (abis.isEmpty() || abis.size() == 1) {
             return abis
         }
-        ImmutableSet.Builder builder = ImmutableSet.builder()
+        Set<String> ret = new HashSet<>(abis.size())
         if (abis.contains("arm64-v8a")) {
-            builder.add("arm64-v8a")
+            ret.add("arm64-v8a")
         }
         if (abis.contains("armeabi-v7a")) {
-            builder.add("armeabi-v7a")
+            ret.add("armeabi-v7a")
         }
         if (abis.contains("armeabi")) {
-            builder.add("armeabi")
+            ret.add("armeabi")
         }
         if (abis.contains("x86")) {
-            builder.add("x86")
+            ret.add("x86")
         }
         if (abis.contains("x86_64")) {
-            builder.add("x86_64")
+            ret.add("x86_64")
         }
-        return builder.build()
+        return ret
     }
 }
