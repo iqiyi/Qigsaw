@@ -26,7 +26,6 @@ package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
-import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.DexReMergeHandler
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.FixedMainDexList
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
@@ -150,11 +149,22 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawAssembleTask.splitManifestOutputDir = splitManifestOutputDir
                 qigsawAssembleTask.oldApkOutputDir = oldApkOutputDir
                 qigsawAssembleTask.splitDependenciesOutputDir = splitDependenciesOutputDir
-
-                Set<String> abiFilters = android.defaultConfig.ndk.abiFilters
-                if (abiFilters == null) {
-                    abiFilters = ImmutableSet.builder().build()
+                Set<String> mergedAbiFilters = new HashSet<>(0)
+                if (android.productFlavors != null) {
+                    android.productFlavors.each {
+                        if (variant.flavorName.contains(it.name.capitalize()) || variant.flavorName.contains(it.name.uncapitalize())) {
+                            Set<String> flavorAbiFilter = it.ndk.abiFilters
+                            if (flavorAbiFilter != null) {
+                                mergedAbiFilters.addAll(flavorAbiFilter)
+                            }
+                        }
+                    }
                 }
+                Set<String> abiFilters = android.defaultConfig.ndk.abiFilters
+                if (abiFilters != null) {
+                    mergedAbiFilters.addAll(abiFilters)
+                }
+                QigsawLogger.w("your abiFilters are: " + mergedAbiFilters)
                 qigsawAssembleTask.initArgs(
                         qigsawId,
                         versionAGP,
@@ -164,10 +174,9 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         versionName,
                         mergeAssetsDir,
                         mergeJniLibsDir,
-                        abiFilters,
+                        mergedAbiFilters,
                         dfProjects,
                         dfClassPaths)
-                generateQigsawConfigTask.setGroup(QIGSAW)
                 qigsawAssembleTask.setGroup(QIGSAW)
                 File apkFile = null
                 variant.outputs.each {
@@ -184,12 +193,12 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         try {
                             configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask, dfClassPaths,
                                     splitApkOutputDir, splitManifestOutputDir, splitDependenciesOutputDir)
-                            println("dynamic feature project ${dfProject.name} has been evaluated!")
+                            QigsawLogger.w("dynamic feature project ${dfProject.name} has been evaluated!")
                         } catch (Throwable ignored) {
                             dfProject.afterEvaluate {
                                 configQigsawAssembleTaskDependencies(dfProject, variantName, mergeJniLibsTask, dfClassPaths,
                                         splitApkOutputDir, splitManifestOutputDir, splitDependenciesOutputDir)
-                                println("dynamic feature project ${dfProject.name} has not been evaluated!")
+                                QigsawLogger.w("dynamic feature project ${dfProject.name} has not been evaluated!")
                             }
                         }
                     }
@@ -218,11 +227,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         Task multiDexTask = AGPCompat.getMultiDexTask(project, variantName)
                         //if R8 is enable, there is no multiDex task.
                         if (multiDexTask != null) {
-                            QigsawLogger.e("Task ${multiDexTask.name} is found!")
+                            QigsawLogger.w("Task ${multiDexTask.name} is found!")
                             removeRulesAboutMultiDex(multiDexTask, variant)
                         } else {
                             if (r8Task != null) {
-                                QigsawLogger.e("Task ${r8Task.name} is found!")
+                                QigsawLogger.w("Task ${r8Task.name} is found!")
                                 removeRulesAboutMultiDex(r8Task, variant)
                             }
                         }
