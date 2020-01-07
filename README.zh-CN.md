@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)
 ![](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)
-![](https://img.shields.io/badge/release-1.2.2-red.svg?style=flat)
+![](https://img.shields.io/badge/release-1.2.3-red.svg?style=flat)
 
 Qigsaw是一套基于[Android App Bundles](https://developer.android.com/guide/app-bundle/)实现的Android动态组件化方案，它无需应用重新安装即可动态分发插件。
 
@@ -15,7 +15,7 @@ Qigsaw是一套基于[Android App Bundles](https://developer.android.com/guide/a
 ```
 buildscript {
     dependencies {
-        classpath 'com.iqiyi.android.qigsaw:gradle-plugin:1.2.2'
+        classpath 'com.iqiyi.android.qigsaw:gradle-plugin:1.2.3'
     }
 }
 ```
@@ -25,7 +25,7 @@ buildscript {
 ```
 dependencies {
     //qigsaw core lib
-    implementation "com.iqiyi.android.qigsaw:splitcore:1.2.2"
+    implementation "com.iqiyi.android.qigsaw:splitcore:1.2.3"
 }
 ...
 ...
