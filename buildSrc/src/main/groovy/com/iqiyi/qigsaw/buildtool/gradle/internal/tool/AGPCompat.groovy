@@ -163,6 +163,14 @@ class AGPCompat {
         return task
     }
 
+    static getStripDebugSymbolTask(Project project, String variantName) {
+        Task task = project.tasks.findByName("transformNativeLibsWithStripDebugSymbolFor${variantName}")
+        if (task == null) {
+            task = project.tasks.findByName("strip${variantName}DebugSymbols")
+        }
+        return task
+    }
+
     static Task getAssemble(ApplicationVariant variant) {
         try {
             return variant.assembleProvider.get()
@@ -210,6 +218,5 @@ class AGPCompat {
     static Task getDexSplitterTask(Project project, String variantName) {
         String proguardTaskName = "transformDexWithDexSplitterFor${variantName}"
         return project.tasks.findByName(proguardTaskName)
-
     }
 }
