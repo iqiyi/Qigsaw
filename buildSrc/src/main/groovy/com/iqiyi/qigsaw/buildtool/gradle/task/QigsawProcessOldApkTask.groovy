@@ -81,14 +81,18 @@ class QigsawProcessOldApkTask extends DefaultTask {
             if (splitDetails.builtInUrlPrefix == null) {
                 throw new GradleException("Qigsaw Error: The applied version of qigsaw-gradle-plugin and old apk ${oldApk} is not matched!")
             }
-            extractBuiltInSplitApkFromOldApk(splitDetails.builtInUrlPrefix.equals("assets://"), splitDetails.abiFilters, splitDetails.splits)
+            boolean assetsBuiltIn = splitDetails.builtInUrlPrefix.equals("assets://")
+            if (!assetsBuiltIn && splitDetails.abiFilters == null) {
+                throw new GradleException("Qigsaw Error: Can't read 'abiFilters' from old split json file.")
+            }
+            extractBuiltInSplitApkFromOldApk(assetsBuiltIn, splitDetails.abiFilters, splitDetails.splits)
         }
     }
 
     void extractBuiltInSplitApkFromOldApk(boolean assetsBuiltIn, Set<String> abiFilters, List<SplitInfo> splits) {
         ZipFile sourceZip = new ZipFile(oldApk)
         Enumeration e = sourceZip.entries()
-        String splitApkDirPrefix = assetsBuiltIn ? "assets/" : "lib/${abiFilters.get(0)}/"
+        String splitApkDirPrefix = assetsBuiltIn ? "assets/" : "lib/${abiFilters.getAt(0)}/"
         String splitApkSuffix = assetsBuiltIn ? SdkConstants.DOT_ZIP : SdkConstants.DOT_NATIVE_LIBS
         while (e.hasMoreElements()) {
             ZipEntry entry = (ZipEntry) e.nextElement()
