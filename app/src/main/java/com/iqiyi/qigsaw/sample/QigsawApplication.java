@@ -19,6 +19,7 @@ import com.iqiyi.qigsaw.sample.downloader.SampleDownloader;
 import com.iqiyi.qigsaw.sample.reporter.SampleLogger;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitInstallReporter;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitLoadReporter;
+import com.iqiyi.qigsaw.sample.reporter.SampleSplitUninstallReporter;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitUpdateReporter;
 
 public class QigsawApplication extends Application {
@@ -43,6 +44,7 @@ public class QigsawApplication extends Application {
                 .verifySignature(true)
                 .loadReporter(new SampleSplitLoadReporter(this))
                 .installReporter(new SampleSplitInstallReporter(this))
+                .uninstallReporter(new SampleSplitUninstallReporter(this))
                 .updateReporter(new SampleSplitUpdateReporter(this))
                 .obtainUserConfirmationDialogClass(SampleObtainUserConfirmationDialog.class)
                 .build();

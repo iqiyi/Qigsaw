@@ -60,16 +60,17 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     private final String[] workProcesses;
 
     SplitLoadManagerImpl(Context context,
-                         String currentProcessName,
                          int splitLoadMode,
                          boolean qigsawMode,
+                         boolean isMainProcess,
+                         String currentProcessName,
                          String[] workProcesses,
                          String[] forbiddenWorkProcesses) {
         super(context, currentProcessName, splitLoadMode);
         this.qigsawMode = qigsawMode;
         this.workProcesses = workProcesses;
         this.forbiddenWorkProcesses = forbiddenWorkProcesses;
-        SplitInfoManagerService.install(context, currentProcessName);
+        SplitInfoManagerService.install(context, isMainProcess);
         SplitPathManager.install(context);
     }
 

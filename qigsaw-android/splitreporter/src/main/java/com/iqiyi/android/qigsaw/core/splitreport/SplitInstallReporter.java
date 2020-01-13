@@ -25,7 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.support.annotation.WorkerThread;
 
 import java.util.List;
 
@@ -42,6 +42,7 @@ public interface SplitInstallReporter {
      * @param installedSplits splits which have been installed successfully.
      * @param cost            time in ms.
      */
+    @WorkerThread
     void onStartInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost);
 
     /**
@@ -53,6 +54,7 @@ public interface SplitInstallReporter {
      * @param error           split which has been installed unsuccessfully.
      * @param cost            time in ms.
      */
+    @WorkerThread
     void onStartInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull SplitInstallError error, long cost);
 
     /**
@@ -63,6 +65,7 @@ public interface SplitInstallReporter {
      * @param installedSplits splits which have been installed successfully.
      * @param cost            time in ms.
      */
+    @WorkerThread
     void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost);
 
     /**
@@ -75,6 +78,7 @@ public interface SplitInstallReporter {
      * @param errors          splits which have been installed unsuccessfully.
      * @param cost            time in ms.
      */
+    @WorkerThread
     void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull List<SplitInstallError> errors, long cost);
 
 }

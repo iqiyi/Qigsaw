@@ -30,6 +30,7 @@ import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoad;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadReporter;
+import com.iqiyi.android.qigsaw.core.splitreport.SplitUninstallReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitUpdateReporter;
 
 public class SplitConfiguration {
@@ -45,6 +46,8 @@ public class SplitConfiguration {
     final SplitLoadReporter loadReporter;
 
     final SplitUpdateReporter updateReporter;
+
+    final SplitUninstallReporter uninstallReporter;
 
     final Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
@@ -63,6 +66,7 @@ public class SplitConfiguration {
         this.installReporter = builder.installReporter;
         this.loadReporter = builder.loadReporter;
         this.updateReporter = builder.updateReporter;
+        this.uninstallReporter = builder.uninstallReporter;
         this.obtainUserConfirmationDialogClass = builder.obtainUserConfirmationDialogClass;
         this.workProcesses = builder.workProcesses;
         this.verifySignature = builder.verifySignature;
@@ -81,6 +85,8 @@ public class SplitConfiguration {
         private SplitLoadReporter loadReporter;
 
         private SplitUpdateReporter updateReporter;
+
+        private SplitUninstallReporter uninstallReporter;
 
         private Class<? extends ObtainUserConfirmationDialog> obtainUserConfirmationDialogClass;
 
@@ -141,6 +147,14 @@ public class SplitConfiguration {
          */
         public Builder loadReporter(@NonNull SplitLoadReporter loadReporter) {
             this.loadReporter = loadReporter;
+            return this;
+        }
+
+        /**
+         * Report uninstall status when splits are fully uninstalled.
+         */
+        public Builder uninstallReporter(@NonNull SplitUninstallReporter uninstallReporter) {
+            this.uninstallReporter = uninstallReporter;
             return this;
         }
 

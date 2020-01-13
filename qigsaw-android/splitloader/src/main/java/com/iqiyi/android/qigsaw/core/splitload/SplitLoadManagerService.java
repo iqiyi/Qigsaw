@@ -40,13 +40,14 @@ public class SplitLoadManagerService {
     private static final AtomicReference<SplitLoadManager> sReference = new AtomicReference<>();
 
     public static void install(Context context,
-                               String currentProcessName,
                                int splitLoadMode,
                                boolean qigsawMode,
+                               boolean isMainProcess,
+                               String currentProcessName,
                                String[] workProcesses,
                                String[] forbiddenWorkProcesses) {
         if (sReference.get() == null) {
-            sReference.set(create(context, currentProcessName, splitLoadMode, qigsawMode, workProcesses, forbiddenWorkProcesses));
+            sReference.set(create(context, splitLoadMode, qigsawMode, isMainProcess, currentProcessName, workProcesses, forbiddenWorkProcesses));
         }
     }
 
@@ -62,11 +63,12 @@ public class SplitLoadManagerService {
     }
 
     private static SplitLoadManager create(Context context,
-                                           String currentProcessName,
                                            int splitLoadMode,
                                            boolean qigsawMode,
+                                           boolean isMainProcess,
+                                           String currentProcessName,
                                            String[] workProcesses,
                                            String[] forbiddenWorkProcesses) {
-        return new SplitLoadManagerImpl(context, currentProcessName, splitLoadMode, qigsawMode, workProcesses, forbiddenWorkProcesses);
+        return new SplitLoadManagerImpl(context, splitLoadMode, qigsawMode, isMainProcess, currentProcessName, workProcesses, forbiddenWorkProcesses);
     }
 }

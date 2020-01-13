@@ -22,34 +22,24 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
+package com.iqiyi.android.qigsaw.core.splitreport;
 
-import android.content.Context;
-import android.support.annotation.Nullable;
-import android.support.annotation.RestrictTo;
+import android.support.annotation.WorkerThread;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+/**
+ * report uninstall status of split APKs, called in main process.
+ */
+public interface SplitUninstallReporter {
 
-@RestrictTo(LIBRARY_GROUP)
-public class SplitInfoManagerService {
+    /**
+     * When splits are uninstalled successfully, this method will be invoked.
+     *
+     * @param uninstalledSplits splits which have been uninstalled successfully.
+     * @param cost              time in ms.
+     */
+    @WorkerThread
+    void onSplitUninstallOK(List<String> uninstalledSplits, long cost);
 
-    private static final AtomicReference<SplitInfoManager> sReference = new AtomicReference<>();
-
-    public static void install(Context context, boolean isMainProcess) {
-        sReference.compareAndSet(null, createSplitInfoManager(context, isMainProcess));
-    }
-
-    @Nullable
-    public static SplitInfoManager getInstance() {
-        return sReference.get();
-    }
-
-    private static SplitInfoManagerImpl createSplitInfoManager(Context context, boolean isMainProcess) {
-        SplitInfoVersionManager versionManager = SplitInfoVersionManagerImpl.createSplitInfoVersionManager(context, isMainProcess);
-        SplitInfoManagerImpl infoManager = new SplitInfoManagerImpl();
-        infoManager.attach(versionManager);
-        return infoManager;
-    }
 }
