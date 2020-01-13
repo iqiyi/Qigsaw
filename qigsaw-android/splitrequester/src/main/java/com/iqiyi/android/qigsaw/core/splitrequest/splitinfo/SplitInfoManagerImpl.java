@@ -190,7 +190,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
         return null;
     }
 
-    private SplitDetails getOrCreateSplitDetails(Context context) {
+    private synchronized SplitDetails getOrCreateSplitDetails(Context context) {
         SplitInfoVersionManager versionManager = getSplitInfoVersionManager();
         SplitDetails details = getSplitDetails();
         if (details == null) {

@@ -50,19 +50,19 @@ final class SplitInfoVersionManagerImpl implements SplitInfoVersionManager {
 
     private boolean isMainProcess;
 
-    static SplitInfoVersionManager createSplitInfoVersionManager(Context context, String currentProcessName) {
+    static SplitInfoVersionManager createSplitInfoVersionManager(Context context, boolean isMainProcess) {
         String defaultVersion = SplitBaseInfoProvider.getDefaultSplitInfoVersion();
         String qigsawId = SplitBaseInfoProvider.getQigsawId();
-        return new SplitInfoVersionManagerImpl(context, currentProcessName, defaultVersion, qigsawId);
+        return new SplitInfoVersionManagerImpl(context, isMainProcess, defaultVersion, qigsawId);
     }
 
     private SplitInfoVersionManagerImpl(
             Context context,
-            String currentProcessName,
+            boolean isMainProcess,
             String defaultVersion,
             String qigsawId) {
         this.defaultVersion = defaultVersion;
-        this.isMainProcess = context.getPackageName().equals(currentProcessName);
+        this.isMainProcess = isMainProcess;
         File baseRootDir = new File(context.getDir(SplitConstants.QIGSAW, Context.MODE_PRIVATE), qigsawId);
         this.rootDir = new File(baseRootDir, SPLIT_ROOT_DIR_NAME);
         processVersionData(context);

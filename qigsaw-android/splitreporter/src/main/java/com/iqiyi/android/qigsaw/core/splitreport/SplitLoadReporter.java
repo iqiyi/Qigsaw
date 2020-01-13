@@ -24,6 +24,7 @@
 
 package com.iqiyi.android.qigsaw.core.splitreport;
 
+import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 
 import java.util.List;
@@ -40,6 +41,7 @@ public interface SplitLoadReporter {
      * @param loadedSplits splits which have been loaded successfully.
      * @param cost         time in ms.
      */
+    @MainThread
     void onLoadOK(String processName, @NonNull List<SplitBriefInfo> loadedSplits, long cost);
 
     /**
@@ -50,6 +52,7 @@ public interface SplitLoadReporter {
      * @param errors       splits which have been loaded unsuccessfully.
      * @param cost         time in ms.
      */
+    @MainThread
     void onLoadFailed(String processName, @NonNull List<SplitBriefInfo> loadedSplits, @NonNull List<SplitLoadError> errors, long cost);
 
 }

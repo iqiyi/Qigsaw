@@ -24,6 +24,9 @@
 
 package com.iqiyi.android.qigsaw.core.splitreport;
 
+import android.support.annotation.MainThread;
+import android.support.annotation.WorkerThread;
+
 import java.util.List;
 
 /**
@@ -39,6 +42,7 @@ public interface SplitUpdateReporter {
      * @param newSplitInfoVersion new version of split info file.
      * @param updateSplits        splits need be updated
      */
+    @WorkerThread
     void onUpdateOK(String oldSplitInfoVersion, String newSplitInfoVersion, List<String> updateSplits);
 
     /**
@@ -48,6 +52,7 @@ public interface SplitUpdateReporter {
      * @param newSplitInfoVersion new version of split info file.
      * @param errorCode           {@link SplitUpdateErrorCode}
      */
+    @WorkerThread
     void onUpdateFailed(String oldSplitInfoVersion, String newSplitInfoVersion, int errorCode);
 
     /**
@@ -55,6 +60,7 @@ public interface SplitUpdateReporter {
      *
      * @param newSplitInfoVersion new version of split info file.
      */
+    @MainThread
     void onNewSplitInfoVersionLoaded(String newSplitInfoVersion);
 
 }

@@ -22,34 +22,26 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
+package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
-import android.support.annotation.RestrictTo;
 
-import java.util.concurrent.atomic.AtomicReference;
+import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import java.util.List;
 
-@RestrictTo(LIBRARY_GROUP)
-public class SplitInfoManagerService {
+public class DefaultSplitUninstallReporter implements SplitUninstallReporter {
 
-    private static final AtomicReference<SplitInfoManager> sReference = new AtomicReference<>();
+    private static final String TAG = "SplitUninstallReporter";
 
-    public static void install(Context context, boolean isMainProcess) {
-        sReference.compareAndSet(null, createSplitInfoManager(context, isMainProcess));
+    protected final Context context;
+
+    public DefaultSplitUninstallReporter(Context context) {
+        this.context = context;
     }
 
-    @Nullable
-    public static SplitInfoManager getInstance() {
-        return sReference.get();
-    }
-
-    private static SplitInfoManagerImpl createSplitInfoManager(Context context, boolean isMainProcess) {
-        SplitInfoVersionManager versionManager = SplitInfoVersionManagerImpl.createSplitInfoVersionManager(context, isMainProcess);
-        SplitInfoManagerImpl infoManager = new SplitInfoManagerImpl();
-        infoManager.attach(versionManager);
-        return infoManager;
+    @Override
+    public void onSplitUninstallOK(List<String> uninstalledSplits, long cost) {
+        SplitLog.i(TAG, "Succeed to uninstall %s, cost time %d ms.", uninstalledSplits.toString(), cost);
     }
 }

@@ -27,10 +27,13 @@ package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitinstall.SplitPendingUninstallManager;
+import com.iqiyi.android.qigsaw.core.splitinstall.SplitUninstallReporterManager;
+import com.iqiyi.android.qigsaw.core.splitreport.SplitUninstallReporter;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 final class SplitStartUninstallTask implements Runnable {
@@ -45,10 +48,17 @@ final class SplitStartUninstallTask implements Runnable {
 
     @Override
     public void run() {
+        long time = System.currentTimeMillis();
+        List<String> realUninstallSplits = new ArrayList<>(uninstallSplits.size());
         for (SplitInfo info : uninstallSplits) {
             SplitLog.d(TAG, "split %s need to be uninstalled, try to delete its files", info.getSplitName());
             File splitRootDir = SplitPathManager.require().getSplitRootDir(info);
             FileUtil.deleteDir(splitRootDir);
+            realUninstallSplits.add(info.getSplitName());
+        }
+        SplitUninstallReporter uninstallReporter = SplitUninstallReporterManager.getUninstallReporter();
+        if (uninstallReporter != null) {
+            uninstallReporter.onSplitUninstallOK(realUninstallSplits, System.currentTimeMillis() - time);
         }
         boolean result = new SplitPendingUninstallManager().deletePendingUninstallSplitsRecord();
         SplitLog.d(TAG, "%s to delete record file of pending uninstall splits!", result ? "Succeed" : "Failed");
