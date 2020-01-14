@@ -24,11 +24,13 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
+import com.android.annotations.Nullable
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
@@ -66,20 +68,18 @@ class QigsawProguardConfigTask extends DefaultTask {
     @OutputDirectory
     File outputDir
 
-    String applyMappingPath
-
-    @Input
-    String mappingFileMD5 = ""
+    @InputFile
+    @Optional
+    @Nullable
+    File applyMappingFile
 
     @Input
     String applicationId
 
     void initArgs(String applicationId) {
         this.applicationId = applicationId
-        this.applyMappingPath = QigsawSplitExtensionHelper.getApplyMapping(project)
-        if (applyMappingPath.length() > 0) {
-            mappingFileMD5 = FileUtils.getMD5(new File(applyMappingPath))
-        }
+        String applyMappingPath = QigsawSplitExtensionHelper.getApplyMapping(project)
+        this.applyMappingFile = (applyMappingPath == null ? null : new File(applyMappingPath))
     }
 
     File getOutputProguardFile() {
@@ -96,17 +96,16 @@ class QigsawProguardConfigTask extends DefaultTask {
         QigsawLogger.w("try update qigsaw proguard file with ${file}")
         // Write our recommended proguard settings to this file
         FileWriter fw = new FileWriter(file.path)
-        if (applyMappingPath.length() != 0) {
-            File mappingFile = new File(applyMappingPath)
-            if (mappingFile.exists() && mappingFile.isFile() && mappingFile.length() > 0) {
-                QigsawLogger.w("try add applymapping ${mappingFile.path} to build the package")
-                fw.write("-applymapping " + applyMappingPath)
+        if (applyMappingFile != null) {
+            if (applyMappingFile.exists() && applyMappingFile.isFile() && applyMappingFile.length() > 0) {
+                QigsawLogger.w("try to add applymapping ${applyMappingFile.path} to build the package")
+                fw.write("-applymapping " + applyMappingFile.absolutePath)
                 fw.write("\n")
             } else {
-                QigsawLogger.e("applymapping file ${applyMappingPath} is not valid, just ignore!")
+                QigsawLogger.e("applymapping file ${applyMappingFile.absolutePath} is not valid, just ignore!")
             }
         } else {
-            QigsawLogger.e("applymapping file ${applyMappingPath} is not null, just ignore!")
+            QigsawLogger.e("applymapping file is null, just ignore!")
         }
         fw.write(PROGUARD_CONFIG_SETTINGS + "-keep class ${applicationId}.QigsawConfig{\n *;\n }\n")
         fw.close()
