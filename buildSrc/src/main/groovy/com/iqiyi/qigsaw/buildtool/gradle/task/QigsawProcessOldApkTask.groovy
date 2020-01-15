@@ -25,6 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
+import com.android.annotations.Nullable
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
@@ -33,6 +34,8 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
@@ -46,10 +49,10 @@ class QigsawProcessOldApkTask extends DefaultTask {
     @Input
     boolean hasQigsawTask
 
-    String oldApk
-
-    @Input
-    String oldApkMD5 = ""
+    @Optional
+    @InputFile
+    @Nullable
+    File oldApk
 
     @OutputDirectory
     File outputDir
@@ -57,13 +60,10 @@ class QigsawProcessOldApkTask extends DefaultTask {
     @Input
     String versionName
 
-    void initArgs(boolean hasQigsawTask, String versionName, String oldApk) {
+    void initArgs(boolean hasQigsawTask, String versionName, File oldApk) {
         this.hasQigsawTask = hasQigsawTask
         this.versionName = versionName
         this.oldApk = oldApk
-        if (oldApk.length() > 0) {
-            oldApkMD5 = FileUtils.getMD5(new File(oldApk))
-        }
     }
 
     @TaskAction
@@ -72,7 +72,7 @@ class QigsawProcessOldApkTask extends DefaultTask {
             outputDir.deleteDir()
         }
         outputDir.mkdirs()
-        if (oldApk.length() != 0 && hasQigsawTask) {
+        if (oldApk != null && hasQigsawTask) {
             File oldSplitJsonFile = extractSplitJsonFileFromOldApk()
             SplitDetails splitDetails = TypeClassFileParser.parseFile(oldSplitJsonFile, SplitDetails.class)
             if (splitDetails == null) {

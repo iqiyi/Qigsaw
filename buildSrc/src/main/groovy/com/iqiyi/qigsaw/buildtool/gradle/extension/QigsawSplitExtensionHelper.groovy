@@ -45,7 +45,7 @@ class QigsawSplitExtensionHelper {
         } catch (Throwable ignored) {
 
         }
-        return QigsawSplitExtension.EMPTY
+        return null
     }
 
     static boolean getReleaseSplitApk(Project project) {
@@ -60,7 +60,7 @@ class QigsawSplitExtensionHelper {
         try {
             return project.extensions.qigsawSplit.restrictWorkProcessesForSplits
         } catch (Throwable ignored) {
-            return Collections.emptyList()
+            return null
         }
     }
 
@@ -73,6 +73,6 @@ class QigsawSplitExtensionHelper {
         } catch (Throwable ignored) {
 
         }
-        return QigsawSplitExtension.EMPTY
+        return null
     }
 }

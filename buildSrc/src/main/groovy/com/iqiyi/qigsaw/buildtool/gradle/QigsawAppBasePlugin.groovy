@@ -51,6 +51,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
     public static final String QIGSAW_INTERMEDIATES_SPLIT_INFO = "${QIGSAW_INTERMEDIATES}split_info/"
 
+    public static final String QIGSAW_INTERMEDIATES_QIGSAW_CONFIG = "${QIGSAW_INTERMEDIATES}qigsaw_config/"
+
     public static final String QIGSAW_INTERMEDIATES_OLD_APK = "${QIGSAW_INTERMEDIATES}old_apk/"
 
     public static final String QIGSAW_INTERMEDIATES_SPLIT_APK = "${QIGSAW_INTERMEDIATES}split_apk/"
@@ -121,27 +123,27 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File splitApkOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_APK + variantName.uncapitalize())
                 File splitManifestOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_MANIFEST + variantName.uncapitalize())
                 File splitDependenciesOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_DEPENDENCIES + variantName.uncapitalize())
-
+                File qigsawConfigOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_QIGSAW_CONFIG + variantName.uncapitalize())
                 //compat fot tinker
                 String oldApk = TinkerHelper.getOldApk(project)
                 if (oldApk == null) {
                     oldApk = QigsawSplitExtensionHelper.getOldApk(project)
                 }
                 QigsawProcessOldApkTask processOldApkTask = project.tasks.create("qigsawProcess${variantName}OldApk", QigsawProcessOldApkTask)
-                processOldApkTask.initArgs(hasQigsawTask, versionName, oldApk)
+                processOldApkTask.initArgs(hasQigsawTask, versionName, oldApk == null ? null : new File(oldApk))
                 processOldApkTask.outputDir = oldApkOutputDir
                 //create QigsawConfig.java
                 GenerateQigsawConfig generateQigsawConfigTask = project.tasks.create("generate${variantName}QigsawConfig", GenerateQigsawConfig)
-                generateQigsawConfigTask.setApplicationId(applicationId)
-                generateQigsawConfigTask.setSourceOutputDir(variant.variantData.scope.buildConfigSourceOutputDir)
+                generateQigsawConfigTask.oldApkOutputDir = oldApkOutputDir
+                generateQigsawConfigTask.outputDir = qigsawConfigOutputDir
+                generateQigsawConfigTask.sourceOutputDir = variant.variantData.scope.buildConfigSourceOutputDir
                 String qigsawId = getQigsawId(project, versionName)
                 String splitInfoVersion = versionName + "_" + QigsawSplitExtensionHelper.getSplitInfoVersion(project)
-
-                generateQigsawConfigTask.initArgs(hasQigsawTask, qigsawId, versionName, splitInfoVersion, dfNames)
-                generateQigsawConfigTask.oldApkOutputDir = oldApkOutputDir
+                generateQigsawConfigTask.initArgs(hasQigsawTask, qigsawId, applicationId, versionName, splitInfoVersion, dfNames)
+                generateQigsawConfigTask.dependsOn processOldApkTask
+                generateQigsawConfigTask.dependsOn generateBuildConfigTask
+                generateQigsawConfigTask.setGroup(QIGSAW)
                 generateBuildConfigTask.finalizedBy generateQigsawConfigTask
-                generateBuildConfigTask.dependsOn processManifestTask
-                generateBuildConfigTask.dependsOn processOldApkTask
 
                 QigsawAssembleTask qigsawAssembleTask = project.tasks.create("qigsawAssemble${variantName}", QigsawAssembleTask)
                 qigsawAssembleTask.outputDir = qigsawAssembleOutputDir
@@ -202,9 +204,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
                     }
-                    qigsawAssembleTask.dependsOn(mergeJniLibsTask)
-                    mergeJniLibsTask.dependsOn(mergeAssetsTask)
-                    qigsawAssembleTask.finalizedBy(assembleTask)
+
+                    qigsawAssembleTask.dependsOn mergeJniLibsTask
+                    mergeJniLibsTask.dependsOn mergeAssetsTask
+                    qigsawAssembleTask.finalizedBy assembleTask
                     qigsawInstallTask.dependsOn qigsawAssembleTask
                     qigsawInstallTask.mustRunAfter assembleTask
 
@@ -218,7 +221,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     qigsawProcessManifestTask.splitManifestOutputDir = splitManifestOutputDir
                     qigsawProcessManifestTask.mergedManifestFile = mergedManifestFile
                     qigsawProcessManifestTask.mustRunAfter processManifestTask
-                    generateBuildConfigTask.dependsOn qigsawProcessManifestTask
+                    generateQigsawConfigTask.dependsOn qigsawProcessManifestTask
 
                     Task r8Task = AGPCompat.getR8Task(project, variantName)
                     //remove tinker auto-proguard configuration for 'class * extends android.app.Application', because qigsaw support load split application.
@@ -301,6 +304,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 variant.outputs.each {
                     splitApkFile = it.outputFile
                 }
+                //copy split output files
                 CopySplitApkTask copySplitApkTask = dfProject.tasks.create("copySplitApk${variantName}", CopySplitApkTask)
                 copySplitApkTask.splitApkFile = splitApkFile
                 copySplitApkTask.splitApkOutputDir = splitApkOutputDir
@@ -320,11 +324,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 configuration.incoming.dependencies.each {
                     splitDependencies.add("${it.group}:${it.name}:${it.version}")
                 }
-                AnalyzeDependenciesTask analyzeDependenciesTask = dfProject.tasks.create("analyzeDependencies${variantName}", AnalyzeDependenciesTask)
-                analyzeDependenciesTask.initArgs(variant.name.capitalize(), splitDependencies, dfClassPaths)
+                AnalyzeSplitDependenciesTask analyzeDependenciesTask = dfProject.tasks.create("analyzeSplitDependencies${variantName}", AnalyzeSplitDependenciesTask)
+                analyzeDependenciesTask.initArgs(splitDependencies, dfClassPaths)
                 analyzeDependenciesTask.outputDir = splitDependenciesOutputDir
+                analyzeDependenciesTask.mustRunAfter dfProcessManifestTask
                 dfAssembleTask.dependsOn analyzeDependenciesTask
-                //copy split output files
                 QigsawLogger.w("${dfProject.name} assemble${baseVariantName} has been depended!")
             }
         }
