@@ -141,7 +141,7 @@ class QigsawAssembleTask extends DefaultTask {
     @TaskAction
     void makeSplitJsonFile() {
         Task stripDebugSymbolTask = AGPCompat.getStripDebugSymbolTask(project, variantName)
-        if (!stripDebugSymbolTask.enabled) {
+        if (stripDebugSymbolTask != null && !stripDebugSymbolTask.enabled) {
             QigsawLogger.e("stripDebugSymbol task is not enabled!!")
         }
         if (versionAGP >= VersionNumber.parse("3.5.0")) {
