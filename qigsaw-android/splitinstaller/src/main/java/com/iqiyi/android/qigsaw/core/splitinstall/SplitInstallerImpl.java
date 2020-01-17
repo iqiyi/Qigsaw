@@ -111,32 +111,7 @@ final class SplitInstallerImpl extends SplitInstaller {
 
         }
         createInstalledMark(info);
-        if (startInstall) {
-            if (!checkDependenciesInstalledStatus(info)) {
-                IOException exception = new IOException("Split " + info.getSplitName() + "'s dependencies are not installed!");
-                throw new InstallException(SplitInstallError.DEPENDENCIES_NOT_INSTALLED, new Exception(exception));
-            }
-        }
-        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, checkDependenciesInstalledStatus(info));
-    }
-
-    private boolean checkDependenciesInstalledStatus(SplitInfo info) {
-        SplitInfoManager manager = SplitInfoManagerService.getInstance();
-        if (manager == null) {
-            return false;
-        }
-        List<String> dependencies = info.getDependencies();
-        if (dependencies != null) {
-            for (String dependency : dependencies) {
-                SplitInfo dependencySplitInfo = manager.getSplitInfo(appContext, dependency);
-                File dependencyMarkFile = SplitPathManager.require().getSplitMarkFile(dependencySplitInfo);
-                if (!dependencyMarkFile.exists()) {
-                    SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
-                    return false;
-                }
-            }
-        }
-        return true;
+        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths);
     }
 
     @Override

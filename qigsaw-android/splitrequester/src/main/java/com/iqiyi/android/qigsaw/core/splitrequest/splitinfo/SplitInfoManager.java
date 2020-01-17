@@ -68,7 +68,7 @@ public interface SplitInfoManager {
      * @param splitNames a list of split name.
      * @return a list of {@link SplitInfo}
      */
-    List<SplitInfo> getSplitInfos(Context context, List<String> splitNames);
+    List<SplitInfo> getSplitInfos(Context context, Collection<String> splitNames);
 
     /**
      * @param context get all split info

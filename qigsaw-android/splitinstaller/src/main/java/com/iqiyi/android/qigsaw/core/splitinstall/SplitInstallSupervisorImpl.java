@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -111,10 +112,6 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             if (!isAllSplitsBuiltIn(needInstallSplits) && !isNetworkAvailable(appContext)) {
                 callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.NETWORK_ERROR));
                 return;
-            }
-            Set<String> allDependencies = getAllDependencies(moduleNameList, needInstallSplits);
-            if (!allDependencies.isEmpty()) {
-                SplitLog.e(TAG, "QIGSAW WARNING: Your request must contains all dynamic feature dependencies, otherwise it maybe occur runtime error!");
             }
             startDownloadSplits(moduleNameList, needInstallSplits, callback);
         }
@@ -237,20 +234,6 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         return false;
     }
 
-    private Set<String> getAllDependencies(List<String> moduleNames, List<SplitInfo> needInstallSplits) {
-        Set<String> splitDependencies = new ArraySet<>(0);
-        for (SplitInfo info : needInstallSplits) {
-            List<String> dependencies = info.getDependencies();
-            if (dependencies != null) {
-                splitDependencies.addAll(dependencies);
-            }
-        }
-        if (!splitDependencies.isEmpty()) {
-            splitDependencies.removeAll(moduleNames);
-        }
-        return splitDependencies;
-    }
-
     private boolean isAllSplitsBuiltIn(List<SplitInfo> needInstallSplits) {
         for (SplitInfo info : needInstallSplits) {
             if (!info.isBuiltIn()) {
@@ -318,14 +301,21 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     private List<SplitInfo> getNeed2BeInstalledSplits(List<String> moduleNames) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         assert manager != null;
-        Collection<SplitInfo> allSplits = manager.getAllSplitInfo(appContext);
-        List<SplitInfo> needInstallSplits = new ArrayList<>(moduleNames.size());
-        for (SplitInfo info : allSplits) {
-            if (moduleNames.contains(info.getSplitName())) {
-                needInstallSplits.add(info);
+        List<SplitInfo> needInstallSplitInfos = manager.getSplitInfos(appContext, moduleNames);
+        Set<String> dependenciesSplits = new HashSet<>(0);
+        for (SplitInfo info : needInstallSplitInfos) {
+            if (info.getDependencies() != null) {
+                dependenciesSplits.addAll(info.getDependencies());
             }
         }
-        return needInstallSplits;
+        if (!dependenciesSplits.isEmpty()) {
+            dependenciesSplits.removeAll(moduleNames);
+            SplitLog.i(TAG, "Add dependencies %s automatically for install splits %s!", dependenciesSplits.toString(), moduleNames.toString());
+            List<SplitInfo> dependenciesSplitInfos = manager.getSplitInfos(appContext, dependenciesSplits);
+            dependenciesSplitInfos.addAll(needInstallSplitInfos);
+            return dependenciesSplitInfos;
+        }
+        return needInstallSplitInfos;
     }
 
     private void deferredDownloadSplits(final List<SplitInfo> needInstallSplits, final Callback callback) {
