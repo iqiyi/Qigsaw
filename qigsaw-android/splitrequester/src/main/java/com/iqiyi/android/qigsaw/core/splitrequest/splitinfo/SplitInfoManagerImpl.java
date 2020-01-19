@@ -115,16 +115,14 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
     }
 
     @Override
-    public List<SplitInfo> getSplitInfos(Context context, List<String> splitNames) {
+    public List<SplitInfo> getSplitInfos(Context context, Collection<String> splitNames) {
         SplitDetails details = getOrCreateSplitDetails(context);
         if (details != null) {
             Collection<SplitInfo> splits = details.getSplitInfoListing().getSplitInfoMap().values();
             List<SplitInfo> splitInfos = new ArrayList<>(splitNames.size());
             for (SplitInfo split : splits) {
-                for (String splitName : splitNames) {
-                    if (splitName.equals(split.getSplitName())) {
-                        splitInfos.add(split);
-                    }
+                if (splitNames.contains(split.getSplitName())) {
+                    splitInfos.add(split);
                 }
             }
             return splitInfos;

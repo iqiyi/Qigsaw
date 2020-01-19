@@ -189,12 +189,7 @@ class QigsawAssembleTask extends DefaultTask {
                 }
             }
 
-            List<String> dfDependencies = new ArrayList<>()
-            File dfDependenciesFile = new File(splitDependenciesOutputDir, splitName + SdkConstants.DOT_JSON)
-            if (dfDependenciesFile.exists()) {
-                List<String> splitDependencies = TypeClassFileParser.parseFile(dfDependenciesFile, List.class)
-                dfDependencies.addAll(splitDependencies)
-            }
+            List<String> dfDependencies = findAllSplitDependencies(splitName)
 
             QigsawLogger.w("dynamic feature ${splitName} has dependencies: ${dfDependencies.toString()}")
             //sign split apk if in need.
@@ -274,6 +269,19 @@ class QigsawAssembleTask extends DefaultTask {
         File splitJsonFile = fileCreator.createSplitJsonFile(splitDetails, splitInfoVersion)
 
         copySplitJsonFileAndSplitAPKs(splitDetails.splits, splitJsonFile, fixedAbis, copyToAssets)
+    }
+
+    List<String> findAllSplitDependencies(String splitName) {
+        File dfDependenciesFile = new File(splitDependenciesOutputDir, splitName + SdkConstants.DOT_JSON)
+        List<String> splitDependencies = new ArrayList<>(0)
+        if (dfDependenciesFile.exists()) {
+            List<String> result = TypeClassFileParser.parseFile(dfDependenciesFile, List.class)
+            splitDependencies.addAll(result)
+            result.each {
+                splitDependencies.addAll(findAllSplitDependencies(it))
+            }
+        }
+        return splitDependencies
     }
 
     void copySplitJsonFileAndSplitAPKs(List<SplitInfo> splits, File splitJsonFile, Set<String> fixedAbis, boolean copyToAssets) {

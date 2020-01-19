@@ -60,11 +60,6 @@ public final class SplitInstallError extends SplitBriefInfo {
     public static final int MARK_CREATE_FAILED = -16;
 
     /**
-     * split's dependencies are not installed.
-     */
-    public static final int DEPENDENCIES_NOT_INSTALLED = -17;
-
-    /**
      * error code of this exception.
      */
     public final int errorCode;

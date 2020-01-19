@@ -87,16 +87,12 @@ abstract class SplitInstaller {
 
         final List<String> addedDexPaths;
 
-        final boolean dependenciesInstalled;
-
         InstallResult(@NonNull String splitName,
                       @NonNull File apkFile,
-                      @Nullable List<String> addedDexPaths,
-                      boolean dependenciesInstalled) {
+                      @Nullable List<String> addedDexPaths) {
             this.splitName = splitName;
             this.apkFile = apkFile;
             this.addedDexPaths = addedDexPaths;
-            this.dependenciesInstalled = dependenciesInstalled;
         }
     }
 
