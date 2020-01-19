@@ -74,6 +74,9 @@ class QigsawProcessOldApkTask extends DefaultTask {
         outputDir.mkdirs()
         if (oldApk != null && hasQigsawTask) {
             File oldSplitJsonFile = extractSplitJsonFileFromOldApk()
+            if (oldSplitJsonFile == null) {
+                throw new GradleException("Qigsaw Error: Failed to extract split json file from old apk!")
+            }
             SplitDetails splitDetails = TypeClassFileParser.parseFile(oldSplitJsonFile, SplitDetails.class)
             if (splitDetails == null) {
                 throw new GradleException("Qigsaw Error: Can't read qigsaw split json file in old apk ${oldApk}")
@@ -129,12 +132,6 @@ class QigsawProcessOldApkTask extends DefaultTask {
         while (e.hasMoreElements()) {
             ZipEntry entry = (ZipEntry) e.nextElement()
             String entryName = entry.getName()
-            if (entryName.charAt(0) < 'a') {
-                continue
-            }
-            if (entryName.charAt(0) > 'a') {
-                break
-            }
             if (!entryName.startsWith("assets/")) {
                 continue
             }
