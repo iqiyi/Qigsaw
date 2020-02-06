@@ -38,8 +38,16 @@ class QigsawLogger {
         BUILD_LOGGER.error("${LOG_PREFIX}${msg}")
     }
 
+    static void e(String msg, Throwable e) {
+        BUILD_LOGGER.error("${LOG_PREFIX}${msg}", e)
+    }
+
     static void w(String msg) {
         BUILD_LOGGER.warn("${LOG_PREFIX}${msg}")
+    }
+
+    static void w(String msg, Throwable e) {
+        BUILD_LOGGER.warn("${LOG_PREFIX}${msg}", e)
     }
 
 }

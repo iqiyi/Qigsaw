@@ -30,6 +30,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.SplitInfoProcessor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ZipUtils
 
 class SplitInfoProcessorImpl implements SplitInfoProcessor {
 
@@ -47,12 +48,13 @@ class SplitInfoProcessorImpl implements SplitInfoProcessor {
         if (splitsExtractionOutputDir.exists()) {
             splitsExtractionOutputDir.deleteDir()
         }
-        FileUtils.unZipFile(splitApkFile, splitsExtractionOutputDir.absolutePath)
+        ZipUtils.unZipAPk(splitApkFile.absolutePath, splitsExtractionOutputDir.absolutePath)
         ManifestReader manifestReader = new ManifestReaderImpl(SplitManifestFile)
         rawSplitInfo.md5 = FileUtils.getMD5(splitApkFile)
         rawSplitInfo.size = splitApkFile.length()
         String splitApplicationName = manifestReader.readApplicationName().name
         rawSplitInfo.applicationName = (splitApplicationName == null || splitApplicationName.length() == 0 ? null : splitApplicationName)
+        rawSplitInfo.onDemand = manifestReader.readOnDemand()
         rawSplitInfo.builtIn = !manifestReader.readOnDemand() || !releaseSplitApk
         List<String> splitProcesses = new ArrayList<>()
         Set<ComponentInfo> activities = manifestReader.readActivities()

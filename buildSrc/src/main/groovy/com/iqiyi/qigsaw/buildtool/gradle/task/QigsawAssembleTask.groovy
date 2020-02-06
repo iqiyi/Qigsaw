@@ -194,7 +194,7 @@ class QigsawAssembleTask extends DefaultTask {
             QigsawLogger.w("dynamic feature ${splitName} has dependencies: ${dfDependencies.toString()}")
             //sign split apk if in need.
             SplitApkSigner apkSigner = new SplitApkSigner(project, variantName)
-            File splitSignedApk = apkSigner.signSplitAPKIfNeed(splitApkFile)
+            File splitSignedApk = apkSigner.signAPKIfNeed(splitApkFile, null)
             //create split info
             SplitInfo rawSplitInfo = SplitInfo.newBuilder()
                     .splitApkFile(splitSignedApk)

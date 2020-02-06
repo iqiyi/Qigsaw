@@ -39,9 +39,14 @@ class SplitInfo {
     String url
 
     /**
-     * Whether put split apk in base.apk file
+     * Whether put split apk into base.apk
      */
     boolean builtIn
+
+    /**
+     * whether install split apk on demand.
+     */
+    boolean onDemand
 
     /**
      * size of split apk file
@@ -80,6 +85,9 @@ class SplitInfo {
      */
     List<LibInfo> nativeLibraries
 
+    /**
+     * dependencies of the split
+     */
     List<String> dependencies
 
     SplitInfo(Builder builder) {
@@ -149,6 +157,7 @@ class SplitInfo {
            | size = ${size}
            | md5 = ${md5}
            | builtIn = ${builtIn}
+           | onDemand = ${onDemand}
            | applicationName = ${applicationName}
            | minSdkVersion = ${minSdkVersion}
            | dexNumber = ${dexNumber}

@@ -47,8 +47,8 @@ class SplitApkSigner {
         this.variantName = variantName
     }
 
-    File signSplitAPKIfNeed(File splitApk) {
-        ApkVerifier apkVerifier = new ApkVerifier.Builder(splitApk).build()
+    File signAPKIfNeed(File unsignedApk, File signedApk) {
+        ApkVerifier apkVerifier = new ApkVerifier.Builder(unsignedApk).build()
         if (!apkVerifier.verify().verified) {
             SigningConfig signingConfig
             try {
@@ -67,9 +67,11 @@ class SplitApkSigner {
             X509Certificate certificate = certificateInfo.getCertificate()
             ApkSigner.SignerConfig signerConfig = new ApkSigner.SignerConfig.Builder("CERT", key, [certificate]).build()
             ApkSigner.Builder signerBuilder = new ApkSigner.Builder([signerConfig])
-            File signedApk = new File(splitApk.path.toString() + ".signed")
+            if (signedApk == null) {
+                signedApk = new File(unsignedApk.path.toString() + ".signed")
+            }
             ApkSigner apkSigner = signerBuilder
-                    .setInputApk(splitApk)
+                    .setInputApk(unsignedApk)
                     .setOutputApk(signedApk)
                     .setV1SigningEnabled(signingConfig.isV1SigningEnabled())
                     .setV2SigningEnabled(signingConfig.isV2SigningEnabled())
@@ -77,7 +79,7 @@ class SplitApkSigner {
             apkSigner.sign()
             return signedApk
         }
-        return splitApk
+        return unsignedApk
     }
 
 }

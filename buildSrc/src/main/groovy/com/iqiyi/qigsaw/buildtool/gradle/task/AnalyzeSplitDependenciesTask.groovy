@@ -66,6 +66,6 @@ class AnalyzeSplitDependenciesTask extends DefaultTask {
         if (!dfDependencies.empty) {
             FileUtils.createFileForTypeClass(dfDependencies, splitDependenciesFile)
         }
-        QigsawLogger.e(">Task :AnalyzeDependenciesTask ${project.name} has dependencies ${dfDependencies}")
+        QigsawLogger.e(">Task :AnalyzeSplitDependenciesTask ${project.name} has dependencies ${dfDependencies}")
     }
 }
