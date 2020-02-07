@@ -63,16 +63,18 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
     public static final String QIGSAW_INTERMEDIATES_SPLIT_DEPENDENCIES = "${QIGSAW_INTERMEDIATES}split_dependencies/"
 
+    public static final String QIGSAW_INTERMEDIATES_SPLIT_UPLOAD = "${QIGSAW_INTERMEDIATES}split_upload/"
+
     @Override
     void apply(Project project) {
         //create qigsaw extension.
         project.extensions.create("qigsawSplit", QigsawSplitExtension)
         if (!project.plugins.hasPlugin('com.android.application')) {
-            throw new GradleException('Qigsaw Plugin Error: Android Application plugin required')
+            throw new GradleException('Qigsaw Error: Android Application plugin required')
         }
         def versionAGP = VersionNumber.parse(AGPCompat.getAndroidGradlePluginVersionCompat())
         if (versionAGP < VersionNumber.parse("3.2.0")) {
-            throw new GradleException('generateQigsawApk: Android Gradle Version is required 3.2.0 at least!')
+            throw new GradleException('Qigsaw Error: Android Gradle Version is required 3.2.0 at least!')
         }
         //extends from AppExtension
         def android = project.extensions.android
@@ -82,7 +84,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         project.afterEvaluate {
             //if AAPT2 is disable, package id of plugin resources can not be customized.
             if (!AGPCompat.isAapt2EnabledCompat(project)) {
-                throw new GradleException('generateQigsawApk: AAPT2 required')
+                throw new GradleException('Qigsaw Error: AAPT2 required')
             }
             boolean hasQigsawTask = hasQigsawTask(project)
             def dynamicFeatures = android.dynamicFeatures
@@ -124,6 +126,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File splitManifestOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_MANIFEST + variantName.uncapitalize())
                 File splitDependenciesOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_DEPENDENCIES + variantName.uncapitalize())
                 File qigsawConfigOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_QIGSAW_CONFIG + variantName.uncapitalize())
+                File splitUploadOutputDir = new File(project.buildDir, QIGSAW_INTERMEDIATES_SPLIT_UPLOAD + variantName.uncapitalize())
                 //compat fot tinker
                 String oldApk = TinkerHelper.getOldApk(project)
                 if (oldApk == null) {
@@ -188,6 +191,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawInstallTask.variantData = variant.variantData
                 qigsawInstallTask.installApkFile = apkFile
                 qigsawInstallTask.setGroup(QIGSAW)
+
+                QigsawUploadSplitApkTask uploadSplitApkTask = project.tasks.create("qigsawUploadSplit${variantName}", QigsawUploadSplitApkTask)
+                uploadSplitApkTask.initArgs(oldApk == null ? null : new File(oldApk), splitUploadOutputDir, packageOutputDir, variantName)
+                uploadSplitApkTask.setGroup(QIGSAW)
                 //set task dependency
                 if (hasQigsawTask) {
 
