@@ -48,7 +48,7 @@ class QigsawSplitExtensionHelper {
         return null
     }
 
-    static boolean getReleaseSplitApk(Project project) {
+    static boolean isReleaseSplitApk(Project project) {
         try {
             return project.extensions.qigsawSplit.releaseSplitApk
         } catch (Throwable ignored) {
@@ -74,5 +74,13 @@ class QigsawSplitExtensionHelper {
 
         }
         return null
+    }
+
+    static boolean isUse7z(Project project) {
+        try {
+            return project.extensions.qigsawSplit.use7z
+        } catch (Throwable ignored) {
+            return false
+        }
     }
 }

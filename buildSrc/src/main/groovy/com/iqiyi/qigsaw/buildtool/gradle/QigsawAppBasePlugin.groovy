@@ -192,8 +192,9 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawInstallTask.installApkFile = apkFile
                 qigsawInstallTask.setGroup(QIGSAW)
 
+                boolean isSigningNeed = variant.buildType.signingConfig != null && variant.buildType.signingConfig.isSigningReady()
                 QigsawUploadSplitApkTask uploadSplitApkTask = project.tasks.create("qigsawUploadSplit${variantName}", QigsawUploadSplitApkTask)
-                uploadSplitApkTask.initArgs(oldApk == null ? null : new File(oldApk), splitUploadOutputDir, packageOutputDir, variantName)
+                uploadSplitApkTask.initArgs(oldApk == null ? null : new File(oldApk), splitUploadOutputDir, packageOutputDir, variantName, isSigningNeed)
                 uploadSplitApkTask.setGroup(QIGSAW)
                 //set task dependency
                 if (hasQigsawTask) {

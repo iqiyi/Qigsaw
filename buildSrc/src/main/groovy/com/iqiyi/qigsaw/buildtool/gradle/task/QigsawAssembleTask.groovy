@@ -110,7 +110,7 @@ class QigsawAssembleTask extends DefaultTask {
     File splitDependenciesOutputDir
 
     QigsawAssembleTask() {
-        this.releaseSplitApk = QigsawSplitExtensionHelper.getReleaseSplitApk(project)
+        this.releaseSplitApk = QigsawSplitExtensionHelper.isReleaseSplitApk(project)
         this.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(project)
     }
 

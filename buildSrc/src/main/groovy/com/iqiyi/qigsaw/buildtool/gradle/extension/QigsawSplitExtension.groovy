@@ -51,6 +51,12 @@ class QigsawSplitExtension {
     boolean releaseSplitApk = false
 
     /**
+     * Whether repack base apk with 7z format when you use qigsawUploadSplit${VariantName} task to upload split apk files.
+     * default value is {@code false}
+     */
+    boolean use7z = false
+
+    /**
      * Restrict splits working process, if you do not assign split name, this split will work on
      * all processes, otherwise only work processes declared in its manifest.
      */

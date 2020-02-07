@@ -25,6 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
+import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.CommandUtils
@@ -47,13 +48,13 @@ import java.util.zip.ZipEntry
 
 class QigsawUploadSplitApkTask extends DefaultTask {
 
-    static final String OLD_APK_EXTRACTION = "old_apk_extraction"
-
-    static final String NEW_SPLIT_INFO = "new_split_info"
+    static final String NEW_APKS = "new_apks"
 
     static final String STORED_FILES = "store_files"
 
-    static final String NEW_APKS = "new_apks"
+    static final String NEW_SPLIT_INFO = "new_split_info"
+
+    static final String OLD_APK_EXTRACTION = "old_apk_extraction"
 
     @InputFile
     @Optional
@@ -68,11 +69,19 @@ class QigsawUploadSplitApkTask extends DefaultTask {
     @OutputDirectory
     File packageOutputDir
 
-    void initArgs(File oldApk, File outputDir, File packageOutputDir, String variantName) {
+    @Input
+    boolean use7z
+
+    @Input
+    boolean isSigningNeed
+
+    void initArgs(File oldApk, File outputDir, File packageOutputDir, String variantName, boolean isSigningNeed) {
         this.oldApk = oldApk
         this.variantName = variantName
         this.outputDir = outputDir
         this.packageOutputDir = packageOutputDir
+        this.use7z = QigsawSplitExtensionHelper.isUse7z(project)
+        this.isSigningNeed = isSigningNeed
     }
 
     @TaskAction
@@ -145,21 +154,13 @@ class QigsawUploadSplitApkTask extends DefaultTask {
         FileUtils.copyFile(newSplitJsonFile, oldSplitJsonFile)
         File newApksDir = new File(outputDir, NEW_APKS)
         newApksDir.mkdirs()
-        Collection<File> resFiles = new ArrayList<>(0)
-        Collections.addAll(resFiles, new File(oldApkExtractionPath).listFiles())
-        File unsignedApk = new File(newApksDir, oldApk.name.replace(".apk", "_unsigned.apk"))
-        ZipUtils.zipFiles(resFiles, new File(oldApkExtractionPath), unsignedApk, compressData)
-        SplitApkSigner apkSigner = new SplitApkSigner(project, variantName)
-        File signedApk = new File(newApksDir, oldApk.name.replace(".apk", "_signed.apk"))
-        try {
-            apkSigner.signAPKIfNeed(unsignedApk, signedApk)
-        } catch (Throwable ignored) {
-            QigsawLogger.e("Can't find signingConfigs in app build.gradle")
-        }
-        //generate 7zip format apk files
-        File unsigned7zaApk = new File(newApksDir, oldApk.name.replace(".apk", "_7za_unsigned.apk"))
-        boolean createOk = run7zCmd("7za", "a", "-tzip", unsigned7zaApk.absolutePath, oldApkExtractionPath + File.separator + "*", "-mx9")
-        if (createOk) {
+        File signedApk
+        File unsignedApk
+        if (use7z) {
+            //generate 7zip format apk files
+            unsignedApk = new File(newApksDir, oldApk.name.replace(".apk", "_7za_unsigned_${variantName.uncapitalize()}.apk"))
+            signedApk = new File(newApksDir, oldApk.name.replace(".apk", "_7za_signed_${variantName.uncapitalize()}.apk"))
+            run7zCmd("7za", "a", "-tzip", unsignedApk.absolutePath, oldApkExtractionPath + File.separator + "*", "-mx9")
             List<String> storedFiles = new ArrayList<>()
             for (String name : compressData.keySet()) {
                 File file = new File(oldApkExtractionPath, name)
@@ -172,6 +173,7 @@ class QigsawUploadSplitApkTask extends DefaultTask {
                 }
             }
             if (storedFiles.size() > 0) {
+                QigsawLogger.w("Rewrite the stored files into the 7zip, file count ${storedFiles.size()}")
                 File storeFilesDir = new File(outputDir, STORED_FILES)
                 storeFilesDir.mkdirs()
                 for (String name : storedFiles) {
@@ -180,41 +182,44 @@ class QigsawUploadSplitApkTask extends DefaultTask {
                     if (parent != null && (!parent.exists())) {
                         parent.mkdirs()
                     }
-                    FileUtils.copyFile(new File(oldApkExtractionPath, name), storeFile)
+                    FileUtils.copyFile(new File(oldApkExtractionPath, name), storeFile, false)
                 }
-                boolean updateOk = run7zCmd("7za", "a", "-tzip", unsigned7zaApk.absolutePath, storeFilesDir.absolutePath + File.separator + "*", "-mx0")
-                if (updateOk) {
-                    File signed7zaApk = new File(newApksDir, oldApk.name.replace(".apk", "_7za_signed.apk"))
-                    try {
-                        apkSigner.signAPKIfNeed(unsigned7zaApk, signed7zaApk)
-                    } catch (Throwable ignored) {
-                        QigsawLogger.e("Can't find signingConfigs in app build.gradle")
-                    }
-                }
+                run7zCmd("7za", "a", "-tzip", unsignedApk.absolutePath, storeFilesDir.absolutePath + File.separator + "*", "-mx0")
+            }
+        } else {
+            signedApk = new File(newApksDir, oldApk.name.replace(".apk", "_signed_${variantName.uncapitalize()}.apk"))
+            unsignedApk = new File(newApksDir, oldApk.name.replace(".apk", "_unsigned_${variantName.uncapitalize()}.apk"))
+            Collection<File> resFiles = new ArrayList<>(0)
+            Collections.addAll(resFiles, new File(oldApkExtractionPath).listFiles())
+            ZipUtils.zipFiles(resFiles, new File(oldApkExtractionPath), unsignedApk, compressData)
+        }
+        if (isSigningNeed) {
+            QigsawLogger.w("'SignConfig' has been configured, start to sign apk ${unsignedApk.absolutePath}")
+            if (unsignedApk.exists()) {
+                SplitApkSigner apkSigner = new SplitApkSigner(project, variantName)
+                apkSigner.signAPKIfNeed(unsignedApk, signedApk)
+                unsignedApk.delete()
             }
         }
         //copy target products to package output dir.
         if (packageOutputDir.exists()) {
             packageOutputDir.deleteDir()
         }
-        File qigsawApksOutputDir = new File(packageOutputDir, "qigsaw_apks")
-        qigsawApksOutputDir.mkdirs()
+        packageOutputDir.mkdirs()
         FileUtils.copyFile(newSplitJsonFile, new File(packageOutputDir, newSplitJsonFile.name))
         if (newApksDir.listFiles() != null) {
             newApksDir.listFiles().each {
-                FileUtils.copyFile(it, new File(qigsawApksOutputDir, it.name))
+                FileUtils.copyFile(it, new File(packageOutputDir, it.name))
             }
         }
     }
 
-    static boolean run7zCmd(String... cmd) {
+    static void run7zCmd(String... cmd) {
         try {
             String cmdResult = CommandUtils.runCmd(cmd)
             QigsawLogger.w("Run command successfully, result: " + cmdResult)
-            return true
         } catch (Throwable e) {
-            QigsawLogger.e("'7za' command is not found, have you install 7zip?", e)
+            throw new GradleException("'7za' command is not found, have you install 7zip?", e)
         }
-        return false
     }
 }
