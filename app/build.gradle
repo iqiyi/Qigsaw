@@ -91,6 +91,12 @@ qigsawSplit {
      */
     releaseSplitApk = false
 
+    /**
+     * Whether repack base apk with 7z format when you use qigsawUploadSplit${VariantName} task to upload split apk files.
+     * default value is {@code false}
+     */
+    use7z = true
+
 }
 
 if (sample) {
