@@ -288,6 +288,18 @@ class QigsawAssembleTask extends DefaultTask {
         if (!this.assetsDir.exists()) {
             this.assetsDir.mkdirs()
         }
+        //delete old split json files
+        File[] oldSplitJsonFiles = assetsDir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File file) {
+                return file.name.startsWith("qigsaw_") && file.name.endsWith(SdkConstants.DOT_JSON)
+            }
+        })
+        if (oldSplitJsonFiles != null) {
+            oldSplitJsonFiles.each {
+                it.delete()
+            }
+        }
         File outputJsonFile = new File(assetsDir, splitJsonFile.name)
         if (outputJsonFile.exists()) {
             outputJsonFile.delete()
