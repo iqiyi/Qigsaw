@@ -102,6 +102,7 @@ class SplitInfo {
         this.splitName = origin.splitName
         this.url = origin.url
         this.builtIn = origin.builtIn
+        this.onDemand = origin.onDemand
         this.size = origin.size
         this.applicationName = origin.applicationName
         this.version = origin.version
