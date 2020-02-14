@@ -112,8 +112,10 @@ abstract class SplitLoadTask implements Runnable {
                 } catch (InterruptedException e) {
                     String splitName = splitFileIntents.get(0).getStringExtra(SplitConstants.KET_NAME);
                     SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
-                    SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
-                    reportLoadResult(Collections.<SplitBriefInfo>emptyList(), Collections.singletonList(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERRUPTED_ERROR, e)), 0);
+                    if (info != null) {
+                        SplitBriefInfo splitBriefInfo = new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn());
+                        reportLoadResult(Collections.<SplitBriefInfo>emptyList(), Collections.singletonList(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERRUPTED_ERROR, e)), 0);
+                    }
                 }
             }
         }
@@ -128,7 +130,11 @@ abstract class SplitLoadTask implements Runnable {
         for (Intent splitFileIntent : splitFileIntents) {
             String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
             SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
-            SplitBriefInfo splitBriefInfo = new SplitBriefInfo(splitName, info.getSplitVersion(), info.isBuiltIn());
+            if (info == null) {
+                SplitLog.w(TAG, "Unable to get info of %s, just skip!", splitName == null ? "null" : splitName);
+                continue;
+            }
+            SplitBriefInfo splitBriefInfo = new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn());
             //if if split has been loaded, just skip.
             if (checkSplitLoaded(splitName)) {
                 SplitLog.i(TAG, "Split %s has been loaded!", splitName);
