@@ -139,7 +139,7 @@ final class SplitInstallManagerImpl implements SplitInstallManager {
         ApplicationInfo appInfo;
         try {
             appInfo = context.getPackageManager().getApplicationInfo(packageName, PackageManager.GET_META_DATA);
-        } catch (PackageManager.NameNotFoundException e) {
+        } catch (Throwable e) {
             Log.w(TAG, "App is not found in PackageManager");
             return fusedModules;
         }
@@ -168,7 +168,7 @@ final class SplitInstallManagerImpl implements SplitInstallManager {
         try {
             PackageInfo packageInfo;
             return (packageInfo = context.getPackageManager().getPackageInfo(packageName, 0)) != null ? packageInfo.splitNames : null;
-        } catch (PackageManager.NameNotFoundException var2) {
+        } catch (Throwable var2) {
             Log.d(TAG, "App is not found in PackageManager");
             return null;
         }
