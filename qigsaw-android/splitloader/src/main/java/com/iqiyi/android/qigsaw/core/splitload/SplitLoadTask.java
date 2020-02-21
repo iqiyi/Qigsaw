@@ -87,7 +87,8 @@ abstract class SplitLoadTask implements Runnable {
                                   String splitName,
                                   List<String> addedDexPaths,
                                   File optimizedDirectory,
-                                  File librarySearchPath) throws SplitLoadException;
+                                  File librarySearchPath,
+                                  List<String> dependencies) throws SplitLoadException;
 
     abstract void onSplitActivateFailed(ClassLoader classLoader);
 
@@ -158,7 +159,7 @@ abstract class SplitLoadTask implements Runnable {
             File splitDir = SplitPathManager.require().getSplitDir(info);
             ClassLoader classLoader;
             try {
-                classLoader = loadCode(loader, splitName, addedDexPaths, optimizedDirectory, librarySearchPath);
+                classLoader = loadCode(loader, splitName, addedDexPaths, optimizedDirectory, librarySearchPath, info.getDependencies());
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s code!", splitName);
                 loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));

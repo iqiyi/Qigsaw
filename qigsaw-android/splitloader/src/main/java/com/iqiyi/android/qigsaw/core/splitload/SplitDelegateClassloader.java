@@ -25,7 +25,6 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.extension.AABExtension;
@@ -46,13 +45,9 @@ final class SplitDelegateClassloader extends PathClassLoader {
 
     private int splitLoadMode;
 
-    @Nullable
-    static SplitDelegateClassloader sInstance;
-
     SplitDelegateClassloader(ClassLoader parent) {
         super("", parent);
         originClassLoader = (PathClassLoader) parent;
-        sInstance = this;
     }
 
     private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
@@ -95,7 +90,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
     }
 
     private Class<?> onClassNotFound(String name) {
-        Class<?> ret = findClassInSplits(name, null);
+        Class<?> ret = findClassInSplits(name);
         if (ret != null) {
             SplitLog.i(TAG, "Class %s is found in Splits", name);
             return ret;
@@ -103,7 +98,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
         Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
         if (fakeComponent != null) {
             SplitLoadManagerService.getInstance().loadInstalledSplits();
-            ret = findClassInSplits(name, null);
+            ret = findClassInSplits(name);
             if (ret != null) {
                 SplitLog.i(TAG, "Class %s is found in Splits after loading all installed splits.", name);
                 return ret;
@@ -128,12 +123,9 @@ final class SplitDelegateClassloader extends PathClassLoader {
         return null;
     }
 
-    Class<?> findClassInSplits(String name, @Nullable SplitDexClassLoader skipToFindCl) {
+    private Class<?> findClassInSplits(String name) {
         Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
         for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
-            if (classLoader == skipToFindCl) {
-                continue;
-            }
             try {
                 return classLoader.loadClassItself(name);
             } catch (ClassNotFoundException e) {
@@ -154,12 +146,52 @@ final class SplitDelegateClassloader extends PathClassLoader {
     }
 
     @Override
+    protected URL findResource(String name) {
+        URL resource = super.findResource(name);
+        if (resource == null) {
+            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+            for (SplitDexClassLoader loader : splitDexClassLoaders) {
+                resource = loader.findResourceItself(name);
+                if (resource != null) {
+                    break;
+                }
+            }
+        }
+        return resource;
+    }
+
+    @Override
+    protected Enumeration<URL> findResources(String name) {
+        Enumeration<URL> resources = super.findResources(name);
+        if (resources == null) {
+            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+            for (SplitDexClassLoader loader : splitDexClassLoaders) {
+                resources = loader.findResourcesItself(name);
+                if (resources != null) {
+                    break;
+                }
+            }
+        }
+        return resources;
+    }
+
+    @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         return findClass(name);
     }
 
     @Override
     public String findLibrary(String name) {
-        return originClassLoader.findLibrary(name);
+        String libName = originClassLoader.findLibrary(name);
+        if (libName == null) {
+            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+            for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+                libName = classLoader.findLibraryItself(name);
+                if (libName != null) {
+                    break;
+                }
+            }
+        }
+        return libName;
     }
 }

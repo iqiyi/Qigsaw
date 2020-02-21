@@ -42,9 +42,10 @@ final class SplitLoaderImpl extends SplitLoader {
     SplitDexClassLoader loadCode(String moduleNames,
                                  @Nullable List<String> dexPaths,
                                  File optimizedDirectory,
-                                 @Nullable File librarySearchPath) throws SplitLoadException {
+                                 @Nullable File librarySearchPath,
+                                 @Nullable List<String> dependencies) throws SplitLoadException {
         try {
-            return SplitDexClassLoader.create(moduleNames, dexPaths, optimizedDirectory, librarySearchPath);
+            return SplitDexClassLoader.create(moduleNames, dexPaths, optimizedDirectory, librarySearchPath, dependencies);
         } catch (Throwable e) {
             throw new SplitLoadException(SplitLoadError.CREATE_CLASSLOADER_FAILED, e);
         }

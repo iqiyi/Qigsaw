@@ -27,7 +27,6 @@ def readPropertyFromLocalProperties(String key) {
         properties.load(project.rootProject.file('./local.properties').newDataInputStream())
     } catch (Exception e) {
         println("load local properties failed msg:${e.message}")
-        println('12-----------------------------')
     }
     return properties.getProperty(key)
 }
