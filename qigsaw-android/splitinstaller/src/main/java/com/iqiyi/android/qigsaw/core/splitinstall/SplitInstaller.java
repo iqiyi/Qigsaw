@@ -76,8 +76,10 @@ abstract class SplitInstaller {
 
     /**
      * create a mark file to record that this split has been installed successfully.
+     *
+     * @return if {@code true} means the split is first installed, otherwise {@code false} means the split has been install.
      */
-    protected abstract void createInstalledMark(SplitInfo info) throws InstallException;
+    protected abstract boolean createInstalledMark(SplitInfo info) throws InstallException;
 
     class InstallResult {
 
@@ -87,12 +89,16 @@ abstract class SplitInstaller {
 
         final List<String> addedDexPaths;
 
+        final boolean firstInstallation;
+
         InstallResult(@NonNull String splitName,
                       @NonNull File apkFile,
-                      @Nullable List<String> addedDexPaths) {
+                      @Nullable List<String> addedDexPaths,
+                      boolean firstInstallation) {
             this.splitName = splitName;
             this.apkFile = apkFile;
             this.addedDexPaths = addedDexPaths;
+            this.firstInstallation = firstInstallation;
         }
     }
 
