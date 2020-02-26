@@ -27,18 +27,18 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class SplitApplicationLoaders {
 
-    private final Set<SplitDexClassLoader> splitDexClassLoaders = new HashSet<>();
+    private final Set<SplitDexClassLoader> splitDexClassLoaders = Collections.newSetFromMap(new ConcurrentHashMap<SplitDexClassLoader, Boolean>());
 
     private static final AtomicReference<SplitApplicationLoaders> sInstance = new AtomicReference<>();
-
-    private static final Object sLock = new Object();
 
     public static SplitApplicationLoaders getInstance() {
         if (sInstance.get() == null) {
@@ -48,49 +48,39 @@ final class SplitApplicationLoaders {
     }
 
     void addClassLoader(@NonNull SplitDexClassLoader classLoader) {
-        synchronized (sLock) {
-            splitDexClassLoaders.add(classLoader);
-        }
+        splitDexClassLoaders.add(classLoader);
     }
 
     Set<SplitDexClassLoader> getClassLoaders() {
-        synchronized (sLock) {
-            return splitDexClassLoaders;
-        }
+        return splitDexClassLoaders;
     }
 
     boolean removeClassLoader(@NonNull SplitDexClassLoader classLoader) {
-        synchronized (sLock) {
-            return splitDexClassLoaders.remove(classLoader);
-        }
+        return splitDexClassLoaders.remove(classLoader);
     }
 
     @Nullable
     Set<SplitDexClassLoader> getClassLoaders(@Nullable List<String> moduleNames) {
-        synchronized (sLock) {
-            if (moduleNames == null) {
-                return null;
-            }
-            Set<SplitDexClassLoader> loaders = new HashSet<>(0);
-            for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
-                if (moduleNames.contains(classLoader.moduleName())) {
-                    loaders.add(classLoader);
-                }
-            }
-            return loaders;
+        if (moduleNames == null) {
+            return null;
         }
+        Set<SplitDexClassLoader> loaders = new HashSet<>(moduleNames.size());
+        for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+            if (moduleNames.contains(classLoader.moduleName())) {
+                loaders.add(classLoader);
+            }
+        }
+        return loaders;
     }
 
     @Nullable
     SplitDexClassLoader getClassLoader(String moduleName) {
-        synchronized (sLock) {
-            for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
-                if (classLoader.moduleName().equals(moduleName)) {
-                    return classLoader;
-                }
+        for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+            if (classLoader.moduleName().equals(moduleName)) {
+                return classLoader;
             }
-            return null;
         }
+        return null;
     }
 
 }
