@@ -99,11 +99,13 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
     @Override
     public String findLibrary(String name) {
         String libName = super.findLibrary(name);
-        if (dependenciesLoaders != null) {
-            for (SplitDexClassLoader loader : dependenciesLoaders) {
-                libName = loader.findLibrary(name);
-                if (libName != null) {
-                    break;
+        if (libName == null) {
+            if (dependenciesLoaders != null) {
+                for (SplitDexClassLoader loader : dependenciesLoaders) {
+                    libName = loader.findLibrary(name);
+                    if (libName != null) {
+                        break;
+                    }
                 }
             }
         }
