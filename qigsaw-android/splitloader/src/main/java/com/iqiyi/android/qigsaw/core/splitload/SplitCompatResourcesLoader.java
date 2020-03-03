@@ -246,6 +246,9 @@ public class SplitCompatResourcesLoader {
             }
             for (Map.Entry<Object, WeakReference<Resources>> entry : activeResources.entrySet()) {
                 Resources res = entry.getValue().get();
+                if (res == null) {
+                    continue;
+                }
                 if (res == preResources) {
                     activeResources.put(entry.getKey(), new WeakReference<>(newResources));
                     SplitLog.i(TAG, "pre-resources found in @mActiveResources");
@@ -257,6 +260,9 @@ public class SplitCompatResourcesLoader {
                     (Map<String, WeakReference<Object>>) mPackagesInActivityThread().get(activityThread);
             for (Map.Entry<String, WeakReference<Object>> entry : instance_mPackages.entrySet()) {
                 Object packageInfo = entry.getValue().get();
+                if (packageInfo == null) {
+                    continue;
+                }
                 Resources resources = (Resources) mResourcesInLoadedApk().get(packageInfo);
                 if (resources == preResources) {
                     SplitLog.i(TAG, "pre-resources found in @mPackages");
@@ -268,6 +274,9 @@ public class SplitCompatResourcesLoader {
                     (Map<String, WeakReference<Object>>) mResourcePackagesInActivityThread().get(activityThread);
             for (Map.Entry<String, WeakReference<Object>> entry : instance_mResourcePackages.entrySet()) {
                 Object packageInfo = entry.getValue().get();
+                if (packageInfo == null) {
+                    continue;
+                }
                 Resources resources = (Resources) mResourcesInLoadedApk().get(packageInfo);
                 if (resources == preResources) {
                     SplitLog.i(TAG, "pre-resources found in @mResourcePackages");

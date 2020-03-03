@@ -27,29 +27,39 @@ public abstract class StateUpdateListenerRegister<StateT> {
 
     private final StateUpdatedReceiver receiver = new StateUpdatedReceiver(this);
 
+    private final Object mLock = new Object();
+
     protected StateUpdateListenerRegister(PlayCore playCore, IntentFilter intentFilter, Context context) {
         this.playCore = playCore;
         this.intentFilter = intentFilter;
         this.context = context;
     }
 
-    public final synchronized void registerListener(StateUpdatedListener<StateT> listener) {
-        this.playCore.debug("registerListener");
-        if (mStateUpdatedListeners.contains(listener)) {
-            this.playCore.debug("listener has been registered!");
-            return;
-        }
-        mStateUpdatedListeners.add(listener);
-        if (mStateUpdatedListeners.size() == 1) {
-            context.registerReceiver(receiver, intentFilter);
+    public final void registerListener(StateUpdatedListener<StateT> listener) {
+        synchronized (mLock) {
+            this.playCore.debug("registerListener");
+            if (mStateUpdatedListeners.contains(listener)) {
+                this.playCore.debug("listener has been registered!");
+                return;
+            }
+            mStateUpdatedListeners.add(listener);
+            if (mStateUpdatedListeners.size() == 1) {
+                context.registerReceiver(receiver, intentFilter);
+            }
         }
     }
 
-    public final synchronized void unregisterListener(StateUpdatedListener<StateT> listener) {
-        this.playCore.debug("unregisterListener");
-        mStateUpdatedListeners.remove(listener);
-        if (mStateUpdatedListeners.isEmpty()) {
-            context.unregisterReceiver(receiver);
+    public final void unregisterListener(StateUpdatedListener<StateT> listener) {
+        synchronized (mLock) {
+            this.playCore.debug("unregisterListener");
+            boolean contained = mStateUpdatedListeners.remove(listener);
+            if (mStateUpdatedListeners.isEmpty() && contained) {
+                try {
+                    context.unregisterReceiver(receiver);
+                } catch (IllegalArgumentException e) {
+                    playCore.error(e, "Receiver not registered: " + intentFilter.getAction(0));
+                }
+            }
         }
     }
 
