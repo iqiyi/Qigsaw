@@ -28,6 +28,8 @@ class SplitInfo {
 
     transient File splitApk
 
+    transient boolean versionChanged = false
+
     /**
      * The name of split apk
      */
