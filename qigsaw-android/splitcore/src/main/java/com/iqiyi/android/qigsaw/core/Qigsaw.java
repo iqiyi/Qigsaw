@@ -141,14 +141,18 @@ public class Qigsaw {
                     splitConfiguration.obtainUserConfirmationDialogClass,
                     splitConfiguration.verifySignature);
             SplitApkInstaller.startUninstallSplits(context);
-            Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
+            if (Looper.myLooper() != null) {
+                Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
 
-                @Override
-                public boolean queueIdle() {
-                    cleanStaleSplits(context);
-                    return false;
-                }
-            });
+                    @Override
+                    public boolean queueIdle() {
+                        cleanStaleSplits(context);
+                        return false;
+                    }
+                });
+            } else {
+                cleanStaleSplits(context);
+            }
         }
         SplitLoadManagerService.getInstance().loadInstalledSplitsWhenAppLaunches();
     }
