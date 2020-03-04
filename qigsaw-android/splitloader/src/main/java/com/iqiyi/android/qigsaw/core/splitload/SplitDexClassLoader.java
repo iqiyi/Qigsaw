@@ -29,10 +29,12 @@ import android.text.TextUtils;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
 import java.io.File;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Set;
 
 import dalvik.system.BaseDexClassLoader;
-
 
 final class SplitDexClassLoader extends BaseDexClassLoader {
 
@@ -40,26 +42,32 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
 
     private final String moduleName;
 
+    private Set<SplitDexClassLoader> dependenciesLoaders;
+
     private SplitDexClassLoader(String moduleName,
                                 List<String> dexPaths,
                                 File optimizedDirectory,
                                 String librarySearchPath,
+                                List<String> dependencies,
                                 ClassLoader parent) throws Throwable {
         super((dexPaths == null) ? "" : TextUtils.join(File.pathSeparator, dexPaths), optimizedDirectory, librarySearchPath, parent);
         this.moduleName = moduleName;
+        this.dependenciesLoaders = SplitApplicationLoaders.getInstance().getClassLoaders(dependencies);
         SplitUnKnownFileTypeDexLoader.loadDex(this, dexPaths, optimizedDirectory);
     }
 
     static SplitDexClassLoader create(String moduleName,
                                       List<String> dexPaths,
                                       File optimizedDirectory,
-                                      File librarySearchFile) throws Throwable {
+                                      File librarySearchFile,
+                                      List<String> dependencies) throws Throwable {
         long time = System.currentTimeMillis();
         SplitDexClassLoader cl = new SplitDexClassLoader(
                 moduleName,
                 dexPaths,
                 optimizedDirectory,
                 librarySearchFile == null ? null : librarySearchFile.getAbsolutePath(),
+                dependencies,
                 SplitDexClassLoader.class.getClassLoader()
         );
         SplitLog.d(TAG, "Cost %d ms to load %s code", System.currentTimeMillis() - time, moduleName);
@@ -70,16 +78,85 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         try {
             return super.findClass(name);
-        } catch (ClassNotFoundException error) {
-            if (SplitDelegateClassloader.sInstance != null) {
-                return SplitDelegateClassloader.sInstance.findClassInSplits(name, this);
+        } catch (ClassNotFoundException e1) {
+            if (dependenciesLoaders != null) {
+                for (SplitDexClassLoader loader : dependenciesLoaders) {
+                    try {
+                        return loader.loadClassItself(name);
+                    } catch (ClassNotFoundException e2) {
+                        SplitLog.w(TAG, "SplitDexClassLoader: Class %s is not found in %s ClassLoader", name, loader.moduleName());
+                    }
+                }
             }
-            throw error;
+            throw e1;
         }
     }
 
     String moduleName() {
         return moduleName;
+    }
+
+    @Override
+    public String findLibrary(String name) {
+        String libName = super.findLibrary(name);
+        if (dependenciesLoaders != null) {
+            for (SplitDexClassLoader loader : dependenciesLoaders) {
+                libName = loader.findLibrary(name);
+                if (libName != null) {
+                    break;
+                }
+            }
+        }
+        if (libName == null) {
+            if (getParent() instanceof BaseDexClassLoader) {
+                libName = ((BaseDexClassLoader) getParent()).findLibrary(name);
+            }
+        }
+        return libName;
+    }
+
+    @Override
+    protected Enumeration<URL> findResources(String name) {
+        Enumeration<URL> resources = super.findResources(name);
+        if (resources == null) {
+            if (dependenciesLoaders != null) {
+                for (SplitDexClassLoader loader : dependenciesLoaders) {
+                    resources = loader.findResourcesItself(name);
+                    if (resources != null) {
+                        break;
+                    }
+                }
+            }
+        }
+        return resources;
+    }
+
+    @Override
+    protected URL findResource(String name) {
+        URL resource = super.findResource(name);
+        if (resource == null) {
+            if (dependenciesLoaders != null) {
+                for (SplitDexClassLoader loader : dependenciesLoaders) {
+                    resource = loader.findResourceItself(name);
+                    if (resource != null) {
+                        break;
+                    }
+                }
+            }
+        }
+        return resource;
+    }
+
+    URL findResourceItself(String name) {
+        return super.findResource(name);
+    }
+
+    Enumeration<URL> findResourcesItself(String name) {
+        return super.findResources(name);
+    }
+
+    String findLibraryItself(String name) {
+        return super.findLibrary(name);
     }
 
     Class<?> loadClassItself(String name) throws ClassNotFoundException {
