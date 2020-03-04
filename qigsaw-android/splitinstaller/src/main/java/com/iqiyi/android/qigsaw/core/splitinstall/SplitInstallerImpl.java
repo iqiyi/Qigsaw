@@ -110,8 +110,8 @@ final class SplitInstallerImpl extends SplitInstaller {
         } catch (Throwable ignored) {
 
         }
-        createInstalledMark(info);
-        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths);
+        boolean firstInstallation = createInstalledMark(info);
+        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstallation);
     }
 
     @Override
@@ -182,15 +182,17 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected void createInstalledMark(SplitInfo info) throws InstallException {
+    protected boolean createInstalledMark(SplitInfo info) throws InstallException {
         File markFile = SplitPathManager.require().getSplitMarkFile(info);
         if (!markFile.exists()) {
             try {
                 FileUtil.createFileSafely(markFile);
+                return true;
             } catch (IOException e) {
                 throw new InstallException(SplitInstallError.MARK_CREATE_FAILED, e);
             }
         }
+        return false;
     }
 
     /**

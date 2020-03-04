@@ -60,7 +60,9 @@ abstract class SplitInstallTask implements Runnable {
             SplitBriefInfo briefInfo = new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn());
             try {
                 SplitInstaller.InstallResult installResult = installer.install(isStartInstall, info);
-                installedSplits.add(briefInfo);
+                if (installResult.firstInstallation) {
+                    installedSplits.add(briefInfo);
+                }
                 installResults.add(installResult);
             } catch (SplitInstaller.InstallException error) {
                 installCompleted = false;
