@@ -87,13 +87,17 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
             if (uploader == null) {
                 QigsawLogger.e("SplitApkUploader has not been implemented, just make split " + splitInfo.splitName + " built-in")
             } else {
-                String uploadedUrl = uploader.uploadSync(project, splitInfo.splitApk, splitInfo.splitName)
-                if (uploadedUrl != null && uploadedUrl.startsWith("http")) {
-                    splitInfo.url = uploadedUrl
-                    QigsawLogger.w("Split ${splitInfo.splitName} apk file has been uploaded, see ${uploadedUrl}")
-                    return
+                if (!updateMode || splitInfo.versionChanged) {
+                    String uploadedUrl = uploader.uploadSync(project, splitInfo.splitApk, splitInfo.splitName)
+                    if (uploadedUrl != null && uploadedUrl.startsWith("http")) {
+                        splitInfo.url = uploadedUrl
+                        QigsawLogger.w("Split ${splitInfo.splitName} apk file has been uploaded, see ${uploadedUrl}")
+                        return
+                    } else {
+                        QigsawLogger.e("Split ${splitInfo.splitName} upload failed! url: ${uploadedUrl}")
+                    }
                 } else {
-                    QigsawLogger.e("Split ${splitInfo.splitName} upload failed! url: ${uploadedUrl}")
+                    QigsawLogger.e("Version of split ${splitInfo.splitName} is not changed, use old info!")
                 }
             }
         }
@@ -163,7 +167,7 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
                 for (SplitInfo oldInfo : oldSplitDetails.splits) {
                     if (newInfo.splitName.equals(oldInfo.splitName)) {
                         if (newInfo.version.equals(oldInfo.version)) {
-                            QigsawLogger.w("Built-in split ${newInfo.splitName} version ${newInfo.version} is not changed, using old info!")
+                            QigsawLogger.w("Split ${newInfo.splitName} version ${newInfo.version} is not changed, using old info!")
                             newInfo.copySplitInfo(oldInfo)
                         } else {
                             if (updateSplits == null) {
@@ -171,6 +175,7 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
                             }
                             QigsawLogger.w("Split ${newInfo.splitName} version ${newInfo.version} is changed, it need to be updated!")
                             newInfo.builtIn = false
+                            newInfo.versionChanged = true
                             updateSplits.add(newInfo.splitName)
                         }
                     }
