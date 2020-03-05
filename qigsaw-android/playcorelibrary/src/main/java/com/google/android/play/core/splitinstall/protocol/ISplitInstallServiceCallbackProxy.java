@@ -2,11 +2,11 @@ package com.google.android.play.core.splitinstall.protocol;
 
 import android.os.Bundle;
 import android.os.IInterface;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
 import java.util.List;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public interface ISplitInstallServiceCallbackProxy extends IInterface {

@@ -35,8 +35,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.RestrictTo;
 import android.util.DisplayMetrics;
 import android.view.ContextThemeWrapper;
 
@@ -52,7 +52,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * Developer is forbidden to use this Class.
