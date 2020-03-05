@@ -175,6 +175,7 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
                             }
                             QigsawLogger.w("Split ${newInfo.splitName} version ${newInfo.version} is changed, it need to be updated!")
                             newInfo.builtIn = false
+                            newInfo.onDemand = true
                             newInfo.versionChanged = true
                             updateSplits.add(newInfo.splitName)
                         }
