@@ -3,7 +3,7 @@ package com.iqiyi.android.qigsaw.core.common;
 
 import android.annotation.SuppressLint;
 import android.os.Build;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.RestrictTo;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -17,7 +17,7 @@ import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.util.zip.ZipFile;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class FileUtil {

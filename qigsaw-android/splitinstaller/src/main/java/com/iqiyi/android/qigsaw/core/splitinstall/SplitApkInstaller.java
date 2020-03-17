@@ -26,15 +26,15 @@ package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import android.app.Activity;
 import android.content.Context;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.splitdownload.Downloader;
 import com.iqiyi.android.qigsaw.core.splitinstall.remote.SplitInstallSupervisor;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public final class SplitApkInstaller {

@@ -25,7 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.content.Context;
-import androidx.annotation.NonNull;
+import android.support.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 

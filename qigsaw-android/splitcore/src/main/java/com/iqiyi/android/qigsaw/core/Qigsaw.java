@@ -30,7 +30,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Looper;
 import android.os.MessageQueue;
-import androidx.annotation.NonNull;
+import android.support.annotation.NonNull;
 
 import com.google.android.play.core.splitcompat.SplitCompat;
 import com.iqiyi.android.qigsaw.core.common.ProcessUtil;

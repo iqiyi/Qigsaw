@@ -27,8 +27,8 @@ package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 import android.app.IntentService;
 import android.content.Intent;
 import android.os.IBinder;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
@@ -42,7 +42,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class SplitUpdateService extends IntentService {

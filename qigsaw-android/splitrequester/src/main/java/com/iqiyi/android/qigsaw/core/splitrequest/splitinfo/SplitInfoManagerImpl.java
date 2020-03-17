@@ -26,8 +26,8 @@ package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
 import android.content.Context;
 import android.content.res.Resources;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.AbiUtil;

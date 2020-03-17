@@ -24,8 +24,8 @@
 
 package com.iqiyi.android.qigsaw.core.splitreport;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 
 public final class SplitInstallError extends SplitBriefInfo {
 

@@ -27,9 +27,9 @@ package com.iqiyi.android.qigsaw.core;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 import android.util.LruCache;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;

@@ -25,14 +25,14 @@
 package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
 import android.content.Context;
-import androidx.annotation.NonNull;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public interface SplitInfoManager {

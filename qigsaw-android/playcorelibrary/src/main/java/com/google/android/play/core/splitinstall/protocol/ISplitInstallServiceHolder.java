@@ -2,11 +2,11 @@ package com.google.android.play.core.splitinstall.protocol;
 
 import android.os.IBinder;
 import android.os.IInterface;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.RestrictTo;
 
 import com.google.android.binder.BinderWrapper;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public abstract class ISplitInstallServiceHolder extends BinderWrapper implements ISplitInstallServiceProxy {

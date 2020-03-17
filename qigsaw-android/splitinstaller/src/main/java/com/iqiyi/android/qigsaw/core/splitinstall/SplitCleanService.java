@@ -26,12 +26,23 @@ package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import android.app.IntentService;
 import android.content.Intent;
-import androidx.annotation.Nullable;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.Nullable;
+import android.support.annotation.RestrictTo;
 
+import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import java.io.File;
+import java.io.FileFilter;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class SplitCleanService extends IntentService {
