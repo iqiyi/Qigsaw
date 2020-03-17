@@ -28,7 +28,7 @@ dependencies {
     implementation project(':splitrequester')
     implementation project(':splitextension')
     implementation project(':splitreporter')
-    implementation "com.android.support:support-core-utils:${versions.support}"
+    implementation "com.android.support:support-annotations:${versions.support}"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'

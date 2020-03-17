@@ -30,7 +30,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.util.ArraySet;
 
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -46,6 +45,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -125,7 +125,7 @@ abstract class SplitLoadTask implements Runnable {
     private void loadSplitInternal() {
         long time = System.currentTimeMillis();
         SplitLoader loader = createSplitLoader();
-        Set<Split> splits = new ArraySet<>();
+        Set<Split> splits = new HashSet<>();
         List<SplitLoadError> loadErrors = new ArrayList<>(0);
         List<SplitBriefInfo> splitBriefInfoList = new ArrayList<>(splitFileIntents.size());
         for (Intent splitFileIntent : splitFileIntents) {
