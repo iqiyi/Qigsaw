@@ -31,7 +31,6 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 class FixedMainDexList {
 
     final String[] FILTERRULES = [
-            "class * implements com.tencent.tinker.entry.ApplicationLifeCycle",
             "class * extends android.app.Application"
     ]
     final String ADDRULES = "\n# Adjust by qigsaw"
