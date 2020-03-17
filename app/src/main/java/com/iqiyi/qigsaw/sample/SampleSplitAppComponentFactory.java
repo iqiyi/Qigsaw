@@ -3,8 +3,8 @@ package com.iqiyi.qigsaw.sample;
 import android.app.AppComponentFactory;
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.RequiresApi;
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 
 import com.iqiyi.android.qigsaw.core.splitload.SplitDelegateClassLoaderFactory;
 

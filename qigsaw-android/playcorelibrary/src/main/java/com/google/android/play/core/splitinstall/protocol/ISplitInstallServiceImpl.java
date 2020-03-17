@@ -4,14 +4,14 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
 import com.google.android.binder.IInterfaceProxy;
 import com.google.android.binder.ParcelHelper;
 
 import java.util.List;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class ISplitInstallServiceImpl extends IInterfaceProxy implements ISplitInstallServiceProxy {
