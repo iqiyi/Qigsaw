@@ -31,8 +31,10 @@ import android.content.res.Resources;
 import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 
+import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +44,8 @@ import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public abstract class SplitLoadManager {
+
+    protected static final String TAG = "SplitLoadManager";
 
     private final Context context;
 
@@ -117,7 +121,16 @@ public abstract class SplitLoadManager {
      */
     Set<String> getLoadedSplitApkPaths() {
         synchronized (this) {
-            return loadedSplitApkPaths;
+            Set<String> loadedSplitApkPathsInsure = new HashSet<>(loadedSplitApkPaths.size());
+            for (String path : loadedSplitApkPaths) {
+                File file = new File(path);
+                if (file.exists() && file.isFile()) {
+                    loadedSplitApkPathsInsure.add(path);
+                } else {
+                    SplitLog.w(TAG, "Split has been loaded, but its file %s is not exist!", path);
+                }
+            }
+            return loadedSplitApkPathsInsure;
         }
     }
 

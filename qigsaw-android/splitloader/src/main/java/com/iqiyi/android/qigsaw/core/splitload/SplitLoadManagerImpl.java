@@ -51,8 +51,6 @@ import java.util.List;
 
 final class SplitLoadManagerImpl extends SplitLoadManager {
 
-    private static final String TAG = "SplitLoadManagerImpl";
-
     private final boolean qigsawMode;
 
     private final String[] forbiddenWorkProcesses;

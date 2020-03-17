@@ -92,7 +92,6 @@ final class SplitDelegateClassloader extends PathClassLoader {
     private Class<?> onClassNotFound(String name) {
         Class<?> ret = findClassInSplits(name);
         if (ret != null) {
-            SplitLog.i(TAG, "Class %s is found in Splits", name);
             return ret;
         }
         Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
@@ -127,7 +126,9 @@ final class SplitDelegateClassloader extends PathClassLoader {
         Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
         for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
             try {
-                return classLoader.loadClassItself(name);
+                Class<?> clazz = classLoader.loadClassItself(name);
+                SplitLog.i(TAG, "Class %s is found in %s ClassLoader", name, classLoader.moduleName());
+                return clazz;
             } catch (ClassNotFoundException e) {
                 SplitLog.w(TAG, "Class %s is not found in %s ClassLoader", name, classLoader.moduleName());
             }
