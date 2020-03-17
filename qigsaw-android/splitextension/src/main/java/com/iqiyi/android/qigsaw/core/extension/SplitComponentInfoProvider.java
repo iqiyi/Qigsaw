@@ -24,7 +24,7 @@
 
 package com.iqiyi.android.qigsaw.core.extension;
 
-import androidx.annotation.NonNull;
+import android.support.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;

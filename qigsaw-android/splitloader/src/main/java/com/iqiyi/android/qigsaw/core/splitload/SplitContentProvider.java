@@ -24,9 +24,11 @@
 
 package com.iqiyi.android.qigsaw.core.splitload;
 
-import androidx.annotation.RestrictTo;
+import android.support.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.extension.ContentProviderProxy;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManager;
+import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public abstract class SplitContentProvider extends ContentProviderProxy {

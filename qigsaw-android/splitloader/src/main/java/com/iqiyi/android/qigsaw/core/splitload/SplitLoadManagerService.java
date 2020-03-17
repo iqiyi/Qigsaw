@@ -25,11 +25,11 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.RestrictTo;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * Create and manage {@link SplitLoadManager} instance.

@@ -3,9 +3,9 @@ package com.google.android.binder;
 import android.os.IInterface;
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.RestrictTo;
 
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class ParcelHelper {

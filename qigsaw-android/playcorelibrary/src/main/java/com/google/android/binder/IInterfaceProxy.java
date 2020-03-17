@@ -4,10 +4,10 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.Parcel;
 import android.os.RemoteException;
-import androidx.annotation.RestrictTo;
+import android.support.annotation.RestrictTo;
 
 import static android.os.IBinder.FLAG_ONEWAY;
-import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class IInterfaceProxy implements IInterface {
