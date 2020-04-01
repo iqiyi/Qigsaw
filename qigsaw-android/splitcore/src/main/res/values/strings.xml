@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">qigsaw-splitcore</string>
     <string name="warm_prompt">温馨提示</string>
     <string name="prompt_desc">使用此功能将会消耗您约%sM流量数据，是否继续下载？</string>
     <string name="confirm">确认</string>
