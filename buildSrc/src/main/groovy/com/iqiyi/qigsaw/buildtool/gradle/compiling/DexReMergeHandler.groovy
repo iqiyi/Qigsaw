@@ -26,10 +26,9 @@ package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.annotations.NonNull
 import com.android.annotations.Nullable
-import com.android.build.api.artifact.BuildableArtifact
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.LoggerWrapper
-import com.android.build.gradle.internal.api.artifact.BuildableArtifactUtil
+
 import com.android.build.gradle.internal.scope.InternalArtifactType
 import com.android.build.gradle.internal.scope.VariantScope
 import com.android.builder.dexing.DexMergerTool
@@ -46,6 +45,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import org.gradle.api.Project
 
 import java.lang.reflect.Constructor
+import java.lang.reflect.Method
 import java.nio.file.Path
 import java.util.concurrent.Callable
 import java.util.concurrent.ForkJoinPool
@@ -78,10 +78,10 @@ class DexReMergeHandler {
         if (DexingType.LEGACY_MULTIDEX != variantScope.getDexingType()) {
             return
         }
-        BuildableArtifact mainDexListArtifact = variantScope
+        Iterable mainDexListArtifact = variantScope
                 .getArtifacts()
                 .getFinalArtifactFiles(
-                InternalArtifactType.LEGACY_MULTIDEX_MAIN_DEX_LIST)
+                        InternalArtifactType.LEGACY_MULTIDEX_MAIN_DEX_LIST)
         Path mainDexPath = null
         if (mainDexListArtifact.empty) {
             try {
@@ -91,7 +91,11 @@ class DexReMergeHandler {
                 //ignored
             }
         } else {
-            mainDexPath = BuildableArtifactUtil.singlePath(mainDexListArtifact)
+            Class<?> class_BuildableArtifactUtil = Class.forName("com.android.build.gradle.internal.api.artifact.BuildableArtifactUtil")
+            Class<?> class_BuildableArtifact = Class.forName("com.android.build.api.artifact.BuildableArtifact")
+            Method method_singlePath = class_BuildableArtifactUtil.getDeclaredMethod("singlePath", class_BuildableArtifact)
+            method_singlePath.setAccessible(true)
+            mainDexPath = method_singlePath.invoke(null, mainDexListArtifact)
         }
         List<Path> dexPaths = new ArrayList<>()
         dexFiles.each {
