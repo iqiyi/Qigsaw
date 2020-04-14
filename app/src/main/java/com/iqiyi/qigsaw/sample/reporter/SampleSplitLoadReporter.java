@@ -1,7 +1,7 @@
 package com.iqiyi.qigsaw.sample.reporter;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitLoadReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;

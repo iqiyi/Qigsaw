@@ -24,8 +24,8 @@
 
 package com.iqiyi.android.qigsaw.core.splitreport;
 
-import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
 
 import java.util.List;
 

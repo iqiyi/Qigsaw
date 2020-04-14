@@ -27,7 +27,7 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
@@ -39,7 +39,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class SplitLibraryLoaderHelper {

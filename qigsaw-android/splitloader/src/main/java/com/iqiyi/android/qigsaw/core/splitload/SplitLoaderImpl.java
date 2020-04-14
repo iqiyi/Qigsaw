@@ -25,7 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 

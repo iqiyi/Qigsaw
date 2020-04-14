@@ -9,7 +9,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.splitload.SplitCompatResourcesLoader;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLibraryLoaderHelper;
