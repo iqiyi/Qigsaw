@@ -25,9 +25,11 @@
 package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
 import android.content.Context;
+
 import androidx.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.OEMCompat;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -107,6 +109,21 @@ public final class SplitPathManager {
     public File getSplitMarkFile(SplitInfo info) {
         File splitDir = getSplitDir(info);
         return new File(splitDir, info.getMd5());
+    }
+
+    /**
+     * Get special mark file for split(), if file is existed, indicate the split has been installed.
+     *
+     * @param info split info.
+     */
+    public File getSplitSpecialMarkFile(SplitInfo info) {
+        File splitDir = getSplitDir(info);
+        return new File(splitDir, info.getMd5() + ".ov");
+    }
+
+    public File getSplitSpecialLockFile(SplitInfo info) {
+        File splitDir = getSplitDir(info);
+        return new File(splitDir, "ov.lock");
     }
 
     /**

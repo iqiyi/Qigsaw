@@ -1,8 +1,9 @@
 package com.iqiyi.android.qigsaw.core.common;
 
-
 import android.annotation.SuppressLint;
 import android.os.Build;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
 
 import java.io.BufferedInputStream;
@@ -26,7 +27,7 @@ public class FileUtil {
 
     }
 
-    private static final String TAG = "SplitFileUtil";
+    private static final String TAG = "Split.FileUtil";
 
     public static void copyFile(InputStream input, OutputStream output) throws IOException {
         BufferedInputStream bufferedInput = new BufferedInputStream(input);
@@ -43,7 +44,7 @@ public class FileUtil {
         }
     }
 
-    public static void createFileSafely(File file) throws IOException {
+    public static void createFileSafely(@NonNull File file) throws IOException {
         if (!file.exists()) {
             boolean isCreationSuccessful = false;
             int numAttempts = 0;
@@ -62,12 +63,54 @@ public class FileUtil {
             }
             if (!isCreationSuccessful) {
                 throw new IOException("Failed to create file " + file.getAbsolutePath(), cause);
+            } else {
+                SplitLog.v(TAG, "Succeed to create file " + file.getAbsolutePath());
             }
         }
     }
 
-    public static boolean deleteFileSafely(File file) {
-        if (file == null || !file.exists()) {
+    public static synchronized boolean deleteFileSafelyLock(@NonNull File file, File lockFile) throws IOException {
+        if (!file.exists()) {
+            return true;
+        }
+        FileLockHelper fileLock = null;
+        boolean ret;
+        try {
+            fileLock = FileLockHelper.getFileLock(lockFile);
+            ret = deleteFileSafely(file);
+        } catch (IOException e) {
+            throw new IOException("Failed to lock file " + lockFile.getAbsolutePath());
+        } finally {
+            if (lockFile != null) {
+                closeQuietly(fileLock);
+            }
+        }
+        return ret;
+    }
+
+    public static synchronized void createFileSafelyLock(@NonNull File file, File lockFile) throws IOException {
+        if (file.exists()) {
+            return;
+        }
+        FileLockHelper fileLock = null;
+        try {
+            fileLock = FileLockHelper.getFileLock(lockFile);
+            try {
+                createFileSafely(file);
+            } catch (IOException e) {
+                throw new IOException("Failed to create file " + file.getAbsolutePath());
+            }
+        } catch (IOException e) {
+            throw new IOException("Failed to lock file " + lockFile.getAbsolutePath());
+        } finally {
+            if (lockFile != null) {
+                closeQuietly(fileLock);
+            }
+        }
+    }
+
+    public static boolean deleteFileSafely(@NonNull File file) {
+        if (!file.exists()) {
             return true;
         }
         boolean isDeleteSuccessful = false;

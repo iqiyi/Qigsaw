@@ -31,10 +31,14 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.Looper;
 import android.os.MessageQueue;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import android.text.TextUtils;
 
+import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.OEMCompat;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
@@ -45,6 +49,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -91,7 +96,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             return;
         }
         if (isProcessAllowedToWork()) {
-            deferredLoadInstalledSplits();
+            deferredLoadInstalledSplitsIfNeed();
         }
     }
 
@@ -176,7 +181,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         return true;
     }
 
-    private void deferredLoadInstalledSplits() {
+    private void deferredLoadInstalledSplitsIfNeed() {
         if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
             Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
                 @Override
@@ -197,13 +202,40 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
         File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo);
+        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo);
         File splitApk;
         if (splitInfo.isBuiltIn() && splitInfo.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
             splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
         } else {
             splitApk = new File(splitDir, splitName + SplitConstants.DOT_APK);
         }
-        if (markFile.exists()) {
+        //check oat file if special mark file is exist.
+        if (specialMarkFile.exists() && !markFile.exists()) {
+            SplitLog.v(TAG, "In vivo & oppo, we need to check oat file when split is going to be loaded.");
+            File optimizedDirectory = SplitPathManager.require().getSplitOptDir(splitInfo);
+            File oatFile = OEMCompat.getOatFilePath(splitApk, optimizedDirectory);
+            if (FileUtil.isLegalFile(oatFile)) {
+                boolean result = OEMCompat.checkOatFile(oatFile);
+                SplitLog.v(TAG, "Check result of oat file %s is " + result, oatFile.getAbsoluteFile());
+                File lockFile = SplitPathManager.require().getSplitSpecialLockFile(splitInfo);
+                if (result) {
+                    try {
+                        FileUtil.createFileSafelyLock(markFile, lockFile);
+                    } catch (IOException e) {
+                        SplitLog.w(TAG, "Failed to create installed mark file " + oatFile.exists());
+                    }
+                } else {
+                    try {
+                        FileUtil.deleteFileSafelyLock(oatFile, lockFile);
+                    } catch (IOException e) {
+                        SplitLog.w(TAG, "Failed to delete corrupted oat file " + oatFile.exists());
+                    }
+                }
+            } else {
+                SplitLog.v(TAG, "Oat file %s is still not exist in vivo & oppo, system continue to use interpreter mode.", oatFile.getAbsoluteFile());
+            }
+        }
+        if (markFile.exists() || specialMarkFile.exists()) {
             List<String> dependencies = splitInfo.getDependencies();
             if (dependencies != null) {
                 SplitLog.i(TAG, "Split %s has dependencies %s !", splitName, dependencies);
