@@ -10,7 +10,7 @@ buildscript {
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
     }
 }
-applyRootProjectProperties()
+if (!hasProperty('PUBLISHING_MODE')) applyRootProjectProperties()
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "com.android.tools.build:gradle:${AGP_VERSION}"
@@ -63,4 +63,33 @@ void applyRootProjectProperties() {
     local_properties.each { key, value ->
         project.ext[key] = value
     }
+}
+
+ext.publishToPrivateNexus = { g, a, v ->
+    apply plugin: 'com.novoda.bintray-release'
+    publish {
+        userOrg = 'user'
+        groupId = g
+        artifactId = a
+        publishVersion = v
+        desc = 'desc'
+        website = 'website'
+    }
+
+    publishing {
+        repositories {
+            maven {//fixme init user info in init.gradle
+                url PRIVATE_NEXUS_REPOSITORY
+                credentials {
+                    username PRIVATE_NEXUS_USER
+                    password PRIVATE_NEXUS_PASSWORD
+                }
+            }
+        }
+    }
+}
+
+//publish to user nexus: uploader ->publishing ->publish
+if (hasProperty('PUBLISHING_MODE') && hasProperty('PRIVATE_NEXUS_REPOSITORY')) {
+    publishToPrivateNexus('com.iqiyi.android.qigsaw', 'uploader', '1.0.0')
 }

@@ -8,6 +8,7 @@ buildscript {
         jcenter()
     }
     dependencies {
+        classpath 'com.novoda:bintray-release:0.9.2'
         classpath "com.android.tools.build:gradle:${AGP_VERSION}"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
@@ -25,6 +26,19 @@ allprojects {
 
 subprojects {
     apply from: rootProject.file('./gradle/checkStyle.gradle')
+
+    if (project.hasProperty('PUBLISHING_MODE') && project.name != 'uploader') {
+        apply plugin: 'com.novoda.bintray-release'
+        publish {
+            groupId = 'com.iqiyi.android.qigsaw'
+            artifactId = project.name
+            publishVersion = VERSION_NAME
+
+            userOrg = 'iqiyi'
+            desc = 'Qigsaw is a dynamic modularization library which is based on Android App Bundles'
+            website = 'https://github.com/iqiyi/Qigsaw'
+        }
+    }
 }
 
 ext {
@@ -34,5 +48,5 @@ ext {
             'targetSdk' : 28,
             'support'   : '27.1.1'
     ]
-    sample=false
+    sample = false
 }
