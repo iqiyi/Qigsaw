@@ -1,0 +1,59 @@
+apply plugin: 'groovy'
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    if (project.hasProperty('PUBLISHING_MODE')) {
+        compileOnly "com.android.tools.build:gradle:${AGP_VERSION}"
+        compileOnly "com.iqiyi.android.qigsaw:gradle-plugin:${VERSION_NAME}"
+    } else {
+        implementation "com.android.tools.build:gradle:${AGP_VERSION}"
+        implementation "com.iqiyi.android.qigsaw:gradle-plugin:${VERSION_NAME}"
+    }
+    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.4.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.4.0'
+    implementation 'com.squareup.retrofit2:adapter-rxjava:2.4.0'
+    implementation gradleApi()
+}
+
+sourceSets {
+    def path = project.rootProject.file('./qigsaw-android-sample/buildSrc').absolutePath
+    main {
+        groovy {
+            srcDir path + '/src/main/groovy'
+        }
+
+        resources {
+            srcDir path + '/src/main/resources'
+        }
+    }
+}
+
+ext.publishToPrivateNexus = { g, a, v ->
+    apply plugin: 'com.novoda.bintray-release'
+    publish {
+        userOrg = 'user'
+        groupId = g
+        artifactId = a
+        publishVersion = v
+        desc = 'desc'
+        website = 'website'
+    }
+
+    publishing {
+        repositories {
+            maven {//fixme init user info in init.gradle
+                url PRIVATE_NEXUS_REPOSITORY
+                credentials {
+                    username PRIVATE_NEXUS_USER
+                    password PRIVATE_NEXUS_PASSWORD
+                }
+            }
+        }
+    }
+}
+
+//publish to user nexus: uploader ->publishing ->publish
+if (hasProperty('PUBLISHING_MODE') && hasProperty('PRIVATE_NEXUS_REPOSITORY')) {
+    publishToPrivateNexus('com.iqiyi.android.qigsaw', 'uploader', VERSION_NAME)
+}

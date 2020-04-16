@@ -26,6 +26,5 @@ if (!hasProperty('SAMPLE_MODE')) {
         project(':gradle-plugin').projectDir = new File("./buildSrc")
 
         include ':uploader'
-        project(':uploader').projectDir = new File("./qigsaw-android-sample/buildSrc")
     }
 }
