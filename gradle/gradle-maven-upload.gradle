@@ -1,3 +1,18 @@
+if (hasProperty('PUBLISHING_MODE')) {
+    if (project.name != 'uploader') {
+        apply plugin: 'com.novoda.bintray-release'
+        publish {
+            groupId = 'com.iqiyi.android.qigsaw'
+            artifactId = project.name
+            publishVersion = VERSION_NAME
+
+            userOrg = 'iqiyi'
+            desc = 'Qigsaw is a dynamic modularization library which is based on Android App Bundles'
+            website = 'https://github.com/iqiyi/Qigsaw'
+        }
+    }
+    return
+}
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'signing'
 

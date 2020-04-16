@@ -9,6 +9,7 @@ buildscript {
         jcenter()
     }
     dependencies {
+        classpath 'com.novoda:bintray-release:0.9.2'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
         classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
     }

@@ -1,3 +1,4 @@
+if (hasProperty('PUBLISHING_MODE')) return
 apply plugin: 'maven-publish'
 
 sourceCompatibility = JAVA_VERSION
