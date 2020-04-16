@@ -1,28 +1,31 @@
 include ':app', 'downloader'
 include ':java', ':assets', ':native'
-include ':splitcore', ':playcorelibrary', ':splitcommon'
-include ':splitinstaller', ':splitdownloader', ':splitloader'
-include ':splitrequester', ':splitreporter', ':splitextension'
 
 project(':assets').projectDir = new File("./features/assets")
 project(':java').projectDir = new File("./features/java")
 project(':native').projectDir = new File("./features/native")
 
-project(':splitcore').projectDir = new File("./qigsaw-android/splitcore")
-project(':playcorelibrary').projectDir = new File("./qigsaw-android/playcorelibrary")
-project(':playcorelibrary').projectDir = new File("./qigsaw-android/playcorelibrary")
-project(':splitinstaller').projectDir = new File("./qigsaw-android/splitinstaller")
-project(':splitdownloader').projectDir = new File("./qigsaw-android/splitdownloader")
-project(':splitloader').projectDir = new File("./qigsaw-android/splitloader")
-project(':splitrequester').projectDir = new File("./qigsaw-android/splitrequester")
-project(':splitreporter').projectDir = new File("./qigsaw-android/splitreporter")
-project(':splitcommon').projectDir = new File("./qigsaw-android/splitcommon")
-project(':splitextension').projectDir = new File("./qigsaw-android/splitextension")
 
-if (hasProperty('PUBLISHING_MODE')) {
-    include ':gradle-plugin'
-    project(':gradle-plugin').projectDir = new File("./buildSrc")
+if (!hasProperty('SAMPLE_MODE')) {
+    include ':splitcore', ':playcorelibrary', ':splitcommon'
+    include ':splitinstaller', ':splitdownloader', ':splitloader'
+    include ':splitrequester', ':splitreporter', ':splitextension'
+    project(':splitcore').projectDir = new File("./qigsaw-android/splitcore")
+    project(':playcorelibrary').projectDir = new File("./qigsaw-android/playcorelibrary")
+    project(':playcorelibrary').projectDir = new File("./qigsaw-android/playcorelibrary")
+    project(':splitinstaller').projectDir = new File("./qigsaw-android/splitinstaller")
+    project(':splitdownloader').projectDir = new File("./qigsaw-android/splitdownloader")
+    project(':splitloader').projectDir = new File("./qigsaw-android/splitloader")
+    project(':splitrequester').projectDir = new File("./qigsaw-android/splitrequester")
+    project(':splitreporter').projectDir = new File("./qigsaw-android/splitreporter")
+    project(':splitcommon').projectDir = new File("./qigsaw-android/splitcommon")
+    project(':splitextension').projectDir = new File("./qigsaw-android/splitextension")
 
-    include ':uploader'
-    project(':uploader').projectDir = new File("./qigsaw-android-sample/buildSrc")
+    if (hasProperty('PUBLISHING_MODE')) {
+        include ':gradle-plugin'
+        project(':gradle-plugin').projectDir = new File("./buildSrc")
+
+        include ':uploader'
+        project(':uploader').projectDir = new File("./qigsaw-android-sample/buildSrc")
+    }
 }

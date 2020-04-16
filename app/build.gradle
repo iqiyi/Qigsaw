@@ -1,9 +1,5 @@
 apply plugin: 'com.android.application'
-if (sample) {
-    apply plugin: 'com.iqiyi.qigsaw.sample.application'
-} else {
-    apply plugin: 'com.iqiyi.qigsaw.application'
-}
+apply plugin: 'com.iqiyi.qigsaw.application'
 
 android {
     compileSdkVersion versions.compileSdk

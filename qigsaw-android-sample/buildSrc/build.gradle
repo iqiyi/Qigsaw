@@ -91,5 +91,5 @@ ext.publishToPrivateNexus = { g, a, v ->
 
 //publish to user nexus: uploader ->publishing ->publish
 if (hasProperty('PUBLISHING_MODE') && hasProperty('PRIVATE_NEXUS_REPOSITORY')) {
-    publishToPrivateNexus('com.iqiyi.android.qigsaw', 'uploader', '1.0.0')
+    publishToPrivateNexus('com.iqiyi.android.qigsaw', 'uploader', VERSION_NAME)
 }

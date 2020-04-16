@@ -29,6 +29,7 @@ import com.android.build.gradle.api.ApplicationVariant
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.DexReMergeHandler
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.FixedMainDexList
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
+import com.iqiyi.qigsaw.buildtool.gradle.extension.SplitUploadExtension
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
@@ -69,6 +70,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
     void apply(Project project) {
         //create qigsaw extension.
         project.extensions.create("qigsawSplit", QigsawSplitExtension)
+        project.extensions.create("splitUpload", SplitUploadExtension)
         if (!project.plugins.hasPlugin('com.android.application')) {
             throw new GradleException('Qigsaw Error: Android Application plugin required')
         }

@@ -1,4 +1,4 @@
-package com.iqiyi.qigsaw.buildtool.gradle.sample.extension
+package com.iqiyi.qigsaw.buildtool.gradle.extension
 
 import com.google.common.collect.Lists
 
