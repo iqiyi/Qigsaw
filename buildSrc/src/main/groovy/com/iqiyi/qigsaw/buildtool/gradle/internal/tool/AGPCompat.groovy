@@ -48,7 +48,11 @@ class AGPCompat {
     }
 
     static File getPackageApplicationDirCompat(Task packageApplicationTask) {
-        return packageApplicationTask.outputDirectory
+        try {
+            return packageApplicationTask.outputDirectory
+        } catch (Throwable ignored) {
+            return packageApplicationTask.outputDirectory.asFile.get()
+        }
     }
 
     private static String getMergedManifestDirCompat(Task processManifestTask) {

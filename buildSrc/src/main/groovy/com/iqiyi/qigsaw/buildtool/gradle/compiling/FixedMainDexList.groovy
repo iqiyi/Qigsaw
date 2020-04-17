@@ -25,7 +25,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.build.gradle.api.ApplicationVariant
-import com.android.build.gradle.internal.scope.VariantScope
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 
 class FixedMainDexList {
@@ -35,14 +34,13 @@ class FixedMainDexList {
     ]
     final String ADDRULES = "\n# Adjust by qigsaw"
 
-    final VariantScope variantScope
+    final File multiDexKeepProguard
 
     FixedMainDexList(ApplicationVariant variant) {
-        this.variantScope = variant.variantData.scope
+        this.multiDexKeepProguard = getManifestMultiDexKeepProguard(variant)
     }
 
     void execute() {
-        File multiDexKeepProguard = getDexKeepProguardFile()
         if (multiDexKeepProguard == null) {
             return
         }
@@ -83,33 +81,71 @@ class FixedMainDexList {
         return match
     }
 
-    File getDexKeepProguardFile() {
+    File getManifestMultiDexKeepProguard(def applicationVariant) {
         File multiDexKeepProguard = null
+
         try {
-            multiDexKeepProguard = variantScope.getManifestKeepListProguardFile()
+            //for kotlin
+            def file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+                    Class.forName('com.android.build.gradle.internal.scope.InternalArtifactType$LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES')
+                            .getDeclaredField("INSTANCE")
+                            .get(null)
+            ).getOrNull()?.getAsFile()
+            if (file != null && file.getName() != '__EMPTY_DIR__') {
+                multiDexKeepProguard = file
+            }
         } catch (Throwable ignore) {
+        }
+
+        if (multiDexKeepProguard == null) {
             try {
-                def buildableArtifact = this.variantScope.getArtifacts().getFinalArtifactFiles(
+                File file = applicationVariant.getVariantData().getScope().getArtifacts().getFinalProduct(
+                        Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
+                                .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
+                                .get(null)
+                ).getOrNull()?.getAsFile()
+                if (file != null && file.getName() != '__EMPTY_DIR__') {
+                    multiDexKeepProguard = file
+                }
+            } catch (Throwable ignore) {
+
+            }
+        }
+
+
+        if (multiDexKeepProguard == null) {
+            try {
+                def buildableArtifact = applicationVariant.getVariantData().getScope().getArtifacts().getFinalArtifactFiles(
                         Class.forName("com.android.build.gradle.internal.scope.InternalArtifactType")
                                 .getDeclaredField("LEGACY_MULTIDEX_AAPT_DERIVED_PROGUARD_RULES")
                                 .get(null)
                 )
 
-                //noinspection GroovyUnch eckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
+                //noinspection GroovyUncheckedAssignmentOfMemberOfRawType,UnnecessaryQualifiedReference
                 multiDexKeepProguard = com.google.common.collect.Iterators.getOnlyElement(buildableArtifact.iterator())
-            } catch (Throwable e) {
+            } catch (Throwable ignore) {
 
             }
-            if (multiDexKeepProguard == null) {
-                try {
-                    multiDexKeepProguard = variantScope.getManifestKeepListFile()
-                } catch (Throwable e) {
-                    QigsawLogger.e("can't find getManifestKeepListFile method, exception:${e}")
-                }
+        }
+
+        if (multiDexKeepProguard == null) {
+            try {
+                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListProguardFile()
+            } catch (Throwable ignore) {
+
             }
         }
+
         if (multiDexKeepProguard == null) {
-            QigsawLogger.e("can't get multiDexKeepProguard file")
+            try {
+                multiDexKeepProguard = applicationVariant.getVariantData().getScope().getManifestKeepListFile()
+            } catch (Throwable ignore) {
+
+            }
+        }
+
+        if (multiDexKeepProguard == null) {
+            mProject.logger.error("can't get multiDexKeepProguard file")
         }
         return multiDexKeepProguard
     }
