@@ -1,13 +1,13 @@
 package com.google.android.play.core.splitcompat.util;
 
 import android.os.Process;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.Locale;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public class PlayCore {

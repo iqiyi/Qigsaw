@@ -26,7 +26,7 @@ package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 
 import android.os.Bundle;
 import android.os.RemoteException;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.splitinstall.protocol.ISplitInstallServiceCallback;
 

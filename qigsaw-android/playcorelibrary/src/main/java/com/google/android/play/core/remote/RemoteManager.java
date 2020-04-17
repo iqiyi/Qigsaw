@@ -7,7 +7,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.IInterface;
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
 import com.google.android.play.core.splitcompat.util.PlayCore;
 import com.google.android.play.core.tasks.TaskWrapper;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 @RestrictTo(LIBRARY_GROUP)
 public final class RemoteManager<T extends IInterface> {

@@ -24,9 +24,9 @@
 
 package com.iqiyi.android.qigsaw.core.splitload.listener;
 
-import android.support.annotation.RestrictTo;
+import androidx.annotation.RestrictTo;
 
-import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
+import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
 /**
  * Interface definition for a callback to be invoked when splits loaded.

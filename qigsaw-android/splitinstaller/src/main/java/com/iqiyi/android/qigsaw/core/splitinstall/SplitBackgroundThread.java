@@ -25,7 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import android.annotation.SuppressLint;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.util.concurrent.ThreadFactory;
 
