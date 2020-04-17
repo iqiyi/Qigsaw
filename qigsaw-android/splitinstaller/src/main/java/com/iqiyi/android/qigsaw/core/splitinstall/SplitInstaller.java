@@ -79,9 +79,11 @@ abstract class SplitInstaller {
      *
      * @return if {@code true} means the split is first installed, otherwise {@code false} means the split has been install.
      */
-    protected abstract boolean createInstalledMark(SplitInfo info) throws InstallException;
+    protected abstract boolean createInstalledMark(File markFile) throws InstallException;
 
-    class InstallResult {
+    protected abstract boolean createInstalledMarkLock(File markFile, File lockFile) throws InstallException;
+
+    static class InstallResult {
 
         final String splitName;
 
@@ -106,7 +108,7 @@ abstract class SplitInstaller {
 
         private final int errorCode;
 
-        InstallException(int errorCode, Exception e) {
+        InstallException(int errorCode, Throwable e) {
             super((new StringBuilder(32)).append("Split Install Error: ").append(errorCode).toString(), e);
             this.errorCode = errorCode;
         }

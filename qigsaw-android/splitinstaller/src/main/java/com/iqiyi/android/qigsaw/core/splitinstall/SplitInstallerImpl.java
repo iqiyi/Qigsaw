@@ -25,16 +25,16 @@
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
 import android.content.Context;
+import android.os.Build;
 import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.OEMCompat;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitInstallError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
@@ -99,18 +99,60 @@ final class SplitInstallerImpl extends SplitInstaller {
                 }
             }
         }
-        try {
-            if (addedDexPaths != null) {
-                String dexPath = TextUtils.join(File.pathSeparator, addedDexPaths);
-                File optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
-                String librarySearchPath = splitLibDir == null ? null : splitLibDir.getAbsolutePath();
-                //trigger oat if need
-                new DexClassLoader(dexPath, optimizedDirectory.getAbsolutePath(), librarySearchPath, SplitInstallerImpl.class.getClassLoader());
+        File markFile = SplitPathManager.require().getSplitMarkFile(info);
+        if (addedDexPaths != null) {
+            String dexPath = TextUtils.join(File.pathSeparator, addedDexPaths);
+            File optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
+            String librarySearchPath = splitLibDir == null ? null : splitLibDir.getAbsolutePath();
+            //trigger oat if need
+            if (!markFile.exists()) {
+                try {
+                    new DexClassLoader(dexPath, optimizedDirectory.getAbsolutePath(), librarySearchPath, SplitInstallerImpl.class.getClassLoader());
+                } catch (Throwable error) {
+                    throw new InstallException(
+                            SplitInstallError.CLASSLOADER_CREATE_FAILED,
+                            error);
+                }
             }
-        } catch (Throwable ignored) {
-
+            //check oat file. We found many native crash in libart.so, especially vivo & oppo.
+            if (OEMCompat.shouldCheckOatFileInCurrentSys()) {
+                SplitLog.v(TAG, "Start to check oat file, current api level is " + Build.VERSION.SDK_INT);
+                boolean specialManufacturer = OEMCompat.isSpecialManufacturer();
+                File oatFile = OEMCompat.getOatFilePath(sourceApk, optimizedDirectory);
+                if (FileUtil.isLegalFile(oatFile)) {
+                    boolean checkResult = OEMCompat.checkOatFile(oatFile);
+                    SplitLog.v(TAG, "Result of oat file %s is " + checkResult, oatFile.getAbsoluteFile());
+                    if (!checkResult) {
+                        SplitLog.w(TAG, "Failed to check oat file " + oatFile.getAbsolutePath());
+                        if (specialManufacturer) {
+                            File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
+                            try {
+                                FileUtil.deleteFileSafelyLock(oatFile, lockFile);
+                            } catch (IOException error) {
+                                SplitLog.w(TAG, "Failed to delete corrupted oat file " + oatFile.exists());
+                            }
+                        } else {
+                            FileUtil.deleteFileSafely(oatFile);
+                        }
+                        throw new InstallException(
+                                SplitInstallError.DEX_OAT_FAILED,
+                                new FileNotFoundException("System generate split " + info.getSplitName() + " oat file failed!")
+                        );
+                    }
+                } else {
+                    if (specialManufacturer) {
+                        SplitLog.v(TAG, "Oat file %s is not exist in vivo & oppo, system would use interpreter mode.", oatFile.getAbsoluteFile());
+                        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(info);
+                        if (!markFile.exists() && !specialMarkFile.exists()) {
+                            File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
+                            boolean firstInstallation = createInstalledMarkLock(specialMarkFile, lockFile);
+                            return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstallation);
+                        }
+                    }
+                }
+            }
         }
-        boolean firstInstallation = createInstalledMark(info);
+        boolean firstInstallation = createInstalledMark(markFile);
         return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstallation);
     }
 
@@ -182,11 +224,23 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected boolean createInstalledMark(SplitInfo info) throws InstallException {
-        File markFile = SplitPathManager.require().getSplitMarkFile(info);
+    protected boolean createInstalledMark(File markFile) throws InstallException {
         if (!markFile.exists()) {
             try {
                 FileUtil.createFileSafely(markFile);
+                return true;
+            } catch (IOException e) {
+                throw new InstallException(SplitInstallError.MARK_CREATE_FAILED, e);
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected boolean createInstalledMarkLock(File markFile, File lockFile) throws InstallException {
+        if (!markFile.exists()) {
+            try {
+                FileUtil.createFileSafelyLock(markFile, lockFile);
                 return true;
             } catch (IOException e) {
                 throw new InstallException(SplitInstallError.MARK_CREATE_FAILED, e);

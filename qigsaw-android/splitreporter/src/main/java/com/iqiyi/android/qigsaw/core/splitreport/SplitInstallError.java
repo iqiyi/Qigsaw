@@ -60,6 +60,16 @@ public final class SplitInstallError extends SplitBriefInfo {
     public static final int MARK_CREATE_FAILED = -16;
 
     /**
+     * Failed to create {@link dalvik.system.DexClassLoader}
+     */
+    public static final int CLASSLOADER_CREATE_FAILED = -17;
+
+    /**
+     * System generate oat file failed.
+     */
+    public static final int DEX_OAT_FAILED = -18;
+
+    /**
      * error code of this exception.
      */
     public final int errorCode;
