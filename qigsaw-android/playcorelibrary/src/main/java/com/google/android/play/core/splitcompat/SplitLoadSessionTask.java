@@ -3,6 +3,7 @@ package com.google.android.play.core.splitcompat;
 import android.content.Intent;
 
 import com.google.android.play.core.splitinstall.SplitSessionStatusChanger;
+import com.google.android.play.core.splitinstall.model.SplitInstallErrorCode;
 import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManager;
 import com.iqiyi.android.qigsaw.core.splitload.SplitLoadManagerService;
@@ -23,6 +24,10 @@ final class SplitLoadSessionTask implements Runnable, OnSplitLoadListener {
 
     @Override
     public void run() {
+        if (splitFileIntents == null) {
+            onFailed(SplitInstallErrorCode.INTERNAL_ERROR);
+            return;
+        }
         //load installed splits
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         if (loadManager != null) {
