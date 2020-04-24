@@ -145,15 +145,15 @@ final class SplitInstallerImpl extends SplitInstaller {
                         File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(info);
                         if (!markFile.exists() && !specialMarkFile.exists()) {
                             File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
-                            boolean firstInstallation = createInstalledMarkLock(specialMarkFile, lockFile);
-                            return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstallation);
+                            boolean firstInstalled = createInstalledMarkLock(specialMarkFile, lockFile);
+                            return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstalled);
                         }
                     }
                 }
             }
         }
-        boolean firstInstallation = createInstalledMark(markFile);
-        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstallation);
+        boolean firstInstalled = createInstalledMark(markFile);
+        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstalled);
     }
 
     @Override
