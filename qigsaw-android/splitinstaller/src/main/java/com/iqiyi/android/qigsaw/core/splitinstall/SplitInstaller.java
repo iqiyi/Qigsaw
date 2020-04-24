@@ -91,16 +91,16 @@ abstract class SplitInstaller {
 
         final List<String> addedDexPaths;
 
-        final boolean firstInstallation;
+        final boolean firstInstalled;
 
         InstallResult(@NonNull String splitName,
                       @NonNull File apkFile,
                       @Nullable List<String> addedDexPaths,
-                      boolean firstInstallation) {
+                      boolean firstInstalled) {
             this.splitName = splitName;
             this.apkFile = apkFile;
             this.addedDexPaths = addedDexPaths;
-            this.firstInstallation = firstInstallation;
+            this.firstInstalled = firstInstalled;
         }
     }
 

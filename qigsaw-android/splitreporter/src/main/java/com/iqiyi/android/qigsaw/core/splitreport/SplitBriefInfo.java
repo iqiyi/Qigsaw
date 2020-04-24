@@ -32,17 +32,34 @@ import androidx.annotation.RestrictTo;
 @Keep
 public class SplitBriefInfo {
 
+    public static final int UNKNOWN = 0;
+
+    public static final int FIRST_INSTALLED = 1;
+
+    public static final int ALREADY_INSTALLED = 2;
+
     public final String splitName;
 
     public final String version;
 
     public final boolean builtIn;
 
+    private int installFlag = UNKNOWN;
+
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public SplitBriefInfo(@NonNull String splitName, @NonNull String version, boolean builtIn) {
         this.splitName = splitName;
         this.version = version;
         this.builtIn = builtIn;
+    }
+
+    public int getInstallFlag() {
+        return installFlag;
+    }
+
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    public void setInstallFlag(int installFlag) {
+        this.installFlag = installFlag;
     }
 
     @Override

@@ -1,6 +1,9 @@
 package com.iqiyi.qigsaw.sample.reporter;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitInstallReporter;
@@ -11,13 +14,25 @@ import java.util.List;
 
 public class SampleSplitInstallReporter extends DefaultSplitInstallReporter {
 
+    private static final String TAG = "SampleSplitInstallReporter";
+
     public SampleSplitInstallReporter(Context context) {
         super(context);
     }
 
+    @SuppressLint("LongLogTag")
     @Override
     public void onStartInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
         super.onStartInstallOK(installedSplits, cost);
+        for (SplitBriefInfo info : installedSplits) {
+            if (info.getInstallFlag() == SplitBriefInfo.ALREADY_INSTALLED) {
+                Log.d(TAG, String.format("Split %s has been installed, don't need delivery this result", info.splitName));
+            } else if (info.getInstallFlag() == SplitBriefInfo.FIRST_INSTALLED) {
+                Log.d(TAG, String.format("Split %s is installed firstly, you can delivery this result", info.splitName));
+            } else {
+                //Oops, it can't happen.
+            }
+        }
     }
 
     @Override
