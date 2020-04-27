@@ -24,48 +24,52 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
+import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC
 import static org.objectweb.asm.Opcodes.ALOAD
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL
 import static org.objectweb.asm.Opcodes.INVOKESTATIC
+import static org.objectweb.asm.Opcodes.RETURN
 
-class SplitActivityWeaver implements SplitComponentWeaver {
+class ServiceWeaver implements SplitComponentWeaver {
 
     @Override
     byte[] weave(InputStream inputStream) {
         ClassReader cr = new ClassReader(inputStream)
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS)
-        ClassVisitor cv = new ActivityClassVisitor(Opcodes.ASM5, cw)
+        ClassVisitor cv = new ServiceClassVisitor(Opcodes.ASM5, cw)
         cr.accept(cv, Opcodes.ASM5)
         return cw.toByteArray()
     }
 
-    static class ActivityClassVisitor extends ClassVisitor implements Opcodes {
-
-        String superName
+    static class ServiceClassVisitor extends ClassVisitor {
 
         boolean needInsert = true
 
-        ActivityClassVisitor(int api, ClassVisitor cv) {
+        String superClassName
+
+        ServiceClassVisitor(int api, ClassVisitor cv) {
             super(api, cv)
         }
 
         @Override
         void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             super.visit(version, access, name, signature, superName, interfaces)
-            this.superName = superName
+            this.superClassName = superName
         }
 
         @Override
         MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-            if ("getResources".equals(name)) {
+            if ("onCreate".equals(name)) {
                 needInsert = false
-                return new ChangeOnCreateMethodVisitor(Opcodes.ASM5, cv.visitMethod(access, name, desc, signature, exceptions), superName)
+                return new ChangeOnCreateMethodVisitor(Opcodes.ASM5,
+                        cv.visitMethod(access, name, desc, signature, exceptions))
             }
             return super.visitMethod(access, name, desc, signature, exceptions)
         }
@@ -73,41 +77,42 @@ class SplitActivityWeaver implements SplitComponentWeaver {
         @Override
         void visitEnd() {
             if (needInsert) {
-                insertGetResourcesMethod(cv)
+                insertOnCreateMethod(cv)
             }
             super.visitEnd()
         }
 
-        void insertGetResourcesMethod(ClassWriter cw) {
-            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "getResources", "()Landroid/content/res/Resources;", null, null)
+        void insertOnCreateMethod(ClassWriter cw) {
+            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "onCreate", "()V", null, null)
             mv.visitVarInsn(ALOAD, 0)
+            mv.visitMethodInsn(INVOKESPECIAL, superClassName, "onCreate", "()V", false)
             mv.visitVarInsn(ALOAD, 0)
-            mv.visitMethodInsn(INVOKESPECIAL, superName, "getResources", "()Landroid/content/res/Resources;", false)
-            mv.visitMethodInsn(INVOKESTATIC, CLASS_WOVEN, METHOD_WOVEN, "(Landroid/app/Activity;Landroid/content/res/Resources;)V", false)
-            mv.visitVarInsn(ALOAD, 0)
-            mv.visitMethodInsn(INVOKESPECIAL, superName, "getResources", "()Landroid/content/res/Resources;", false)
-            mv.visitInsn(ARETURN)
-            mv.visitMaxs(2, 1)
+            mv.visitMethodInsn(INVOKESTATIC, CLASS_WOVEN, METHOD_WOVEN, "(Landroid/app/Service;)V", false)
+            mv.visitInsn(RETURN)
+            mv.visitMaxs(1, 1)
             mv.visitEnd()
         }
+
     }
 
     static class ChangeOnCreateMethodVisitor extends MethodVisitor {
 
-        String superClassName
-
-        ChangeOnCreateMethodVisitor(int api, MethodVisitor mv, String superClassName) {
+        ChangeOnCreateMethodVisitor(int api, MethodVisitor mv) {
             super(api, mv)
-            this.superClassName = superClassName
+        }
+
+        @Override
+        AnnotationVisitor visitAnnotation(String desc, boolean visible) {
+            return super.visitAnnotation(desc, visible)
         }
 
         @Override
         void visitCode() {
             mv.visitVarInsn(ALOAD, 0)
-            mv.visitVarInsn(ALOAD, 0)
-            mv.visitMethodInsn(INVOKESPECIAL, superClassName, "getResources", "()Landroid/content/res/Resources;", false)
-            mv.visitMethodInsn(INVOKESTATIC, CLASS_WOVEN, METHOD_WOVEN, "(Landroid/app/Activity;Landroid/content/res/Resources;)V", false)
+            mv.visitMethodInsn(INVOKESTATIC, CLASS_WOVEN, METHOD_WOVEN, "(Landroid/app/Service;)V", false)
             super.visitCode()
         }
+
     }
+
 }

@@ -24,22 +24,15 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
-import com.android.build.api.transform.DirectoryInput
-import com.android.build.api.transform.Format
-import com.android.build.api.transform.JarInput
-import com.android.build.api.transform.QualifiedContent
-import com.android.build.api.transform.Transform
-import com.android.build.api.transform.TransformException
-import com.android.build.api.transform.TransformInvocation
+import com.android.build.api.transform.*
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.ide.common.internal.WaitableExecutor
+import org.apache.commons.io.FileUtils
 import org.gradle.api.Project
 
-import org.apache.commons.io.FileUtils
+class BaseAppResourcesLoaderTransform extends Transform {
 
-class SplitResourcesLoaderTransform extends Transform {
-
-    final static String NAME = "splitResourcesLoader"
+    final static String NAME = "BaseAppResourcesLoader"
 
     Project project
 
@@ -47,7 +40,7 @@ class SplitResourcesLoaderTransform extends Transform {
 
     WaitableExecutor waitableExecutor
 
-    SplitResourcesLoaderTransform(Project project) {
+    BaseAppResourcesLoaderTransform(Project project) {
         this.project = project
         this.waitableExecutor = WaitableExecutor.useGlobalSharedThreadPool()
     }

@@ -35,6 +35,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TinkerHelper
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
+import com.iqiyi.qigsaw.buildtool.gradle.transform.BaseAppResourcesLoaderTransform
 import com.iqiyi.qigsaw.buildtool.gradle.transform.ComponentInfoTransform
 
 import org.gradle.api.GradleException
@@ -80,7 +81,9 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         def android = project.extensions.android
         //create ComponentInfo.class to record Android Component of dynamic features.
         ComponentInfoTransform commonInfoCreatorTransform = new ComponentInfoTransform(project)
+        BaseAppResourcesLoaderTransform baseAppResourcesLoaderTransform = new BaseAppResourcesLoaderTransform(project)
         android.registerTransform(commonInfoCreatorTransform)
+        android.registerTransform(baseAppResourcesLoaderTransform)
         project.afterEvaluate {
             //if AAPT2 is disable, package id of plugin resources can not be customized.
             if (!AGPCompat.isAapt2EnabledCompat(project)) {
@@ -132,6 +135,18 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 if (oldApk == null) {
                     oldApk = QigsawSplitExtensionHelper.getOldApk(project)
                 }
+
+                File manifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
+                Task baseAppResourcesLoaderTransformformTask = getBaseAppResourcesLoaderTransformformTask(project, variantName)
+                if (baseAppResourcesLoaderTransformformTask != null) {
+                    baseAppResourcesLoaderTransformformTask.doFirst {
+                        if (baseAppResourcesLoaderTransform != null) {
+                            baseAppResourcesLoaderTransform.setManifest(manifestFile)
+                        }
+                    }
+                }
+
+
                 QigsawProcessOldApkTask processOldApkTask = project.tasks.create("qigsawProcess${variantName}OldApk", QigsawProcessOldApkTask)
                 processOldApkTask.initArgs(hasQigsawTask, versionName, oldApk == null ? null : new File(oldApk))
                 processOldApkTask.outputDir = oldApkOutputDir
@@ -300,6 +315,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 }
             }
         }
+    }
+
+    static Task getBaseAppResourcesLoaderTransformformTask(Project project, String variantName) {
+        return project.tasks.findByName("transformClassesWith${BaseAppResourcesLoaderTransform.NAME.capitalize()}For${variantName}")
     }
 
     private static void configQigsawAssembleTaskDependencies(Project dfProject, String baseVariantName,

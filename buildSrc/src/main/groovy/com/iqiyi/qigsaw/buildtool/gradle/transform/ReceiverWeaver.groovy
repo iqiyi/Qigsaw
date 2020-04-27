@@ -33,7 +33,7 @@ import org.objectweb.asm.Opcodes
 import static org.objectweb.asm.Opcodes.ALOAD
 import static org.objectweb.asm.Opcodes.INVOKESTATIC
 
-class SplitReceiverWeaver implements SplitComponentWeaver {
+class ReceiverWeaver implements SplitComponentWeaver {
 
     @Override
     byte[] weave(InputStream inputStream) {

@@ -182,8 +182,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void displayAssets() {
         try {
-            Context context = createPackageContext(getPackageName(), 0);
-            AssetManager assetManager = context.getAssets();
+            AssetManager assetManager = getAssets();
             InputStream is = assetManager.open("assets.txt");
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             StringBuilder stringBuffer = new StringBuilder();

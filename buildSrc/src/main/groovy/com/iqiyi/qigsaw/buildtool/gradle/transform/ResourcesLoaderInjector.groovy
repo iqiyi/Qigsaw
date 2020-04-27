@@ -34,7 +34,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 import java.nio.file.*
 import java.util.regex.Matcher
 
-class SplitResourcesLoaderInjector {
+class ResourcesLoaderInjector {
 
     WaitableExecutor waitableExecutor
 
@@ -44,21 +44,21 @@ class SplitResourcesLoaderInjector {
 
     Set<ComponentInfo> receivers
 
-    SplitActivityWeaver activityWeaver
+    ActivityWeaver activityWeaver
 
-    SplitServiceWeaver serviceWeaver
+    ServiceWeaver serviceWeaver
 
-    SplitReceiverWeaver receiverWeaver
+    ReceiverWeaver receiverWeaver
 
-    SplitResourcesLoaderInjector(WaitableExecutor waitableExecutor, File splitManifest) {
+    ResourcesLoaderInjector(WaitableExecutor waitableExecutor, File splitManifest) {
         this.waitableExecutor = waitableExecutor
         ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
         this.activities = manifestReader.readActivities()
         this.services = manifestReader.readServices()
         this.receivers = manifestReader.readReceivers()
-        this.activityWeaver = new SplitActivityWeaver()
-        this.serviceWeaver = new SplitServiceWeaver()
-        this.receiverWeaver = new SplitReceiverWeaver()
+        this.activityWeaver = new ActivityWeaver()
+        this.serviceWeaver = new ServiceWeaver()
+        this.receiverWeaver = new ReceiverWeaver()
     }
 
     void injectDir(File outputDir) {
@@ -114,7 +114,7 @@ class SplitResourcesLoaderInjector {
         byte[] ret = null
         if (isActivity(className)) {
             println("Inject activity " + className)
-            ret = new SplitActivityWeaver().weave(path.newInputStream())
+            ret = new ActivityWeaver().weave(path.newInputStream())
         } else if (isService(className)) {
             println("Inject service " + className)
             ret = serviceWeaver.weave(path.newInputStream())
