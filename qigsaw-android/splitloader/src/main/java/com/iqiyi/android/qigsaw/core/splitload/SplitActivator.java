@@ -32,6 +32,7 @@ import com.iqiyi.android.qigsaw.core.extension.AABExtension;
 import com.iqiyi.android.qigsaw.core.extension.AABExtensionException;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,7 +72,8 @@ final class SplitActivator {
         }
         if (app != null) {
             try {
-                app.onCreate();
+                Method method = HiddenApiReflection.findMethod(Application.class, "onCreate");
+                method.invoke(app);
             } catch (Throwable e) {
                 if (debuggable()) {
                     throw new RuntimeException(e);
