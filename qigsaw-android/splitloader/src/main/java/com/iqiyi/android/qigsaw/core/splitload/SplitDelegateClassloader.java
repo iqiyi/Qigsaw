@@ -47,7 +47,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
 
     SplitDelegateClassloader(ClassLoader parent) {
         super("", parent);
-        originClassLoader = (PathClassLoader) parent;
+        originClassLoader = (BaseDexClassLoader) parent;
     }
 
     private static void reflectPackageInfoClassloader(Context baseContext, ClassLoader reflectClassLoader) throws Exception {
