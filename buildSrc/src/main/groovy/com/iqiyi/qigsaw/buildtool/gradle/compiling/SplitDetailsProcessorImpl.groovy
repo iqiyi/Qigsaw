@@ -98,6 +98,7 @@ class SplitDetailsProcessorImpl implements SplitDetailsProcessor {
                     }
                 } else {
                     QigsawLogger.e("Version of split ${splitInfo.splitName} is not changed, use old info!")
+                    return
                 }
             }
         }
