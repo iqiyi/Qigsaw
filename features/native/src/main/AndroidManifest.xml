@@ -6,7 +6,7 @@
     <dist:module
         dist:onDemand="true"
         dist:title="@string/module_native">
-        <dist:fusing dist:include="true" />
+        <dist:fusing dist:include="false" />
     </dist:module>
 
     <application>

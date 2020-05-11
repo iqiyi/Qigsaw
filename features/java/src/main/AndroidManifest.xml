@@ -23,7 +23,7 @@
     <dist:module
         dist:onDemand="false"
         dist:title="@string/module_java">
-        <dist:fusing dist:include="true" />
+        <dist:fusing dist:include="false" />
     </dist:module>
 
 </manifest>
