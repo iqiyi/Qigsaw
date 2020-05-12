@@ -85,12 +85,22 @@ class AGPCompat {
         return mergeJniLibsDir
     }
 
-    static File getBundleManifestDirCompat(Task processManifestTask) {
+    static File getBundleManifestDirCompat(Task processManifestTask, def versionAGP) {
+        if (versionAGP < VersionNumber.parse("3.3.0")) {
+            return null
+        }
         File bundleManifestDir = null
         try {
             bundleManifestDir = processManifestTask.bundleManifestOutputDirectory
         } catch (Throwable e) {
+            try {
+                bundleManifestDir = processManifestTask.getBundleManifestOutputDirectory().get().getAsFile()
+            } catch (Throwable e1) {
 
+            }
+        }
+        if (bundleManifestDir == null) {
+            throw new GradleException("Can't read 'bundleManifestOutputDirectory' form " + processManifestTask == null ? null : processManifestTask.class.name)
         }
         return bundleManifestDir
     }

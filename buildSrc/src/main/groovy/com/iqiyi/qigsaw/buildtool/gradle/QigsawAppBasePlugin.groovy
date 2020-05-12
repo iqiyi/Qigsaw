@@ -219,15 +219,14 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     qigsawInstallTask.dependsOn qigsawAssembleTask
                     qigsawInstallTask.mustRunAfter assembleTask
 
-                    File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(processManifestTask)
+                    File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(processManifestTask, versionAGP)
                     //3.2.x has no bundle_manifest dir
                     File bundleManifestFile = bundleManifestDir == null ? null : new File(bundleManifestDir, AGPCompat.ANDROIDMANIFEST_DOT_XML)
                     File mergedManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
                     QigsawProcessManifestTask qigsawProcessManifestTask = project.tasks.create("qigsawProcess${variantName}Manifest", QigsawProcessManifestTask)
 
-                    qigsawProcessManifestTask.initArgs(variantName, bundleManifestFile)
+                    qigsawProcessManifestTask.initArgs(variantName, bundleManifestFile, mergedManifestFile)
                     qigsawProcessManifestTask.splitManifestOutputDir = splitManifestOutputDir
-                    qigsawProcessManifestTask.mergedManifestFile = mergedManifestFile
                     qigsawProcessManifestTask.mustRunAfter processManifestTask
                     generateQigsawConfigTask.dependsOn qigsawProcessManifestTask
 

@@ -25,6 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import org.dom4j.Document
 import org.dom4j.Element
 import org.dom4j.Node
@@ -35,6 +36,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.internal.Pair
 
@@ -50,6 +52,8 @@ class QigsawProcessManifestTask extends DefaultTask {
     @InputFile
     File mergedManifestFile
 
+    @InputFile
+    @Optional
     File bundleManifestFile
 
     QigsawProcessManifestTask() {
@@ -57,7 +61,8 @@ class QigsawProcessManifestTask extends DefaultTask {
     }
 
     void initArgs(String variantName,
-                  File bundleManifestFile) {
+                  File bundleManifestFile,
+                  File mergedManifestFile) {
         this.variantName = variantName
         this.mergedManifestFile = mergedManifestFile
         this.bundleManifestFile = bundleManifestFile
@@ -67,10 +72,12 @@ class QigsawProcessManifestTask extends DefaultTask {
     void process() {
         List<Pair<String, Node>> splitProviderNodes = getSplitProviderNodes()
         if (mergedManifestFile != null && mergedManifestFile.exists()) {
+            QigsawLogger.w("Start to modify base merged-manifest file " + mergedManifestFile)
             Document mergedManifestDoc = saxReader.read(mergedManifestFile)
             modifyManifestContent(mergedManifestDoc, mergedManifestFile, splitProviderNodes)
         }
         if (bundleManifestFile != null && bundleManifestFile.exists()) {
+            QigsawLogger.w("Start to modify base bundle-manifest file " + bundleManifestFile)
             Document bundleManifestDoc = saxReader.read(bundleManifestFile)
             modifyManifestContent(bundleManifestDoc, bundleManifestFile, splitProviderNodes)
         }
