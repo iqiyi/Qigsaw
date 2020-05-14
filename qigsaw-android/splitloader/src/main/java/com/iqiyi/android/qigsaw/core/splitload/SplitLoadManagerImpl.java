@@ -86,7 +86,8 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
         ClassLoader curCl = getContext().getClassLoader();
         if (curCl instanceof SplitDelegateClassloader) {
-            ((SplitDelegateClassloader) curCl).setSplitLoadMode(splitLoadMode);
+            ClassNotFoundInterceptor classNotFoundInterceptor = new DefaultClassNotFoundInterceptor(getContext(), getClass().getClassLoader(), splitLoadMode);
+            ((SplitDelegateClassloader) curCl).setClassNotFoundInterceptor(classNotFoundInterceptor);
         }
     }
 

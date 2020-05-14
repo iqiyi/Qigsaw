@@ -31,9 +31,10 @@ class QigsawSplitExtension {
     final static String EMPTY = ""
 
     /**
-     * Specifies the last old apk's mapping file for proguard to applymapping
+     * Whether repack base apk with 7z format when you use qigsawUploadSplit${VariantName} task to upload split apk files.
+     * default value is {@code false}
      */
-    String applyMapping = EMPTY
+    boolean use7z = false
 
     /**
      * the old apk path
@@ -41,9 +42,9 @@ class QigsawSplitExtension {
     String oldApk = EMPTY
 
     /**
-     * Specifies the version of json file of split-info, default value is 1.0.0
+     * Specifies the last old apk's mapping file for proguard to applymapping
      */
-    String splitInfoVersion = DEFAULT_SPLIT_INFO_VERSION
+    String applyMapping = EMPTY
 
     /**
      * Whether release split apk to server if it need dynamic delivery
@@ -51,16 +52,25 @@ class QigsawSplitExtension {
     boolean releaseSplitApk = false
 
     /**
-     * Whether repack base apk with 7z format when you use qigsawUploadSplit${VariantName} task to upload split apk files.
-     * default value is {@code false}
+     * Specifies the version of json file of split-info, default value is 1.0.0
      */
-    boolean use7z = false
+    String splitInfoVersion = DEFAULT_SPLIT_INFO_VERSION
 
     /**
      * Restrict splits working process, if you do not assign split name, this split will work on
      * all processes, otherwise only work processes declared in its manifest.
      */
-    List<String> restrictWorkProcessesForSplits = Collections.emptyList()
+    List<String> restrictWorkProcessesForSplits = null
+
+    /**
+     * Split fragments which would be loaded by activities of base apk.(Not all fragments in split apk)
+     */
+    Set<String> splitEntryFragments = null
+
+    /**
+     * Activities of base apk which would load split's fragments or resources.
+     */
+    List<String> baseContainerActivities = null
 
     @Override
     String toString() {
@@ -69,6 +79,8 @@ class QigsawSplitExtension {
            | oldApk = ${oldApk}
            | releaseSplitApk = ${releaseSplitApk}
            | restrictWorkProcessesForSplits = ${restrictWorkProcessesForSplits}
+           | splitEntryFragments = ${splitEntryFragments}
+           | baseContainerActivities = ${baseContainerActivities}
         """.stripMargin()
     }
 }

@@ -53,6 +53,11 @@ public interface SplitInfoManager {
     List<String> getUpdateSplits(Context context);
 
     /**
+     * @return a list of split's fragments which would be loaded by activities of base apk.
+     */
+    List<String> getSplitEntryFragments(Context context);
+
+    /**
      * get {@link SplitInfo} by split name.
      *
      * @param context

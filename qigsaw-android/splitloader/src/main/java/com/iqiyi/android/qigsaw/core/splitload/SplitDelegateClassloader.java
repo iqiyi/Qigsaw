@@ -26,9 +26,6 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
 
-import com.iqiyi.android.qigsaw.core.common.SplitLog;
-import com.iqiyi.android.qigsaw.core.extension.AABExtension;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
@@ -39,11 +36,9 @@ import dalvik.system.PathClassLoader;
 
 final class SplitDelegateClassloader extends PathClassLoader {
 
-    private static final String TAG = "SplitDelegateClassloader";
-
     private static BaseDexClassLoader originClassLoader;
 
-    private int splitLoadMode;
+    private ClassNotFoundInterceptor classNotFoundInterceptor;
 
     SplitDelegateClassloader(ClassLoader parent) {
         super("", parent);
@@ -62,9 +57,8 @@ final class SplitDelegateClassloader extends PathClassLoader {
         reflectPackageInfoClassloader(baseContext, classloader);
     }
 
-    void setSplitLoadMode(int splitLoadMode) {
-        this.splitLoadMode = splitLoadMode;
-        SplitLog.i(TAG, "Split load mode is : " + splitLoadMode);
+    void setClassNotFoundInterceptor(ClassNotFoundInterceptor classNotFoundInterceptor) {
+        this.classNotFoundInterceptor = classNotFoundInterceptor;
     }
 
     @Override
@@ -72,68 +66,14 @@ final class SplitDelegateClassloader extends PathClassLoader {
         try {
             return originClassLoader.loadClass(name);
         } catch (ClassNotFoundException error) {
-            if (SplitLoadManagerService.hasInstance()) {
-                if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
-                    Class<?> result = onClassNotFound(name);
-                    if (result != null) {
-                        return result;
-                    }
-                } else if (splitLoadMode == SplitLoad.SINGLE_CLASSLOADER) {
-                    Class<?> result = onClassNotFound2(name);
-                    if (result != null) {
-                        return result;
-                    }
+            if (classNotFoundInterceptor != null) {
+                Class<?> result = classNotFoundInterceptor.findClass(name);
+                if (result != null) {
+                    return result;
                 }
             }
             throw error;
         }
-    }
-
-    private Class<?> onClassNotFound(String name) {
-        Class<?> ret = findClassInSplits(name);
-        if (ret != null) {
-            return ret;
-        }
-        Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
-        if (fakeComponent != null) {
-            SplitLoadManagerService.getInstance().loadInstalledSplits();
-            ret = findClassInSplits(name);
-            if (ret != null) {
-                SplitLog.i(TAG, "Class %s is found in Splits after loading all installed splits.", name);
-                return ret;
-            }
-            SplitLog.w(TAG, "Split component %s is still not found after installing all installed splits, return a %s to avoid crash", name, fakeComponent.getSimpleName());
-            return fakeComponent;
-        }
-        return null;
-    }
-
-    private Class<?> onClassNotFound2(String name) {
-        Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
-        if (fakeComponent != null) {
-            SplitLoadManagerService.getInstance().loadInstalledSplits();
-            try {
-                return originClassLoader.loadClass(name);
-            } catch (ClassNotFoundException e) {
-                SplitLog.w(TAG, "Split component %s is still not found after installing all installed splits,return a %s to avoid crash", name, fakeComponent.getSimpleName());
-                return fakeComponent;
-            }
-        }
-        return null;
-    }
-
-    private Class<?> findClassInSplits(String name) {
-        Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
-        for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
-            try {
-                Class<?> clazz = classLoader.loadClassItself(name);
-                SplitLog.i(TAG, "Class %s is found in %s ClassLoader", name, classLoader.moduleName());
-                return clazz;
-            } catch (ClassNotFoundException e) {
-                SplitLog.w(TAG, "Class %s is not found in %s ClassLoader", name, classLoader.moduleName());
-            }
-        }
-        return null;
     }
 
     @Override

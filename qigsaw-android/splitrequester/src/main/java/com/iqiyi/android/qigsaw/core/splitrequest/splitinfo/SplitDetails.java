@@ -33,22 +33,26 @@ final class SplitDetails {
 
     private final String appVersionName;
 
-    private final SplitInfoListing splitInfoListing;
+    private final List<String> abiFilters;
 
     private final List<String> updateSplits;
 
-    private final List<String> abiFilters;
+    private final List<String> splitEntryFragments;
+
+    private final SplitInfoListing splitInfoListing;
 
     SplitDetails(String qigsawId,
                  String appVersionName,
-                 SplitInfoListing splitInfoListing,
                  List<String> abiFilters,
-                 List<String> updateSplits) {
+                 List<String> updateSplits,
+                 List<String> splitEntryFragments,
+                 SplitInfoListing splitInfoListing) {
         this.qigsawId = qigsawId;
         this.appVersionName = appVersionName;
-        this.splitInfoListing = splitInfoListing;
         this.abiFilters = abiFilters;
         this.updateSplits = updateSplits;
+        this.splitEntryFragments = splitEntryFragments;
+        this.splitInfoListing = splitInfoListing;
     }
 
     String getQigsawId() {
@@ -59,16 +63,20 @@ final class SplitDetails {
         return appVersionName;
     }
 
+    List<String> getAbiFilters() {
+        return abiFilters;
+    }
+
     List<String> getUpdateSplits() {
         return updateSplits;
     }
 
-    SplitInfoListing getSplitInfoListing() {
-        return splitInfoListing;
+    List<String> getSplitEntryFragments() {
+        return splitEntryFragments;
     }
 
-    List<String> getAbiFilters() {
-        return abiFilters;
+    SplitInfoListing getSplitInfoListing() {
+        return splitInfoListing;
     }
 
     boolean verifySplitInfoListing() {

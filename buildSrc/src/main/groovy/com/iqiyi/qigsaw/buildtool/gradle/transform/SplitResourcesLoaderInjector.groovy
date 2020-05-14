@@ -26,10 +26,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.transform
 
 import com.android.SdkConstants
 import com.android.ide.common.internal.WaitableExecutor
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
 
 import java.nio.file.*
 import java.util.regex.Matcher
@@ -38,11 +35,11 @@ class SplitResourcesLoaderInjector {
 
     WaitableExecutor waitableExecutor
 
-    Set<ComponentInfo> activities
+    Set<String> activities
 
-    Set<ComponentInfo> services
+    Set<String> services
 
-    Set<ComponentInfo> receivers
+    Set<String> receivers
 
     SplitActivityWeaver activityWeaver
 
@@ -50,12 +47,15 @@ class SplitResourcesLoaderInjector {
 
     SplitReceiverWeaver receiverWeaver
 
-    SplitResourcesLoaderInjector(WaitableExecutor waitableExecutor, File splitManifest) {
+    SplitResourcesLoaderInjector(WaitableExecutor waitableExecutor, Set<String> activities) {
+        this(waitableExecutor, activities, null, null)
+    }
+
+    SplitResourcesLoaderInjector(WaitableExecutor waitableExecutor, Set<String> activities, Set<String> services, Set<String> receivers) {
         this.waitableExecutor = waitableExecutor
-        ManifestReader manifestReader = new ManifestReaderImpl(splitManifest)
-        this.activities = manifestReader.readActivities()
-        this.services = manifestReader.readServices()
-        this.receivers = manifestReader.readReceivers()
+        this.activities = activities
+        this.services = services
+        this.receivers = receivers
         this.activityWeaver = new SplitActivityWeaver()
         this.serviceWeaver = new SplitServiceWeaver()
         this.receiverWeaver = new SplitReceiverWeaver()
@@ -127,9 +127,9 @@ class SplitResourcesLoaderInjector {
 
     boolean isActivity(String className) {
         boolean isActivity = false
-        if (!activities.isEmpty()) {
+        if (activities != null && !activities.isEmpty()) {
             activities.each {
-                if (it.name.equals(className)) {
+                if (it == className) {
                     isActivity = true
                 }
             }
@@ -139,9 +139,9 @@ class SplitResourcesLoaderInjector {
 
     boolean isService(String className) {
         boolean isService = false
-        if (!services.isEmpty()) {
+        if (services != null && !services.isEmpty()) {
             services.each {
-                if (it.name.equals(className)) {
+                if (it == className) {
                     isService = true
                 }
             }
@@ -151,9 +151,9 @@ class SplitResourcesLoaderInjector {
 
     boolean isReceiver(String className) {
         boolean isReceiver = false
-        if (!receivers.isEmpty()) {
+        if (receivers != null && !receivers.isEmpty()) {
             receivers.each {
-                if (it.name.equals(className)) {
+                if (it == className) {
                     isReceiver = true
                 }
             }

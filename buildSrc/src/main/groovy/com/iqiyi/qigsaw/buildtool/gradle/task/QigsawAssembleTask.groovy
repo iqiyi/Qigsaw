@@ -78,6 +78,9 @@ class QigsawAssembleTask extends DefaultTask {
     @Input
     String appVersionName
 
+    @Input
+    Set<String> splitEntryFragments
+
     def versionAGP
 
     String flavorName
@@ -112,6 +115,7 @@ class QigsawAssembleTask extends DefaultTask {
     QigsawAssembleTask() {
         this.releaseSplitApk = QigsawSplitExtensionHelper.isReleaseSplitApk(project)
         this.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(project)
+        this.splitEntryFragments = QigsawSplitExtensionHelper.getSplitEntryFragments(project)
     }
 
     void initArgs(String qigsawId,
@@ -259,6 +263,7 @@ class QigsawAssembleTask extends DefaultTask {
                 .appVersionName(appVersionName)
                 .builtInUrlPrefix(copyToAssets ? "assets://" : "native://")
                 .abiFilters(fixedAbis)
+                .splitEntryFragments(splitEntryFragments)
                 .build()
 
         SplitDetailsProcessor detailsProcessor = new SplitDetailsProcessorImpl(project, oldApkOutputDir)

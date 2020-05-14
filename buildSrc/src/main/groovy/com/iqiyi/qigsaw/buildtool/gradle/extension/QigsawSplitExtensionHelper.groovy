@@ -83,4 +83,20 @@ class QigsawSplitExtensionHelper {
             return false
         }
     }
+
+    static Set<String> getSplitEntryFragments(Project project) {
+        try {
+            return project.extensions.qigsawSplit.splitEntryFragments
+        } catch (Throwable ignored) {
+            return null
+        }
+    }
+
+    static Set<String> getBaseContainerActivities(Project project) {
+        try {
+            return project.extensions.qigsawSplit.baseContainerActivities
+        } catch (Throwable ignored) {
+            return null
+        }
+    }
 }

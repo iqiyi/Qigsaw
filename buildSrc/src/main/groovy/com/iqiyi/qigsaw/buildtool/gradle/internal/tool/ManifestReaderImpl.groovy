@@ -37,9 +37,49 @@ class ManifestReaderImpl implements ManifestReader {
     }
 
     @Override
-    ComponentInfo readApplicationName() {
+    String readApplicationName() {
         String name = manifest.application.'@android:name'
-        return new ComponentInfo(name)
+        return name
+    }
+
+    @Override
+    Set<String> readActivityNames() {
+        ImmutableSet.Builder activities = ImmutableSet.builder()
+        manifest.application.activity.each {
+            String name = it.'@android:name'.toString()
+            activities.add(name)
+        }
+        return activities.build()
+    }
+
+    @Override
+    Set<String> readServiceNames() {
+        ImmutableSet.Builder services = ImmutableSet.builder()
+        manifest.application.service.each {
+            String name = it.'@android:name'.toString()
+            services.add(name)
+        }
+        return services.build()
+    }
+
+    @Override
+    Set<String> readReceiverNames() {
+        ImmutableSet.Builder receivers = ImmutableSet.builder()
+        manifest.application.receiver.each {
+            String name = it.'@android:name'.toString()
+            receivers.add(name)
+        }
+        return receivers.build()
+    }
+
+    @Override
+    Set<String> readProviderNames() {
+        ImmutableSet.Builder providers = ImmutableSet.builder()
+        manifest.application.provider.each {
+            String name = it.'@android:name'.toString()
+            providers.add(name)
+        }
+        return providers.build()
     }
 
     @Override

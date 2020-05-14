@@ -101,6 +101,15 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
     }
 
     @Override
+    public List<String> getSplitEntryFragments(Context context) {
+        SplitDetails details = getOrCreateSplitDetails(context);
+        if (details != null) {
+            return details.getSplitEntryFragments();
+        }
+        return null;
+    }
+
+    @Override
     public SplitInfo getSplitInfo(Context context, String splitName) {
         SplitDetails details = getOrCreateSplitDetails(context);
         if (details != null) {
@@ -283,6 +292,15 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
                 updateSplits.add(str);
             }
         }
+        JSONArray splitEntryFragmentsArray = contentObj.optJSONArray("splitEntryFragments");
+        List<String> splitEntryFragments = null;
+        if (splitEntryFragmentsArray != null && splitEntryFragmentsArray.length() > 0) {
+            splitEntryFragments = new ArrayList<>(splitEntryFragmentsArray.length());
+            for (int i = 0; i < splitEntryFragmentsArray.length(); i++) {
+                String str = splitEntryFragmentsArray.getString(i);
+                splitEntryFragments.add(str);
+            }
+        }
         JSONArray array = contentObj.optJSONArray("splits");
         for (int i = 0; i < array.length(); i++) {
             JSONObject itemObj = array.getJSONObject(i);
@@ -355,6 +373,6 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
             splitInfoMap.put(splitName, splitInfo);
         }
         SplitInfoListing splitInfoListing = new SplitInfoListing(splitInfoMap);
-        return new SplitDetails(qigsawId, appVersionName, splitInfoListing, abiFilters, updateSplits);
+        return new SplitDetails(qigsawId, appVersionName, abiFilters, updateSplits, splitEntryFragments, splitInfoListing);
     }
 }

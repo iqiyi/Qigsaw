@@ -110,7 +110,7 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
             List<String> providers = new ArrayList<>()
             List<String> applications = new ArrayList<>()
 
-            String applicationName = manifestReader.readApplicationName().name
+            String applicationName = manifestReader.readApplicationName()
             if (applicationName != null && applicationName.length() > 0) {
                 applications.add(applicationName)
             }
@@ -159,7 +159,7 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
                         name, "Ljava/lang/String;", null, value.get(0)).visitEnd()
             } else if (name.endsWith("PROVIDERS")) {
                 for (String providerName : value) {
-                    String splitName = name.split("_")[0]
+                    String splitName = name.split("_PROVIDERS")[0]
                     String providerClassName = providerName + "_Decorated_" + splitName
                     createSimpleClass(dest, providerClassName, "com.iqiyi.android.qigsaw.core.splitload.SplitContentProvider", null)
                 }

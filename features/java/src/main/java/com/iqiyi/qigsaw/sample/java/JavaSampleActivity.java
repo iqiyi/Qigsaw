@@ -3,7 +3,6 @@ package com.iqiyi.qigsaw.sample.java;
 import android.app.Activity;
 import android.os.Bundle;
 
-
 public class JavaSampleActivity extends Activity {
 
     @Override
@@ -11,5 +10,4 @@ public class JavaSampleActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_java_sample);
     }
-
 }

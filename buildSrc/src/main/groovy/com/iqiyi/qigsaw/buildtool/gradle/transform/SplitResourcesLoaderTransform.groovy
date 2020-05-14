@@ -33,6 +33,10 @@ import com.android.build.api.transform.TransformException
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.ide.common.internal.WaitableExecutor
+import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
+import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 import org.apache.commons.io.FileUtils
@@ -45,11 +49,18 @@ class SplitResourcesLoaderTransform extends Transform {
 
     File manifest
 
+    boolean isBaseModule
+
     WaitableExecutor waitableExecutor
 
-    SplitResourcesLoaderTransform(Project project) {
+    SplitResourcesLoaderTransform(Project project, boolean isBaseModule) {
         this.project = project
         this.waitableExecutor = WaitableExecutor.useGlobalSharedThreadPool()
+        this.isBaseModule = isBaseModule
+    }
+
+    SplitResourcesLoaderTransform(Project project) {
+        this(project, false)
     }
 
     @Override
@@ -72,6 +83,16 @@ class SplitResourcesLoaderTransform extends Transform {
         return false
     }
 
+    @Override
+    Map<String, Object> getParameterInputs() {
+        if (isBaseModule) {
+            Map<String, Set<String>> baseContainerActivitiesMap = new HashMap<>()
+            baseContainerActivitiesMap.put("base_container_activities", QigsawSplitExtensionHelper.getBaseContainerActivities(project))
+            return baseContainerActivitiesMap
+        }
+        return super.getParameterInputs()
+    }
+
     void setManifest(File manifest) {
         this.manifest = manifest
     }
@@ -81,11 +102,23 @@ class SplitResourcesLoaderTransform extends Transform {
         super.transform(transformInvocation)
         long startTime = System.currentTimeMillis()
         transformInvocation.getOutputProvider().deleteAll()
-        if (manifest == null || !manifest.exists()) {
-            project.logger.error("SplitResourcesLoaderTransform Task of project ${project.name} has no manifest file!")
-            return
+        SplitResourcesLoaderInjector resourcesLoaderInjector = null
+        if (isBaseModule) {
+            Map<String, List<String>> baseContainerActivitiesMap = getParameterInputs()
+            Set<String> baseContainerActivities = baseContainerActivitiesMap.get("base_container_activities")
+            if (baseContainerActivities != null && !baseContainerActivities.isEmpty()) {
+                resourcesLoaderInjector = new SplitResourcesLoaderInjector(waitableExecutor, baseContainerActivities)
+            }
+        } else {
+            if (manifest == null || !manifest.exists()) {
+                throw new GradleException("SplitResourcesLoaderTransform Task of project ${project.name} has no manifest file!")
+            }
+            ManifestReader manifestReader = new ManifestReaderImpl(manifest)
+            Set<String> activities = manifestReader.readActivityNames()
+            Set<String> services = manifestReader.readServiceNames()
+            Set<String> receivers = manifestReader.readReceiverNames()
+            resourcesLoaderInjector = new SplitResourcesLoaderInjector(waitableExecutor, activities, services, receivers)
         }
-        SplitResourcesLoaderInjector resourcesLoaderInjector = new SplitResourcesLoaderInjector(waitableExecutor, manifest)
         transformInvocation.inputs.each {
             Collection<DirectoryInput> directoryInputs = it.directoryInputs
 
@@ -93,7 +126,9 @@ class SplitResourcesLoaderTransform extends Transform {
                 directoryInputs.each {
                     File outputDir = transformInvocation.outputProvider.getContentLocation(it.file.absolutePath, it.contentTypes, it.scopes, Format.DIRECTORY)
                     FileUtils.copyDirectory(it.file, outputDir)
-                    resourcesLoaderInjector.injectDir(outputDir)
+                    if (resourcesLoaderInjector != null) {
+                        resourcesLoaderInjector.injectDir(outputDir)
+                    }
                 }
             }
             Collection<JarInput> jarInputs = it.jarInputs
@@ -101,7 +136,9 @@ class SplitResourcesLoaderTransform extends Transform {
                 jarInputs.each {
                     File outputJar = transformInvocation.outputProvider.getContentLocation(it.file.absolutePath, it.contentTypes, it.scopes, Format.JAR)
                     FileUtils.copyFile(it.file, outputJar)
-                    resourcesLoaderInjector.injectJar(outputJar)
+                    if (resourcesLoaderInjector != null) {
+                        resourcesLoaderInjector.injectJar(outputJar)
+                    }
                 }
             }
         }

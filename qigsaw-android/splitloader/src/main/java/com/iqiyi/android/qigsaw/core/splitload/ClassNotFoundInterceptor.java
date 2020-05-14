@@ -22,30 +22,13 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.android.qigsaw.core.splitload;
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
+import androidx.annotation.RestrictTo;
 
-interface ManifestReader {
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+public interface ClassNotFoundInterceptor {
 
-    Set<ComponentInfo> readActivities()
-
-    Set<ComponentInfo> readServices()
-
-    Set<ComponentInfo> readReceivers()
-
-    Set<ComponentInfo> readProviders()
-
-    String readApplicationName()
-
-    Set<String> readActivityNames()
-
-    Set<String> readServiceNames()
-
-    Set<String> readReceiverNames()
-
-    Set<String> readProviderNames()
-
-    boolean readOnDemand()
+    Class<?> findClass(String name);
 
 }

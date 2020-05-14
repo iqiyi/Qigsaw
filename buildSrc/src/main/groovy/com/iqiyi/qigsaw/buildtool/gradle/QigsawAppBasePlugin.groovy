@@ -36,7 +36,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TinkerHelper
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
 import com.iqiyi.qigsaw.buildtool.gradle.transform.ComponentInfoTransform
-
+import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitResourcesLoaderTransform
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -80,7 +80,9 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         def android = project.extensions.android
         //create ComponentInfo.class to record Android Component of dynamic features.
         ComponentInfoTransform commonInfoCreatorTransform = new ComponentInfoTransform(project)
+        SplitResourcesLoaderTransform resourcesLoaderTransform = new SplitResourcesLoaderTransform(project, true)
         android.registerTransform(commonInfoCreatorTransform)
+        android.registerTransform(resourcesLoaderTransform)
         project.afterEvaluate {
             //if AAPT2 is disable, package id of plugin resources can not be customized.
             if (!AGPCompat.isAapt2EnabledCompat(project)) {

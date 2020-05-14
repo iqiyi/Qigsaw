@@ -42,6 +42,8 @@ class SplitDetails {
 
     Set<String> abiFilters
 
+    Set<String> splitEntryFragments
+
     static Builder newBuilder() {
         return new Builder()
     }
@@ -51,6 +53,7 @@ class SplitDetails {
         this.appVersionName = builder.appVersionName
         this.abiFilters = builder.abiFilters
         this.builtInUrlPrefix = builder.builtInUrlPrefix
+        this.splitEntryFragments = builder.splitEntryFragments
     }
 
     @Override
@@ -60,6 +63,7 @@ class SplitDetails {
            | builtInUrlPrefix = ${builtInUrlPrefix}
            | abiFilters = ${abiFilters}
            | updateSplits = ${updateSplits}
+           | splitEntryFragments = ${splitEntryFragments}
            | splits = \n${splits}
         """.stripMargin()
     }
@@ -74,6 +78,8 @@ class SplitDetails {
         private Set<String> abiFilters
 
         private String builtInUrlPrefix
+
+        private Set<String> splitEntryFragments
 
         Builder qigsawId(String qigsawId) {
             this.qigsawId = qigsawId
@@ -92,6 +98,12 @@ class SplitDetails {
 
         Builder abiFilters(Set<String> abiFilters) {
             this.abiFilters = (abiFilters == null || abiFilters.isEmpty() ? null : abiFilters)
+            return this
+        }
+
+        Builder splitEntryFragments(Set<String> splitEntryFragments) {
+            this.splitEntryFragments = (splitEntryFragments == null
+                    || splitEntryFragments.isEmpty() ? null : splitEntryFragments)
             return this
         }
 
