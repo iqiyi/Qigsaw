@@ -30,10 +30,6 @@ class ComponentInfo {
 
     String process
 
-    ComponentInfo(String name) {
-        this(name, null)
-    }
-
     ComponentInfo(String name, String process) {
         this.name = name
         this.process = process

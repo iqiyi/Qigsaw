@@ -128,11 +128,7 @@ class SplitResourcesLoaderInjector {
     boolean isActivity(String className) {
         boolean isActivity = false
         if (activities != null && !activities.isEmpty()) {
-            activities.each {
-                if (it == className) {
-                    isActivity = true
-                }
-            }
+           return activities.contains(className)
         }
         return isActivity
     }
@@ -140,11 +136,7 @@ class SplitResourcesLoaderInjector {
     boolean isService(String className) {
         boolean isService = false
         if (services != null && !services.isEmpty()) {
-            services.each {
-                if (it == className) {
-                    isService = true
-                }
-            }
+            return services.contains(className)
         }
         return isService
     }
@@ -152,11 +144,7 @@ class SplitResourcesLoaderInjector {
     boolean isReceiver(String className) {
         boolean isReceiver = false
         if (receivers != null && !receivers.isEmpty()) {
-            receivers.each {
-                if (it == className) {
-                    isReceiver = true
-                }
-            }
+            return receivers.contains(className)
         }
         return isReceiver
     }

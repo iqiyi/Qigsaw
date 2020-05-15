@@ -60,17 +60,17 @@ class QigsawSplitExtension {
      * Restrict splits working process, if you do not assign split name, this split will work on
      * all processes, otherwise only work processes declared in its manifest.
      */
-    List<String> restrictWorkProcessesForSplits = null
+    List<String> restrictWorkProcessesForSplits = Collections.emptyList()
 
     /**
      * Split fragments which would be loaded by activities of base apk.(Not all fragments in split apk)
      */
-    Set<String> splitEntryFragments = null
+    Set<String> splitEntryFragments = Collections.emptyList()
 
     /**
      * Activities of base apk which would load split's fragments or resources.
      */
-    List<String> baseContainerActivities = null
+    List<String> baseContainerActivities = Collections.emptyList()
 
     @Override
     String toString() {

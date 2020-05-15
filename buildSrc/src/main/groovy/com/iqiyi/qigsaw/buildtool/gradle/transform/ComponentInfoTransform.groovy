@@ -88,7 +88,7 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
         }
         String variantName = transformInvocation.context.variantName.capitalize()
 
-        Map<String, List> addFieldMap = new HashMap<>()
+        Map<String, Set> addFieldMap = new HashMap<>()
         for (Project dfProject : dfProjects) {
             def dfAndroid = dfProject.extensions.android
             String splitName = dfProject.name
@@ -104,32 +104,15 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
                 throw new GradleException("can't get manifest file of project ${splitName}!")
             }
             ManifestReader manifestReader = new ManifestReaderImpl(splitManifestFile)
-            List<String> activities = new ArrayList<>()
-            List<String> services = new ArrayList<>()
-            List<String> receivers = new ArrayList<>()
-            List<String> providers = new ArrayList<>()
-            List<String> applications = new ArrayList<>()
-
+            Set<String> activities = manifestReader.readActivityNames()
+            Set<String> services = manifestReader.readServiceNames()
+            Set<String> receivers = manifestReader.readReceiverNames()
+            Set<String> providers = manifestReader.readProviderNames()
+            Set<String> applications = new HashSet<>()
             String applicationName = manifestReader.readApplicationName()
             if (applicationName != null && applicationName.length() > 0) {
                 applications.add(applicationName)
             }
-
-            manifestReader.readActivities().each {
-                activities.add(it.name)
-            }
-
-            manifestReader.readServices().each {
-                services.add(it.name)
-            }
-            manifestReader.readReceivers().each {
-                receivers.add(it.name)
-            }
-
-            manifestReader.readProviders().each {
-                providers.add(it.name)
-            }
-
             addFieldMap.put(splitName + "_APPLICATION", applications)
             addFieldMap.put(splitName + "_ACTIVITIES", activities)
             addFieldMap.put(splitName + "_SERVICES", services)
@@ -147,26 +130,26 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
         })
     }
 
-    static void injectCommonInfo(def dest, ClassWriter cw, Map<String, List> addFieldMap) {
+    static void injectCommonInfo(def dest, ClassWriter cw, Map<String, Set> addFieldMap) {
         addFieldMap.each { entry ->
-            List value = entry.value
-            if (value.size() <= 0) {
-                return
-            }
-            String name = entry.getKey()
-            if (name.endsWith("APPLICATION")) {
-                cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
-                        name, "Ljava/lang/String;", null, value.get(0)).visitEnd()
-            } else if (name.endsWith("PROVIDERS")) {
-                for (String providerName : value) {
-                    String splitName = name.split("_PROVIDERS")[0]
-                    String providerClassName = providerName + "_Decorated_" + splitName
-                    createSimpleClass(dest, providerClassName, "com.iqiyi.android.qigsaw.core.splitload.SplitContentProvider", null)
+            Set value = entry.value
+            if (value.size() > 0) {
+                String name = entry.getKey()
+                if (name.endsWith("APPLICATION")) {
+                    cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
+                            name, "Ljava/lang/String;", null, value.getAt(0)).visitEnd()
+                } else if (name.endsWith("PROVIDERS")) {
+                    //create proxy provider.
+                    for (String providerName : value) {
+                        String splitName = name.split("_PROVIDERS")[0]
+                        String providerClassName = providerName + "_Decorated_" + splitName
+                        createSimpleClass(dest, providerClassName, "com.iqiyi.android.qigsaw.core.splitload.SplitContentProvider", null)
+                    }
+                } else {
+                    cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
+                            name, "Ljava/lang/String;", null,
+                            (value as String[]).join(",")).visitEnd()
                 }
-            } else {
-                cw.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_FINAL + Opcodes.ACC_STATIC,
-                        name, "Ljava/lang/String;", null,
-                        (value as String[]).join(",")).visitEnd()
             }
         }
     }

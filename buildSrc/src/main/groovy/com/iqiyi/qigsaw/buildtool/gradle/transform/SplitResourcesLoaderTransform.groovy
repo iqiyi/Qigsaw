@@ -28,11 +28,13 @@ import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.Format
 import com.android.build.api.transform.JarInput
 import com.android.build.api.transform.QualifiedContent
+import com.android.build.api.transform.SecondaryFile
 import com.android.build.api.transform.Transform
 import com.android.build.api.transform.TransformException
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.ide.common.internal.WaitableExecutor
+import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
@@ -40,6 +42,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 import org.apache.commons.io.FileUtils
+import org.gradle.api.file.FileCollection
 
 class SplitResourcesLoaderTransform extends Transform {
 
@@ -81,6 +84,15 @@ class SplitResourcesLoaderTransform extends Transform {
     @Override
     boolean isIncremental() {
         return false
+    }
+
+    @Override
+    Collection<SecondaryFile> getSecondaryFiles() {
+        if (isBaseModule) {
+            return super.getSecondaryFiles()
+        }
+        FileCollection collection = project.files('build/intermediates/merged_manifests')
+        return ImmutableSet.of(SecondaryFile.nonIncremental(collection))
     }
 
     @Override

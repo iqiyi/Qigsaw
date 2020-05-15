@@ -63,19 +63,19 @@ class SplitInfoProcessorImpl implements SplitInfoProcessor {
                 splitProcesses.add(it.process)
             }
         }
-        Set<String> services = manifestReader.readServices()
+        Set<ComponentInfo> services = manifestReader.readServices()
         services.each {
             if (!splitProcesses.contains(it.process)) {
                 splitProcesses.add(it.process)
             }
         }
-        Set<String> receivers = manifestReader.readReceivers()
+        Set<ComponentInfo> receivers = manifestReader.readReceivers()
         receivers.each {
             if (!splitProcesses.contains(it.process)) {
                 splitProcesses.add(it.process)
             }
         }
-        Set<String> providers = manifestReader.readProviders()
+        Set<ComponentInfo> providers = manifestReader.readProviders()
         providers.each {
             if (!splitProcesses.contains(it.process)) {
                 splitProcesses.add(it.process)
