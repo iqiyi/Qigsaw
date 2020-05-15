@@ -27,6 +27,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.transform
 import com.android.SdkConstants
 import com.android.ide.common.internal.WaitableExecutor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
 
 import java.nio.file.*
 import java.util.regex.Matcher
@@ -96,7 +97,7 @@ class SplitResourcesLoaderInjector {
                     if (!pathString.endsWith(SdkConstants.DOT_CLASS)) {
                         return
                     }
-                    String className = pathString.replaceAll(Matcher.quoteReplacement(File.separator), '.').replace(SdkConstants.DOT_CLASS, "")
+                    String className = pathString.replaceAll("/", '.').replace(SdkConstants.DOT_CLASS, "")
                     byte[] bytes = injectClass(path, className)
                     if (bytes != null) {
                         Files.write(path, bytes, StandardOpenOption.WRITE)
@@ -113,13 +114,13 @@ class SplitResourcesLoaderInjector {
     byte[] injectClass(Path path, String className) {
         byte[] ret = null
         if (isActivity(className)) {
-            println("Inject activity " + className)
+            QigsawLogger.w("Inject activity " + className)
             ret = new SplitActivityWeaver().weave(path.newInputStream())
         } else if (isService(className)) {
-            println("Inject service " + className)
+            QigsawLogger.w("Inject service " + className)
             ret = serviceWeaver.weave(path.newInputStream())
         } else if (isReceiver(className)) {
-            println("Inject receiver " + className)
+            QigsawLogger.w("Inject receiver " + className)
             ret = receiverWeaver.weave(path.newInputStream())
         }
         return ret
@@ -128,7 +129,7 @@ class SplitResourcesLoaderInjector {
     boolean isActivity(String className) {
         boolean isActivity = false
         if (activities != null && !activities.isEmpty()) {
-           return activities.contains(className)
+            return activities.contains(className)
         }
         return isActivity
     }
