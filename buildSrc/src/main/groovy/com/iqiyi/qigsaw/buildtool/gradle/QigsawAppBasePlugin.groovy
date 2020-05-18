@@ -245,6 +245,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             if (r8Task != null) {
                                 QigsawLogger.w("Task ${r8Task.name} is found!")
                                 removeRulesAboutMultiDex(r8Task, variant)
+                            } else {
+                                throw new GradleException("Qigsaw can't find multi-dex task, please submit this issue to https://github.com/iqiyi/Qigsaw/issues")
                             }
                         }
                     }
@@ -260,6 +262,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         } else {
                             if (r8Task != null) {
                                 r8Task.dependsOn proguardConfigTask
+                            } else {
+                                throw new GradleException("Qigsaw can't find proguard task, please submit this issue to https://github.com/iqiyi/Qigsaw/issues")
                             }
                         }
                         proguardConfigTask.mustRunAfter qigsawProcessManifestTask

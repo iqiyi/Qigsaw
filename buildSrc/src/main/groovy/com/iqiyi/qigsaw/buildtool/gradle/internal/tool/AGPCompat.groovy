@@ -199,9 +199,13 @@ class AGPCompat {
     }
 
     static Task getR8Task(Project project, String variantName) {
-        String r8TransformTaskName = "transformClassesAndResourcesWithR8For${variantName}"
-        Task r8TransformTask = project.tasks.findByName(r8TransformTaskName)
-        return r8TransformTask
+        String r8TaskName = "transformClassesAndResourcesWithR8For${variantName}"
+        def r8Task = project.tasks.findByName(r8TaskName)
+        if (r8Task != null) {
+            return r8Task
+        }
+        r8TaskName = "minify${variantName.capitalize()}WithR8"
+        return  project.tasks.findByName(r8TaskName)
     }
 
     static Task getMultiDexTask(Project project, String variantName) {
@@ -216,7 +220,12 @@ class AGPCompat {
 
     static Task getProguardTask(Project project, String variantName) {
         String proguardTaskName = "transformClassesAndResourcesWithProguardFor${variantName}"
-        return project.tasks.findByName(proguardTaskName)
+        def proguardTask = project.tasks.findByName(proguardTaskName)
+        if (proguardTask != null) {
+            return proguardTask
+        }
+        proguardTaskName = "minify${variantName.capitalize()}WithProguard"
+       return project.tasks.findByName(proguardTaskName)
     }
 
     static Task getMergeAssetsTask(Project project, String variantName) {
