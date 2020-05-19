@@ -112,7 +112,7 @@ final class SplitLibExtractor implements Closeable {
                 continue;
             }
             if (entryName.charAt(0) > 'l') {
-                break;
+                continue;
             }
             if (!entryName.startsWith("lib/")) {
                 continue;
