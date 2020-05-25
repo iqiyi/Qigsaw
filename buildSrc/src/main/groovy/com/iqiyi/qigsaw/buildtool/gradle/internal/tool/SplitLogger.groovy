@@ -22,33 +22,32 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.task
+package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
-import com.android.SdkConstants
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.Project
+import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 
-class CopySplitManifestTask extends DefaultTask {
+class SplitLogger {
 
-    @InputFile
-    File splitManifestFile
+    static final String LOG_PREFIX = "Qigsaw Build Message: "
 
-    @OutputDirectory
-    File splitManifestOutputDir
+    private static final Logger BUILD_LOGGER = Logging.getLogger(Project.class)
 
-    @TaskAction
-    void copySplitApk() {
-        File outputManifest = new File(splitManifestOutputDir, project.name + SdkConstants.DOT_XML)
-        if (outputManifest.exists()) {
-            outputManifest.delete()
-        }
-        if (!splitManifestOutputDir.exists()) {
-            splitManifestOutputDir.mkdirs()
-        }
-        FileUtils.copyFile(splitManifestFile, outputManifest)
+    static void e(String msg) {
+        BUILD_LOGGER.error("${LOG_PREFIX}${msg}")
+    }
+
+    static void e(String msg, Throwable e) {
+        BUILD_LOGGER.error("${LOG_PREFIX}${msg}", e)
+    }
+
+    static void w(String msg) {
+        BUILD_LOGGER.warn("${LOG_PREFIX}${msg}")
+    }
+
+    static void w(String msg, Throwable e) {
+        BUILD_LOGGER.warn("${LOG_PREFIX}${msg}", e)
     }
 
 }

@@ -27,8 +27,10 @@ package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 import android.app.IntentService;
 import android.content.Intent;
 import android.os.IBinder;
+
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
+
 import android.text.TextUtils;
 
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
@@ -105,7 +107,7 @@ public class SplitUpdateService extends IntentService {
             return;
         }
         SplitDetails splitDetails = manager.createSplitDetailsForJsonFile(newSplitInfoPath);
-        if (splitDetails == null || !splitDetails.verifySplitInfoListing()) {
+        if (splitDetails == null) {
             SplitLog.w(TAG, "Failed to parse SplitDetails for new split info file!");
             onUpdateError(oldSplitInfoVersion, newSplitInfoVersion, SplitUpdateErrorCode.ERROR_SPLIT_INFO_INVALID);
             return;

@@ -11,11 +11,10 @@ class ZipUtils {
 
     private static final int BUFFER = 8192
 
-    static boolean checkDirectory(String dir) {
-        File dirObj = new File(dir)
-        deleteDir(dirObj)
-        if (!dirObj.exists()) {
-            dirObj.mkdirs()
+    static boolean checkDirectory(File dir) {
+        deleteDir(dir)
+        if (!dir.exists()) {
+            dir.mkdirs()
         }
         return true
     }
@@ -37,31 +36,34 @@ class ZipUtils {
     }
 
     @SuppressWarnings("rawtypes")
-    static HashMap<String, Integer> unZipAPk(String fileName, String filePath) throws IOException {
-        checkDirectory(filePath);
-        ZipFile zipFile = new ZipFile(fileName)
+    static HashMap<String, Integer> unzipApk(File apkFile, File outputDir) throws IOException {
+        checkDirectory(outputDir)
+        ZipFile zipFile = new ZipFile(apkFile)
         Enumeration emu = zipFile.entries()
         HashMap<String, Integer> compress = new HashMap<>()
         try {
             while (emu.hasMoreElements()) {
                 ZipEntry entry = (ZipEntry) emu.nextElement()
                 if (entry.isDirectory()) {
-                    new File(filePath, entry.getName()).mkdirs()
+                    new File(outputDir, entry.getName()).mkdirs()
                     continue
                 }
                 BufferedInputStream bis = new BufferedInputStream(zipFile.getInputStream(entry))
 
-                File file = new File(filePath + File.separator + entry.getName())
+                File file = new File(outputDir, entry.getName())
 
                 File parent = file.getParentFile()
                 if (parent != null && (!parent.exists())) {
                     parent.mkdirs()
                 }
-                String compatibaleresult = entry.getName()
-                if (compatibaleresult.contains("\\")) {
-                    compatibaleresult = compatibaleresult.replace("\\", "/")
+                String compatibaleResult = entry.getName()
+                if (compatibaleResult.contains("\\")) {
+                    compatibaleResult = compatibaleResult.replace("\\", "/")
                 }
-                compress.put(compatibaleresult, entry.getMethod())
+                if (!compatibaleResult.startsWith("res/")) {
+                    println("name = " + compatibaleResult + "   method " + entry.getMethod())
+                }
+                compress.put(compatibaleResult, entry.getMethod())
                 FileOutputStream fos = new FileOutputStream(file)
                 BufferedOutputStream bos = new BufferedOutputStream(fos, BUFFER)
 
@@ -122,7 +124,6 @@ class ZipUtils {
             }
             int compressMethod = compressData.get(rootpath)
             ZipEntry entry = new ZipEntry(rootpath)
-
             if (compressMethod == ZipEntry.DEFLATED) {
                 entry.setMethod(ZipEntry.DEFLATED)
             } else {

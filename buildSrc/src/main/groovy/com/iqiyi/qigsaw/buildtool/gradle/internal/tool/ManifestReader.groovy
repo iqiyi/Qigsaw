@@ -26,23 +26,20 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
 
-class ManifestReaderImpl implements ManifestReader {
+class ManifestReader {
 
     def manifest
 
-    ManifestReaderImpl(File manifest) {
+    ManifestReader(File manifest) {
         this.manifest = new XmlSlurper().parse(manifest)
     }
 
-    @Override
     String readApplicationName() {
         String name = manifest.application.'@android:name'
         return name
     }
 
-    @Override
     Set<String> readActivityNames() {
         ImmutableSet.Builder activities = ImmutableSet.builder()
         manifest.application.activity.each {
@@ -52,7 +49,6 @@ class ManifestReaderImpl implements ManifestReader {
         return activities.build()
     }
 
-    @Override
     Set<String> readServiceNames() {
         ImmutableSet.Builder services = ImmutableSet.builder()
         manifest.application.service.each {
@@ -62,7 +58,6 @@ class ManifestReaderImpl implements ManifestReader {
         return services.build()
     }
 
-    @Override
     Set<String> readReceiverNames() {
         ImmutableSet.Builder receivers = ImmutableSet.builder()
         manifest.application.receiver.each {
@@ -72,7 +67,6 @@ class ManifestReaderImpl implements ManifestReader {
         return receivers.build()
     }
 
-    @Override
     Set<String> readProviderNames() {
         ImmutableSet.Builder providers = ImmutableSet.builder()
         manifest.application.provider.each {
@@ -82,7 +76,6 @@ class ManifestReaderImpl implements ManifestReader {
         return providers.build()
     }
 
-    @Override
     Set<ComponentInfo> readActivities() {
         ImmutableSet.Builder activities = ImmutableSet.builder()
         manifest.application.activity.each {
@@ -93,7 +86,6 @@ class ManifestReaderImpl implements ManifestReader {
         return activities.build()
     }
 
-    @Override
     Set<ComponentInfo> readServices() {
         ImmutableSet.Builder services = ImmutableSet.builder()
         manifest.application.service.each {
@@ -104,7 +96,6 @@ class ManifestReaderImpl implements ManifestReader {
         return services.build()
     }
 
-    @Override
     Set<ComponentInfo> readReceivers() {
         ImmutableSet.Builder receivers = ImmutableSet.builder()
         manifest.application.receiver.each {
@@ -115,7 +106,6 @@ class ManifestReaderImpl implements ManifestReader {
         return receivers.build()
     }
 
-    @Override
     Set<ComponentInfo> readProviders() {
         ImmutableSet.Builder providers = ImmutableSet.builder()
         manifest.application.provider.each {
@@ -126,7 +116,6 @@ class ManifestReaderImpl implements ManifestReader {
         return providers.build()
     }
 
-    @Override
     boolean readOnDemand() {
         return Boolean.valueOf(manifest.module.'@dist:onDemand'.toString())
     }

@@ -28,6 +28,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -43,6 +44,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerServ
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -150,16 +152,33 @@ abstract class SplitLoadTask implements Runnable {
                 loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 continue;
             }
-            List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
-            File optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
-            File librarySearchPath = null;
-            if (info.hasLibs()) {
-                librarySearchPath = SplitPathManager.require().getSplitLibDir(info);
+            String dexOptPath = splitFileIntent.getStringExtra(SplitConstants.KEY_DEX_OPT_DIR);
+            if (info.hasDex() && dexOptPath == null) {
+                SplitLog.w(TAG, "Failed to %s get dex-opt-dir", splitName);
+                loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("internal error")));
+                continue;
             }
+            String nativeLibPath = splitFileIntent.getStringExtra(SplitConstants.KEY_NATIVE_LIB_DIR);
+            try {
+                SplitInfo.LibData libData = info.getPrimaryLibData(appContext);
+                if (libData != null && nativeLibPath == null) {
+                    SplitLog.w(TAG, "Failed to %s get native-lib-dir", splitName);
+                    loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("internal error")));
+                    continue;
+                }
+            } catch (IOException e) {
+                loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, e));
+                continue;
+            }
+            List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
             File splitDir = SplitPathManager.require().getSplitDir(info);
             ClassLoader classLoader;
             try {
-                classLoader = loadCode(loader, splitName, addedDexPaths, optimizedDirectory, librarySearchPath, info.getDependencies());
+                classLoader = loadCode(loader, splitName,
+                        addedDexPaths, dexOptPath == null ? null : new File(dexOptPath),
+                        nativeLibPath == null ? null : new File(nativeLibPath),
+                        info.getDependencies()
+                );
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s code!", splitName);
                 loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));

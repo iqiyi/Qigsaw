@@ -39,7 +39,6 @@ import java.security.MessageDigest
 
 abstract class SimpleClassCreatorTransform extends Transform {
 
-
     static String getStringMD5(String str) {
         return MessageDigest.getInstance("MD5").digest(str.bytes).encodeHex().toString()
     }

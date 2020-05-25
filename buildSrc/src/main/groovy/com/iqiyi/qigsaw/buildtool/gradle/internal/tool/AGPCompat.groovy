@@ -34,17 +34,17 @@ class AGPCompat {
 
     static final String ANDROIDMANIFEST_DOT_XML = "AndroidManifest.xml"
 
-    static String getMergeAssetsBaseDirCompat(Task mergeAssetsTask) {
-        String mergeAssetsOutputDir
+    static String getMergedAssetsBaseDirCompat(Task mergeAssetsTask) {
+        String mergedAssetsOutputDir
         try {
-            mergeAssetsOutputDir = mergeAssetsTask.outputDir.asFile.get()
+            mergedAssetsOutputDir = mergeAssetsTask.outputDir.asFile.get()
         } catch (Throwable ignored) {
-            mergeAssetsOutputDir = mergeAssetsTask.outputDir
+            mergedAssetsOutputDir = mergeAssetsTask.outputDir
         }
-        if (mergeAssetsOutputDir == null) {
+        if (mergedAssetsOutputDir == null) {
             throw new GradleException("Can't read 'outputDir' from " + mergeAssetsTask == null ? null : mergeAssetsTask.class.name)
         }
-        return mergeAssetsOutputDir
+        return mergedAssetsOutputDir
     }
 
     static File getPackageApplicationDirCompat(Task packageApplicationTask) {
@@ -72,19 +72,6 @@ class AGPCompat {
         return new File(getMergedManifestDirCompat(processManifestTask), ANDROIDMANIFEST_DOT_XML)
     }
 
-    static File getMergeJniLibsDirCompat(Task mergeJniLibsTask, def versionAGP) {
-        File mergeJniLibsDir
-        if (versionAGP < VersionNumber.parse("3.5.0")) {
-            mergeJniLibsDir = mergeJniLibsTask.outputStream.getRootLocation()
-        } else {
-            mergeJniLibsDir = mergeJniLibsTask.outputDir.asFile.get()
-        }
-        if (mergeJniLibsDir == null) {
-            throw new GradleException("Can't read 'outputDir' form " + mergeJniLibsTask == null ? null : mergeJniLibsTask.class.name)
-        }
-        return mergeJniLibsDir
-    }
-
     static File getBundleManifestDirCompat(Task processManifestTask, def versionAGP) {
         if (versionAGP < VersionNumber.parse("3.3.0")) {
             return null
@@ -103,6 +90,19 @@ class AGPCompat {
             throw new GradleException("Can't read 'bundleManifestOutputDirectory' form " + processManifestTask == null ? null : processManifestTask.class.name)
         }
         return bundleManifestDir
+    }
+
+    static File getMergeJniLibsBaseDirCompat(Task mergeJniLibsTask) {
+        File mergeJniLibsDir
+        try {
+            mergeJniLibsDir = mergeJniLibsTask.outputStream.getRootLocation()
+        } catch (Throwable e) {
+            mergeJniLibsDir = mergeJniLibsTask.outputDir.asFile.get()
+        }
+        if (mergeJniLibsDir == null) {
+            throw new GradleException("Can't read 'outputDir' form " + mergeJniLibsTask == null ? null : mergeJniLibsTask.class.name)
+        }
+        return mergeJniLibsDir
     }
 
     /**
@@ -169,22 +169,6 @@ class AGPCompat {
         return project.tasks.findByName(mergeManifestTaskName)
     }
 
-    static Task getMergeJniLibsTask(Project project, String variantName) {
-        Task task = project.tasks.findByName("transformNativeLibsWithMergeJniLibsFor${variantName}")
-        if (task == null) {
-            task = project.tasks.findByName("merge${variantName}NativeLibs")
-        }
-        return task
-    }
-
-    static getStripDebugSymbolTask(Project project, String variantName) {
-        Task task = project.tasks.findByName("transformNativeLibsWithStripDebugSymbolFor${variantName}")
-        if (task == null) {
-            task = project.tasks.findByName("strip${variantName}DebugSymbols")
-        }
-        return task
-    }
-
     static Task getAssemble(ApplicationVariant variant) {
         try {
             return variant.assembleProvider.get()
@@ -205,7 +189,7 @@ class AGPCompat {
             return r8Task
         }
         r8TaskName = "minify${variantName.capitalize()}WithR8"
-        return  project.tasks.findByName(r8TaskName)
+        return project.tasks.findByName(r8TaskName)
     }
 
     static Task getMultiDexTask(Project project, String variantName) {
@@ -225,7 +209,7 @@ class AGPCompat {
             return proguardTask
         }
         proguardTaskName = "minify${variantName.capitalize()}WithProguard"
-       return project.tasks.findByName(proguardTaskName)
+        return project.tasks.findByName(proguardTaskName)
     }
 
     static Task getMergeAssetsTask(Project project, String variantName) {
@@ -242,4 +226,13 @@ class AGPCompat {
         String proguardTaskName = "transformDexWithDexSplitterFor${variantName}"
         return project.tasks.findByName(proguardTaskName)
     }
+
+    static Task getMergeJniLibsTask(Project project, String variantName) {
+        Task task = project.tasks.findByName("transformNativeLibsWithMergeJniLibsFor${variantName}")
+        if (task == null) {
+            task = project.tasks.findByName("merge${variantName}NativeLibs")
+        }
+        return task
+    }
+
 }

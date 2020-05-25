@@ -24,42 +24,39 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
+import com.android.SdkConstants
 import com.android.build.api.transform.*
-import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.google.common.collect.ImmutableSet
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 
-class ComponentInfoTransform extends SimpleClassCreatorTransform {
+class SplitComponentTransform extends SimpleClassCreatorTransform {
+
+    static final String NAME = "processSplitComponent"
 
     Project project
 
-    List<Project> dfProjects
+    File splitManifestParentDir
 
-    ComponentInfoTransform(Project project) {
+    Set<String> dynamicFeatureNames
+
+    SplitComponentTransform(Project project) {
         this.project = project
-    }
-
-    void initArgs(List<Project> dfProjects) {
-        this.dfProjects = dfProjects
     }
 
     @Override
     String getName() {
-        return "createComponentInfo"
+        return NAME
     }
 
     @Override
     Collection<SecondaryFile> getSecondaryFiles() {
-        FileCollection collection = project.files('build/intermediates/merged_manifests')
+        FileCollection collection = project.files(splitManifestParentDir)
         return ImmutableSet.of(SecondaryFile.nonIncremental(collection))
     }
 
@@ -82,28 +79,17 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
         super.transform(transformInvocation)
         transformInvocation.getOutputProvider().deleteAll()
-        if (dfProjects == null) {
-            project.logger.error("Have you invoke ComponentInfoTransform#initArgs(...)?")
-            return
+        File splitManifestDir = new File(splitManifestParentDir, transformInvocation.context.variantName.uncapitalize())
+        if (!splitManifestDir.exists()) {
+            throw new GradleException("${splitManifestDir.absolutePath} is not existing!")
         }
-        String variantName = transformInvocation.context.variantName.capitalize()
-
         Map<String, Set> addFieldMap = new HashMap<>()
-        for (Project dfProject : dfProjects) {
-            def dfAndroid = dfProject.extensions.android
-            String splitName = dfProject.name
-            File splitManifestFile = null
-            dfAndroid.applicationVariants.all { ApplicationVariant variant ->
-                String dfVariantName = variant.name.capitalize()
-                if (dfVariantName.equals(variantName)) {
-                    Task processManifestTask = AGPCompat.getProcessManifestTask(dfProject, dfVariantName)
-                    splitManifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
-                }
+        dynamicFeatureNames.each { String name ->
+            File splitManifest = new File(splitManifestDir, name + SdkConstants.DOT_XML)
+            if (!splitManifest.exists()) {
+                throw new GradleException("Project ${name} manifest file ${splitManifest.absolutePath} is not found!")
             }
-            if (splitManifestFile == null || !splitManifestFile.exists()) {
-                throw new GradleException("can't get manifest file of project ${splitName}!")
-            }
-            ManifestReader manifestReader = new ManifestReaderImpl(splitManifestFile)
+            ManifestReader manifestReader = new ManifestReader(splitManifest)
             Set<String> activities = manifestReader.readActivityNames()
             Set<String> services = manifestReader.readServiceNames()
             Set<String> receivers = manifestReader.readReceiverNames()
@@ -113,11 +99,11 @@ class ComponentInfoTransform extends SimpleClassCreatorTransform {
             if (applicationName != null && applicationName.length() > 0) {
                 applications.add(applicationName)
             }
-            addFieldMap.put(splitName + "_APPLICATION", applications)
-            addFieldMap.put(splitName + "_ACTIVITIES", activities)
-            addFieldMap.put(splitName + "_SERVICES", services)
-            addFieldMap.put(splitName + "_RECEIVERS", receivers)
-            addFieldMap.put(splitName + "_PROVIDERS", providers)
+            addFieldMap.put(name + "_APPLICATION", applications)
+            addFieldMap.put(name + "_ACTIVITIES", activities)
+            addFieldMap.put(name + "_SERVICES", services)
+            addFieldMap.put(name + "_RECEIVERS", receivers)
+            addFieldMap.put(name + "_PROVIDERS", providers)
         }
 
         def dest = prepareToCreateClass(transformInvocation)

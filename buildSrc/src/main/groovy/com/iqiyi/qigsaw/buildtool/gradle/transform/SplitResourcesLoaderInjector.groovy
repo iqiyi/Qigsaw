@@ -27,7 +27,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.transform
 import com.android.SdkConstants
 import com.android.ide.common.internal.WaitableExecutor
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 
 import java.nio.file.*
 import java.util.regex.Matcher
@@ -67,7 +67,7 @@ class SplitResourcesLoaderInjector {
             Files.isRegularFile(it)
         }.each { Path path ->
             File file = path.toFile()
-            if (file.name.endsWith(".jar")) {
+            if (file.name.endsWith(SdkConstants.DOT_JAR)) {
                 injectJar(file)
             } else if (file.name.endsWith(SdkConstants.DOT_CLASS)) {
                 this.waitableExecutor.execute {
@@ -114,13 +114,13 @@ class SplitResourcesLoaderInjector {
     byte[] injectClass(Path path, String className) {
         byte[] ret = null
         if (isActivity(className)) {
-            QigsawLogger.w("Inject activity " + className)
+            SplitLogger.w("Inject activity " + className)
             ret = new SplitActivityWeaver().weave(path.newInputStream())
         } else if (isService(className)) {
-            QigsawLogger.w("Inject service " + className)
+            SplitLogger.w("Inject service " + className)
             ret = serviceWeaver.weave(path.newInputStream())
         } else if (isReceiver(className)) {
-            QigsawLogger.w("Inject receiver " + className)
+            SplitLogger.w("Inject receiver " + className)
             ret = receiverWeaver.weave(path.newInputStream())
         }
         return ret

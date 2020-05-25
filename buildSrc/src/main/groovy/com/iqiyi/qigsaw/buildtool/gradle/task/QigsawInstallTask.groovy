@@ -39,18 +39,21 @@ import com.google.common.collect.ImmutableList
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.logging.Logger
-import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 
 class QigsawInstallTask extends DefaultTask {
 
     BaseVariantData variantData
 
-    @InputFile
-    File installApkFile
+    @InputFiles
+    List<File> baseApkFiles
 
     @TaskAction
     void installApk() {
+        if (baseApkFiles.size() > 1) {
+            throw new GradleException("Qigsaw Error: Qigsaw don't support multi-apks.")
+        }
         File adbExecutable = null
         try {
             adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
@@ -80,7 +83,7 @@ class QigsawInstallTask extends DefaultTask {
                     variantConfig.getFullName(),
                     deviceProvider,
                     variantConfig.getMinSdkVersion(),
-                    installApkFile,
+                    baseApkFiles.get(0),
                     installOptions,
                     timeOutInMs,
                     logger)

@@ -80,29 +80,29 @@ final class SplitLibExtractor implements Closeable {
         }
     }
 
-    List<File> load(SplitInfo info, boolean forceReload) throws IOException {
+    List<File> load(SplitInfo.LibData libData, boolean forceReload) throws IOException {
         if (!cacheLock.isValid()) {
             throw new IllegalStateException("SplitLibExtractor was closed");
         } else {
             List<File> files;
             if (!forceReload) {
                 try {
-                    files = loadExistingExtractions(info.getLibInfo().getLibs());
+                    files = loadExistingExtractions(libData.getLibs());
                 } catch (IOException e) {
                     SplitLog.w(TAG, "Failed to reload existing extracted lib files, falling back to fresh extraction");
-                    files = performExtractions(info);
+                    files = performExtractions(libData);
                 }
             } else {
-                files = performExtractions(info);
+                files = performExtractions(libData);
             }
             SplitLog.i(TAG, "load found " + files.size() + " lib files");
             return files;
         }
     }
 
-    private List<File> performExtractions(SplitInfo info) throws IOException {
+    private List<File> performExtractions(SplitInfo.LibData libData) throws IOException {
         ZipFile sourceZip = new ZipFile(sourceApk);
-        String libPrefix = String.format("lib/%s/", info.getLibInfo().getAbi());
+        String libPrefix = String.format("lib/%s/", libData.getAbi());
         Enumeration e = sourceZip.entries();
         List<File> libFiles = new ArrayList<>();
         while (e.hasMoreElements()) {
@@ -121,7 +121,7 @@ final class SplitLibExtractor implements Closeable {
                 continue;
             }
             String libName = entryName.substring(entryName.lastIndexOf('/') + 1);
-            SplitInfo.LibInfo.Lib lib = findLib(libName, info.getLibInfo().getLibs());
+            SplitInfo.LibData.Lib lib = findLib(libName, libData.getLibs());
             if (lib == null) {
                 throw new IOException(String.format("Failed to find %s in split-info", libName));
             }
@@ -177,12 +177,14 @@ final class SplitLibExtractor implements Closeable {
             }
         }
         FileUtil.closeQuietly(sourceZip);
+        if (libFiles.size() != libData.getLibs().size()) {
+            throw new IOException("Number of extracted so files is mismatch, expected: " + libData.getLibs().size() + " ,but: " + libFiles.size());
+        }
         return libFiles;
     }
 
-
-    private SplitInfo.LibInfo.Lib findLib(String libName, List<SplitInfo.LibInfo.Lib> libs) {
-        for (SplitInfo.LibInfo.Lib lib : libs) {
+    private SplitInfo.LibData.Lib findLib(String libName, List<SplitInfo.LibData.Lib> libs) {
+        for (SplitInfo.LibData.Lib lib : libs) {
             if (lib.getName().equals(libName)) {
                 return lib;
             }
@@ -190,14 +192,14 @@ final class SplitLibExtractor implements Closeable {
         return null;
     }
 
-    private List<File> loadExistingExtractions(List<SplitInfo.LibInfo.Lib> libs) throws IOException {
+    private List<File> loadExistingExtractions(List<SplitInfo.LibData.Lib> libs) throws IOException {
         SplitLog.i(TAG, "loading existing lib files");
         File[] files = libDir.listFiles();
         if (files == null || files.length <= 0) {
             throw new IOException("Missing extracted lib file '" + libDir.getPath() + "'");
         }
         List<File> libFiles = new ArrayList<>(files.length);
-        for (SplitInfo.LibInfo.Lib lib : libs) {
+        for (SplitInfo.LibData.Lib lib : libs) {
             boolean hasSo = false;
             for (File file : files) {
                 if (lib.getName().equals(file.getName())) {

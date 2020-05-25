@@ -22,12 +22,17 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.qigsaw.buildtool.gradle.internal.model
+package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
+import org.gradle.api.tasks.AbstractCopyTask
+import org.gradle.api.tasks.Copy
 
-interface SplitJsonFileCreator {
+class ExtractOldOutputsTask extends Copy {
 
-    File createSplitJsonFile(SplitDetails splitDetails, String splitInfoVersion)
-
+    AbstractCopyTask customFrom(File sourceFile) {
+        if (sourceFile == null) {
+            return this
+        }
+        return from(project.zipTree(sourceFile))
+    }
 }

@@ -24,11 +24,14 @@
 
 package com.iqiyi.android.qigsaw.core.splitdownload;
 
+import androidx.annotation.Keep;
+
 import java.util.List;
 
 /**
  * Interface used to download splits, you are expected to implement it with your own downloader lib.
  */
+@Keep
 public interface Downloader {
 
     /**

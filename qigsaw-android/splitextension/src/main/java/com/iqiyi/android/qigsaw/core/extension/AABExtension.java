@@ -26,6 +26,8 @@ package com.iqiyi.android.qigsaw.core.extension;
 
 import android.app.Application;
 import android.content.Context;
+
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.RestrictTo;
 
@@ -54,6 +56,7 @@ import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
  * AABExtension provides interfaces to create its application.
  */
 @RestrictTo(LIBRARY_GROUP)
+@Keep
 public class AABExtension {
 
     private static final String TAG = "Split:AABExtension";

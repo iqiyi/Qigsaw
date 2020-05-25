@@ -69,6 +69,12 @@ final class SplitStartInstallTask extends SplitInstallTask {
             if (installResult.addedDexPaths != null) {
                 splitFileIntent.putStringArrayListExtra(SplitConstants.KEY_ADDED_DEX, (ArrayList<String>) installResult.addedDexPaths);
             }
+            if (installResult.splitDexOptDir != null) {
+                splitFileIntent.putExtra(SplitConstants.KEY_DEX_OPT_DIR, installResult.splitDexOptDir.getAbsolutePath());
+            }
+            if (installResult.splitLibDir != null) {
+                splitFileIntent.putExtra(SplitConstants.KEY_NATIVE_LIB_DIR, installResult.splitLibDir.getAbsolutePath());
+            }
             splitFileIntent.putExtra(SplitConstants.KEY_APK, installResult.apkFile.getAbsolutePath());
             splitFileIntent.putExtra(SplitConstants.KET_NAME, installResult.splitName);
             splitFileIntents.add(splitFileIntent);

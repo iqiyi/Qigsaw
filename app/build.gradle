@@ -17,6 +17,9 @@ android {
         versionCode 271
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
     }
 
     signingConfigs {
@@ -83,6 +86,11 @@ qigsawSplit {
      * Whether upload all split APKs to CDN, ignored 'onDemand' declared in split AndroidManifest file.
      */
     releaseSplitApk = false
+
+    /**
+     * Whether build multiple APKs for ABIs
+     */
+    multipleApkForABIs = false
 
     /**
      * optional, default '1.0.0'

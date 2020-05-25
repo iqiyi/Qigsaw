@@ -157,14 +157,20 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     SplitLog.i(TAG, "Split %s has been loaded, ignore it!", splitInfo.getSplitName());
                     continue;
                 }
-                Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo);
-                if (splitFileIntent != null) {
-                    splitFileIntents.add(splitFileIntent);
+                try {
+                    SplitInfo.ApkData apkData = splitInfo.getPrimaryApkData(getContext());
+                    SplitInfo.LibData libData = splitInfo.getPrimaryLibData(getContext());
+                    Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo, apkData, libData);
+                    if (splitFileIntent != null) {
+                        splitFileIntents.add(splitFileIntent);
+                    }
+                    SplitLog.i(TAG, "Split %s will work in process %s, %s it is %s",
+                            splitInfo.getSplitName(), currentProcessName,
+                            splitFileIntent == null ? "but" : "and",
+                            splitFileIntent == null ? "not installed" : "installed");
+                } catch (IOException ignored) {
+
                 }
-                SplitLog.i(TAG, "Split %s will work in process %s, %s it is %s",
-                        splitInfo.getSplitName(), currentProcessName,
-                        splitFileIntent == null ? "but" : "and",
-                        splitFileIntent == null ? "not installed" : "installed");
             } else {
                 SplitLog.i(TAG, "Split %s do not need work in process %s", splitInfo.getSplitName(), currentProcessName);
             }
@@ -199,13 +205,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     /**
      * fast check operation
      */
-    private Intent createLastInstalledSplitFileIntent(SplitInfo splitInfo) {
+    private Intent createLastInstalledSplitFileIntent(SplitInfo splitInfo, SplitInfo.ApkData apkData, SplitInfo.LibData libData) {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
-        File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo);
-        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo);
+        File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo, apkData);
+        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo, apkData);
         File splitApk;
-        if (splitInfo.isBuiltIn() && splitInfo.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+        if (splitInfo.isBuiltIn() && apkData.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
             splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
         } else {
             splitApk = new File(splitDir, splitName + SplitConstants.DOT_APK);
@@ -242,15 +248,22 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                 SplitLog.i(TAG, "Split %s has dependencies %s !", splitName, dependencies);
                 for (String dependency : dependencies) {
                     SplitInfo dependencySplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getContext(), dependency);
-                    File dependencyMarkFile = SplitPathManager.require().getSplitMarkFile(dependencySplitInfo);
-                    if (!dependencyMarkFile.exists()) {
-                        SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
+                    try {
+                        SplitInfo.ApkData dependencyApkData = dependencySplitInfo.getPrimaryApkData(getContext());
+                        File dependencyMarkFile = SplitPathManager.require().getSplitMarkFile(dependencySplitInfo, dependencyApkData);
+                        if (!dependencyMarkFile.exists()) {
+                            SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
+                            return null;
+                        }
+                    } catch (IOException e) {
                         return null;
                     }
                 }
             }
+            File optimizedDirectory = null;
             ArrayList<String> addedDexPaths = null;
             if (splitInfo.hasDex()) {
+                optimizedDirectory = SplitPathManager.require().getSplitOptDir(splitInfo);
                 addedDexPaths = new ArrayList<>();
                 addedDexPaths.add(splitApk.getAbsolutePath());
                 File[] results = SplitPathManager.require().getSplitCodeCacheDir(splitInfo).listFiles(new FilenameFilter() {
@@ -265,9 +278,19 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     }
                 }
             }
+            File splitLibDir = null;
+            if (libData != null) {
+                splitLibDir = SplitPathManager.require().getSplitLibDir(splitInfo, libData);
+            }
             Intent splitFileIntent = new Intent();
             splitFileIntent.putExtra(SplitConstants.KET_NAME, splitName);
             splitFileIntent.putExtra(SplitConstants.KEY_APK, splitApk.getAbsolutePath());
+            if (optimizedDirectory != null) {
+                splitFileIntent.putExtra(SplitConstants.KEY_DEX_OPT_DIR, optimizedDirectory.getAbsolutePath());
+            }
+            if (splitLibDir != null) {
+                splitFileIntent.putExtra(SplitConstants.KEY_NATIVE_LIB_DIR, splitLibDir.getAbsolutePath());
+            }
             if (addedDexPaths != null) {
                 splitFileIntent.putStringArrayListExtra(SplitConstants.KEY_ADDED_DEX, addedDexPaths);
             }

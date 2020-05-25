@@ -25,7 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.compiling
 
 import com.android.build.gradle.api.ApplicationVariant
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 
 class FixedMainDexList {
 
@@ -44,7 +44,7 @@ class FixedMainDexList {
         if (multiDexKeepProguard == null) {
             return
         }
-        QigsawLogger.w(">Task FixedMainDex -> " + multiDexKeepProguard.absolutePath)
+        SplitLogger.w(">Task FixedMainDex -> " + multiDexKeepProguard.absolutePath)
         println(multiDexKeepProguard.path)
         boolean needUpdate = false
         boolean ignoreToCloseParenthesis = false

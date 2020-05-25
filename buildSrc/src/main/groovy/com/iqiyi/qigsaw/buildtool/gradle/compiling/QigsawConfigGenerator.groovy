@@ -92,12 +92,13 @@ final class QigsawConfigGenerator {
 
             writer.emitJavadoc("Automatically generated file. DO NOT MODIFY")
                     .emitPackage(qigsawConfigPackageName)
+                    .emitImports("androidx.annotation.Keep")
+                    .emitAnnotation("Keep")
                     .beginType("QigsawConfig", "class", PUBLIC_FINAL)
 
             for (ClassField field : mFields) {
                 emitClassField(writer, field)
             }
-
             writer.endType()
         } catch (Throwable e) {
             throw closer.rethrow(e)

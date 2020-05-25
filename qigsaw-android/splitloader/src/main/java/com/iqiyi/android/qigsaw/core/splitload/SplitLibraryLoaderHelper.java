@@ -27,6 +27,7 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.Context;
+
 import androidx.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
@@ -35,6 +36,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerServ
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
@@ -59,12 +61,16 @@ public class SplitLibraryLoaderHelper {
             return false;
         }
         for (SplitInfo info : splits) {
-            if (info.hasLibs()) {
-                List<SplitInfo.LibInfo.Lib> libs = info.getLibInfo().getLibs();
-                for (SplitInfo.LibInfo.Lib lib : libs) {
+            try {
+                SplitInfo.LibData libData = info.getPrimaryLibData(context);
+                if (libData == null) {
+                    continue;
+                }
+                List<SplitInfo.LibData.Lib> libs = libData.getLibs();
+                for (SplitInfo.LibData.Lib lib : libs) {
                     if (lib.getName().equals(System.mapLibraryName(libraryName))) {
                         if (context instanceof Application) {
-                            String libPath = SplitPathManager.require().getSplitLibDir(info).getAbsolutePath() + File.separator + lib.getName();
+                            String libPath = SplitPathManager.require().getSplitLibDir(info, libData).getAbsolutePath() + File.separator + lib.getName();
                             try {
                                 System.load(libPath);
                                 return true;
@@ -80,6 +86,8 @@ public class SplitLibraryLoaderHelper {
                         break;
                     }
                 }
+            } catch (IOException ignored) {
+
             }
         }
         return false;

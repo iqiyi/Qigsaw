@@ -47,7 +47,7 @@ class SplitApkSigner {
         this.variantName = variantName
     }
 
-    File signAPKIfNeed(File unsignedApk, File signedApk) {
+    boolean signApkIfNeed(File unsignedApk, File signedApk) {
         ApkVerifier apkVerifier = new ApkVerifier.Builder(unsignedApk).build()
         if (!apkVerifier.verify().verified) {
             SigningConfig signingConfig
@@ -77,9 +77,9 @@ class SplitApkSigner {
                     .setV2SigningEnabled(signingConfig.isV2SigningEnabled())
                     .build()
             apkSigner.sign()
-            return signedApk
+            return true
         }
-        return unsignedApk
+        return false
     }
 
 }

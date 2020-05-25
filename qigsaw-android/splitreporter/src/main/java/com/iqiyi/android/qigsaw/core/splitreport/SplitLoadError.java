@@ -61,6 +61,8 @@ public class SplitLoadError extends SplitBriefInfo {
      */
     public static final int CREATE_CLASSLOADER_FAILED = -27;
 
+    public static final int INTERNAL_ERROR = -100;
+
     /**
      * error code of this exception.
      */

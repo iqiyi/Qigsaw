@@ -36,8 +36,7 @@ import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.ide.common.internal.WaitableExecutor
 import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
-import com.iqiyi.qigsaw.buildtool.gradle.internal.model.ManifestReader
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReaderImpl
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 
@@ -125,7 +124,7 @@ class SplitResourcesLoaderTransform extends Transform {
             if (manifest == null || !manifest.exists()) {
                 throw new GradleException("SplitResourcesLoaderTransform Task of project ${project.name} has no manifest file!")
             }
-            ManifestReader manifestReader = new ManifestReaderImpl(manifest)
+            ManifestReader manifestReader = new ManifestReader(manifest)
             Set<String> activities = manifestReader.readActivityNames()
             Set<String> services = manifestReader.readServiceNames()
             Set<String> receivers = manifestReader.readReceiverNames()

@@ -29,6 +29,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.RemoteException;
+
 import androidx.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
@@ -41,6 +42,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerServ
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -65,11 +67,16 @@ public abstract class SplitInstallSupervisor {
             if (uninstallSplitInfos != null) {
                 ProcessUtil.killAllOtherProcess(context);
                 realUninstallSplits = new ArrayList<>(uninstallSplitInfos.size());
-                for (SplitInfo uninstall : uninstallSplitInfos) {
-                    File installedMarkFile = SplitPathManager.require().getSplitMarkFile(uninstall);
-                    boolean ret = FileUtil.deleteFileSafely(installedMarkFile);
-                    if (ret) {
-                        realUninstallSplits.add(uninstall);
+                for (SplitInfo uninstallSplitInfo : uninstallSplitInfos) {
+                    try {
+                        SplitInfo.ApkData apkData = uninstallSplitInfo.getPrimaryApkData(context);
+                        File installedMarkFile = SplitPathManager.require().getSplitMarkFile(uninstallSplitInfo, apkData);
+                        boolean ret = FileUtil.deleteFileSafely(installedMarkFile);
+                        if (ret) {
+                            realUninstallSplits.add(uninstallSplitInfo);
+                        }
+                    } catch (IOException ignored) {
+
                     }
                 }
             }
@@ -83,7 +90,7 @@ public abstract class SplitInstallSupervisor {
         if (infoManager != null) {
             Collection<SplitInfo> allSplitInfos = infoManager.getAllSplitInfo(context);
             if (allSplitInfos != null) {
-                SplitInstallService.getHandler(context.getPackageName()).post(new SplitDeleteRedundantVersionTask(allSplitInfos));
+                SplitInstallService.getHandler(context.getPackageName()).post(new SplitDeleteRedundantVersionTask(context, allSplitInfos));
             }
         }
     }

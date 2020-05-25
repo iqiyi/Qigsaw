@@ -29,7 +29,6 @@ import android.content.Context;
 import androidx.annotation.RestrictTo;
 
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
-import com.iqiyi.android.qigsaw.core.common.OEMCompat;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -106,9 +105,9 @@ public final class SplitPathManager {
      *
      * @param info split info.
      */
-    public File getSplitMarkFile(SplitInfo info) {
+    public File getSplitMarkFile(SplitInfo info, SplitInfo.ApkData apkData) {
         File splitDir = getSplitDir(info);
-        return new File(splitDir, info.getMd5());
+        return new File(splitDir, apkData.getMd5());
     }
 
     /**
@@ -116,9 +115,9 @@ public final class SplitPathManager {
      *
      * @param info split info.
      */
-    public File getSplitSpecialMarkFile(SplitInfo info) {
+    public File getSplitSpecialMarkFile(SplitInfo info, SplitInfo.ApkData apkData) {
         File splitDir = getSplitDir(info);
-        return new File(splitDir, info.getMd5() + ".ov");
+        return new File(splitDir, apkData.getMd5() + ".ov");
     }
 
     public File getSplitSpecialLockFile(SplitInfo info) {
@@ -158,8 +157,8 @@ public final class SplitPathManager {
      *
      * @param info split info
      */
-    public File getSplitLibDir(SplitInfo info) {
-        File libDir = new File(getSplitDir(info), "nativeLib" + File.separator + info.getLibInfo().getAbi());
+    public File getSplitLibDir(SplitInfo info, SplitInfo.LibData libData) {
+        File libDir = new File(getSplitDir(info), "nativeLib" + File.separator + libData.getAbi());
         if (!libDir.exists()) {
             libDir.mkdirs();
         }

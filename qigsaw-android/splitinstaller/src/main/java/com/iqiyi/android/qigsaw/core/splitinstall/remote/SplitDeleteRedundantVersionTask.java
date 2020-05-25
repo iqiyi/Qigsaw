@@ -24,6 +24,8 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall.remote;
 
+import android.content.Context;
+
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
@@ -31,6 +33,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -43,8 +46,11 @@ final class SplitDeleteRedundantVersionTask implements Runnable {
 
     private final Collection<SplitInfo> allSplits;
 
-    SplitDeleteRedundantVersionTask(Collection<SplitInfo> allSplits) {
+    private final Context appContext;
+
+    SplitDeleteRedundantVersionTask(Context appContext, Collection<SplitInfo> allSplits) {
         this.allSplits = allSplits;
+        this.appContext = appContext;
     }
 
     @Override
@@ -53,8 +59,13 @@ final class SplitDeleteRedundantVersionTask implements Runnable {
             for (SplitInfo splitInfo : allSplits) {
                 File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
                 File splitRootDir = SplitPathManager.require().getSplitRootDir(splitInfo);
-                File installedMarkFile = SplitPathManager.require().getSplitMarkFile(splitInfo);
-                deleteRedundantSplitVersionDirs(splitDir, splitRootDir, installedMarkFile);
+                try {
+                    SplitInfo.ApkData apkData = splitInfo.getPrimaryApkData(appContext);
+                    File installedMarkFile = SplitPathManager.require().getSplitMarkFile(splitInfo, apkData);
+                    deleteRedundantSplitVersionDirs(splitDir, splitRootDir, installedMarkFile);
+                } catch (IOException ignored) {
+
+                }
             }
         }
     }

@@ -330,7 +330,6 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
                 downloadCallback.onCompleted();
             } else {
                 boolean usingMobileDataPermitted = realTotalBytesNeedToDownload < downloadSizeThresholdValue && !userDownloader.isDeferredDownloadOnlyWhenUsingWifiData();
-
                 userDownloader.deferredDownload(sessionId, createDownloadRequests(needInstallSplits), downloadCallback, usingMobileDataPermitted);
             }
         } catch (IOException e) {
@@ -348,21 +347,19 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             return;
         }
         int sessionId = createSessionId(needInstallSplits);
-        List<DownloadRequest> downloadRequests = createDownloadRequests(needInstallSplits);
-        SplitLog.d(TAG, "startInstall session id: " + sessionId);
         SplitInstallInternalSessionState sessionState = sessionManager.getSessionState(sessionId);
-        boolean needUserConfirmation = false;
-        if (sessionState != null) {
-            needUserConfirmation = sessionState.status() == SplitInstallInternalSessionStatus.REQUIRES_USER_CONFIRMATION;
-        } else {
-            sessionState = new SplitInstallInternalSessionState(sessionId, moduleNames, needInstallSplits, downloadRequests);
-        }
+        boolean needUserConfirmation = (sessionState != null && sessionState.status() == SplitInstallInternalSessionStatus.REQUIRES_USER_CONFIRMATION);
         if (!needUserConfirmation && sessionManager.isIncompatibleWithExistingSession(moduleNames)) {
             SplitLog.w(TAG, "Start install request error code: INCOMPATIBLE_WITH_EXISTING_SESSION");
             callback.onError(bundleErrorCode(SplitInstallInternalErrorCode.INCOMPATIBLE_WITH_EXISTING_SESSION));
             return;
         }
+        SplitLog.d(TAG, "startInstall session id: " + sessionId);
         try {
+            List<DownloadRequest> downloadRequests = createDownloadRequests(needInstallSplits);
+            if (sessionState == null) {
+                sessionState = new SplitInstallInternalSessionState(sessionId, moduleNames, needInstallSplits, downloadRequests);
+            }
             //1.copy built-in apk if need
             //2.check signature
             //3.create list of download request
@@ -447,27 +444,25 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
      * If split has lib files, we need to check whether it supports current cpu arch.
      */
     private boolean isCPUArchMatched(SplitInfo splitInfo) {
-        if (splitInfo.hasLibs()) {
-            try {
-                splitInfo.getLibInfo();
-            } catch (Throwable e) {
-                return false;
-            }
+        try {
+            splitInfo.getPrimaryLibData(appContext);
+        } catch (IOException e) {
+            return false;
         }
         return true;
     }
 
-    private List<DownloadRequest> createDownloadRequests(Collection<SplitInfo> splitInfoList) {
+    private List<DownloadRequest> createDownloadRequests(Collection<SplitInfo> splitInfoList) throws IOException {
         List<DownloadRequest> requests = new ArrayList<>(splitInfoList.size());
         for (SplitInfo splitInfo : splitInfoList) {
+            SplitInfo.ApkData apkData = splitInfo.getPrimaryApkData(appContext);
             File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
             String fileName = splitInfo.getSplitName() + SplitConstants.DOT_APK;
-            //create download request
             DownloadRequest request = DownloadRequest.newBuilder()
-                    .url(splitInfo.getUrl())
+                    .url(apkData.getUrl())
                     .fileDir(splitDir.getAbsolutePath())
                     .fileName(fileName)
-                    .fileMD5(splitInfo.getMd5())
+                    .fileMD5(apkData.getMd5())
                     .moduleName(splitInfo.getSplitName())
                     .build();
             requests.add(request);
@@ -482,7 +477,7 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
             File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
             String fileName = splitInfo.getSplitName() + SplitConstants.DOT_APK;
             File splitApk;
-            if (splitInfo.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+            if (splitInfo.getPrimaryApkData(appContext).getUrl().startsWith(SplitConstants.URL_NATIVE)) {
                 splitApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
             } else {
                 splitApk = new File(splitDir, fileName);
@@ -494,9 +489,9 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
                 FileUtil.closeQuietly(processor);
             }
             //calculate splits total download size.
-            totalBytesToDownload = totalBytesToDownload + splitInfo.getSize();
+            totalBytesToDownload = totalBytesToDownload + splitInfo.getPrimaryApkData(appContext).getSize();
             if (!splitApk.exists()) {
-                realTotalBytesNeedToDownload = realTotalBytesNeedToDownload + splitInfo.getSize();
+                realTotalBytesNeedToDownload = realTotalBytesNeedToDownload + splitInfo.getPrimaryApkData(appContext).getSize();
             }
         }
         return new long[]{totalBytesToDownload, realTotalBytesNeedToDownload};

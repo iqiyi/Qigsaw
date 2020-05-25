@@ -24,7 +24,6 @@
 
 package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
-import java.util.Collection;
 import java.util.List;
 
 final class SplitDetails {
@@ -32,8 +31,6 @@ final class SplitDetails {
     private final String qigsawId;
 
     private final String appVersionName;
-
-    private final List<String> abiFilters;
 
     private final List<String> updateSplits;
 
@@ -43,13 +40,11 @@ final class SplitDetails {
 
     SplitDetails(String qigsawId,
                  String appVersionName,
-                 List<String> abiFilters,
                  List<String> updateSplits,
                  List<String> splitEntryFragments,
                  SplitInfoListing splitInfoListing) {
         this.qigsawId = qigsawId;
         this.appVersionName = appVersionName;
-        this.abiFilters = abiFilters;
         this.updateSplits = updateSplits;
         this.splitEntryFragments = splitEntryFragments;
         this.splitInfoListing = splitInfoListing;
@@ -63,10 +58,6 @@ final class SplitDetails {
         return appVersionName;
     }
 
-    List<String> getAbiFilters() {
-        return abiFilters;
-    }
-
     List<String> getUpdateSplits() {
         return updateSplits;
     }
@@ -77,20 +68,5 @@ final class SplitDetails {
 
     SplitInfoListing getSplitInfoListing() {
         return splitInfoListing;
-    }
-
-    boolean verifySplitInfoListing() {
-        if (splitInfoListing != null
-                && splitInfoListing.getSplitInfoMap() != null) {
-            boolean verified = true;
-            Collection<SplitInfo> splits = splitInfoListing.getSplitInfoMap().values();
-            for (SplitInfo splitInfo : splits) {
-                if (!splitInfo.isValid()) {
-                    verified = false;
-                }
-            }
-            return verified;
-        }
-        return false;
     }
 }

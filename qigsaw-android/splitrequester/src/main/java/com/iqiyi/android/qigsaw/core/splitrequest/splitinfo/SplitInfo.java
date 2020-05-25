@@ -24,9 +24,18 @@
 
 package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
+import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
-import android.text.TextUtils;
 
+import android.content.Context;
+
+import com.iqiyi.android.qigsaw.core.common.AbiUtil;
+import com.iqiyi.android.qigsaw.core.common.FileUtil;
+import com.iqiyi.android.qigsaw.core.common.SplitConstants;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
@@ -36,21 +45,11 @@ public class SplitInfo {
 
     private final String splitName;
 
-    private final String url;
-
-    private final String md5;
-
     private final String splitVersion;
 
     private final String appVersion;
 
-    private final long size;
-
     private final boolean builtIn;
-
-    private final boolean hasLibs;
-
-    private final LibInfo primaryLibInfo;
 
     private final int dexNumber;
 
@@ -62,64 +61,116 @@ public class SplitInfo {
 
     private final List<String> dependencies;
 
+    private final List<SplitInfo.ApkData> apkDataList;
+
+    private final List<SplitInfo.LibData> libDataList;
+
+    private ApkData primaryApkData;
+
+    private LibData primaryLibData;
+
     SplitInfo(String splitName,
               String appVersion,
               String version,
-              String url,
-              String md5,
-              long size,
               boolean builtIn,
               int minSdkVersion,
               int dexNumber,
               List<String> workProcesses,
               List<String> dependencies,
-              boolean hasLibs,
-              LibInfo primaryLibInfo) {
+              List<SplitInfo.ApkData> apkDataList,
+              List<SplitInfo.LibData> libDataList) {
         this.splitName = splitName;
         this.appVersion = appVersion;
         this.splitVersion = version;
-        this.url = url;
-        this.md5 = md5;
-        this.size = size;
         this.builtIn = builtIn;
         this.minSdkVersion = minSdkVersion;
+        this.isMultiDex = dexNumber > 1;
         this.dexNumber = dexNumber;
         this.workProcesses = workProcesses;
         this.dependencies = dependencies;
-        this.hasLibs = hasLibs;
-        this.primaryLibInfo = primaryLibInfo;
-        this.isMultiDex = dexNumber > 1;
+        this.apkDataList = apkDataList;
+        this.libDataList = libDataList;
     }
 
     public String getSplitName() {
         return splitName;
     }
 
-    public String getUrl() {
-        return url;
-    }
+    public ApkData getPrimaryApkData(Context context) throws IOException {
+        if (primaryApkData != null) {
+            return primaryApkData;
+        }
+        String baseAbi = AbiUtil.getBasePrimaryAbi(context);
+        if (builtIn) {
+            if (libDataList == null) {
+                String primaryBuiltInPath = SplitConstants.QIGSAW + "/" + splitName + "-" + SplitConstants.NONE_ABI + SplitConstants.DOT_ZIP;
+                InputStream is = context.getAssets().open(primaryBuiltInPath);
+                FileUtil.closeQuietly(is);
+                primaryApkData = apkDataList.get(0);
+            } else {
+                for (SplitInfo.ApkData apkData : apkDataList) {
+                    if (apkData.abi.contains(baseAbi)) {
+                        String primaryBuiltInPath = SplitConstants.QIGSAW + "/" + splitName + "-" + apkData.abi + SplitConstants.DOT_ZIP;
+                        try {
+                            InputStream is = context.getAssets().open(primaryBuiltInPath);
+                            FileUtil.closeQuietly(is);
+                            primaryApkData = apkData;
+                            break;
+                        } catch (IOException ignored) {
 
-    public String getMd5() {
-        return md5;
+                        }
+                    }
+                }
+            }
+            if (primaryApkData == null) {
+                throw new IOException("Failed to find primary apk data for built-in split " + splitName);
+            }
+        } else {
+            for (SplitInfo.ApkData apkData : apkDataList) {
+                if (apkData.abi.equals(baseAbi) || SplitConstants.NONE_ABI.equals(apkData.abi)) {
+                    primaryApkData = apkData;
+                    break;
+                }
+            }
+            if (primaryApkData == null) {
+                throw new IOException("Failed to find primary apk data for remote split " + splitName);
+            }
+        }
+        return primaryApkData;
     }
 
     public String getSplitVersion() {
         return splitVersion;
     }
 
-    public long getSize() {
-        return size;
-    }
-
     public boolean isBuiltIn() {
         return builtIn;
     }
 
-    public LibInfo getLibInfo() {
-        if (hasLibs && primaryLibInfo == null) {
-            throw new RuntimeException("No supported abi for split " + splitName);
+    @Nullable
+    public LibData getPrimaryLibData(Context context) throws IOException {
+        if (primaryLibData != null) {
+            return primaryLibData;
         }
-        return primaryLibInfo;
+        String baseAbi = AbiUtil.getBasePrimaryAbi(context);
+        if (libDataList == null) {
+            return null;
+        }
+        List<String> splitABIs = new ArrayList<>();
+        for (SplitInfo.LibData libData : libDataList) {
+            splitABIs.add(libData.abi);
+        }
+        String splitPrimaryAbi = AbiUtil.findSplitPrimaryAbi(baseAbi, splitABIs);
+        if (splitPrimaryAbi == null) {
+            throw new IOException("No supported abi for split " + splitName);
+        }
+        for (SplitInfo.LibData libData : libDataList) {
+            if (libData.abi.equals(splitPrimaryAbi)) {
+                primaryLibData = libData;
+                break;
+            }
+        }
+        return primaryLibData;
     }
 
     public List<String> getDependencies() {
@@ -134,10 +185,6 @@ public class SplitInfo {
         return dexNumber > 0;
     }
 
-    public boolean hasLibs() {
-        return hasLibs;
-    }
-
     public List<String> getWorkProcesses() {
         return workProcesses;
     }
@@ -146,43 +193,51 @@ public class SplitInfo {
         return minSdkVersion;
     }
 
-    boolean isValid() {
-        return !TextUtils.isEmpty(url) && checkLibInfo()
-                && !TextUtils.isEmpty(splitName) && !TextUtils.isEmpty(md5)
-                && size > 0;
-    }
-
     public String getAppVersion() {
         return appVersion;
     }
 
-    private boolean checkLibInfo() {
-        if (primaryLibInfo != null && primaryLibInfo.libs != null
-                && !primaryLibInfo.libs.isEmpty()) {
-            if (TextUtils.isEmpty(primaryLibInfo.abi)) {
-                return false;
-            }
-            for (LibInfo.Lib lib : primaryLibInfo.libs) {
-                if (TextUtils.isEmpty(lib.name)
-                        || TextUtils.isEmpty(lib.md5)) {
-                    return false;
-                }
-                if (!lib.name.startsWith("lib")
-                        && !lib.name.endsWith(".so")) {
-                    return false;
-                }
-            }
+    public static class ApkData {
+
+        private String abi;
+
+        private String url;
+
+        private String md5;
+
+        private long size;
+
+        ApkData(String abi, String url, String md5, long size) {
+            this.abi = abi;
+            this.url = url;
+            this.md5 = md5;
+            this.size = size;
         }
-        return true;
+
+        public String getAbi() {
+            return abi;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public String getMd5() {
+            return md5;
+        }
+
+        public long getSize() {
+            return size;
+        }
     }
 
-    public static class LibInfo {
+    public static class LibData {
 
         private final String abi;
 
         private final List<Lib> libs;
 
-        LibInfo(String abi, List<Lib> libs) {
+        LibData(String abi, List<Lib> libs) {
             this.abi = abi;
             this.libs = libs;
         }
@@ -222,6 +277,4 @@ public class SplitInfo {
             }
         }
     }
-
-
 }

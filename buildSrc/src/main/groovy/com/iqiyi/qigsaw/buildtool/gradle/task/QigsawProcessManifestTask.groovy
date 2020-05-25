@@ -25,7 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 import org.dom4j.Document
 import org.dom4j.Element
 import org.dom4j.Node
@@ -42,12 +42,10 @@ import org.gradle.internal.Pair
 
 class QigsawProcessManifestTask extends DefaultTask {
 
-    final SAXReader saxReader
-
-    String variantName
+    final SAXReader saxReader = new SAXReader()
 
     @InputDirectory
-    File splitManifestOutputDir
+    File splitManifestDir
 
     @InputFile
     File mergedManifestFile
@@ -56,34 +54,22 @@ class QigsawProcessManifestTask extends DefaultTask {
     @Optional
     File bundleManifestFile
 
-    QigsawProcessManifestTask() {
-        this.saxReader = new SAXReader()
-    }
-
-    void initArgs(String variantName,
-                  File bundleManifestFile,
-                  File mergedManifestFile) {
-        this.variantName = variantName
-        this.mergedManifestFile = mergedManifestFile
-        this.bundleManifestFile = bundleManifestFile
-    }
-
     @TaskAction
-    void process() {
+    void processBaseManifest() {
         List<Pair<String, Node>> splitProviderNodes = getSplitProviderNodes()
         if (mergedManifestFile != null && mergedManifestFile.exists()) {
-            QigsawLogger.w("Start to modify base merged-manifest file " + mergedManifestFile)
+            SplitLogger.w("Start to modify base merged-manifest file " + mergedManifestFile)
             Document mergedManifestDoc = saxReader.read(mergedManifestFile)
-            modifyManifestContent(mergedManifestDoc, mergedManifestFile, splitProviderNodes)
+            modifyBaseManifestContent(mergedManifestDoc, mergedManifestFile, splitProviderNodes)
         }
         if (bundleManifestFile != null && bundleManifestFile.exists()) {
-            QigsawLogger.w("Start to modify base bundle-manifest file " + bundleManifestFile)
+            SplitLogger.w("Start to modify base bundle-manifest file " + bundleManifestFile)
             Document bundleManifestDoc = saxReader.read(bundleManifestFile)
-            modifyManifestContent(bundleManifestDoc, bundleManifestFile, splitProviderNodes)
+            modifyBaseManifestContent(bundleManifestDoc, bundleManifestFile, splitProviderNodes)
         }
     }
 
-    static void modifyManifestContent(Document document, File xmlFile, List<Pair<String, Node>> splitProviderNodes) {
+    static void modifyBaseManifestContent(Document document, File xmlFile, List<Pair<String, Node>> splitProviderNodes) {
         Element rootEle = document.getRootElement()
         List<? extends Node> appProviderNodes = rootEle.selectNodes("//provider")
         if (appProviderNodes != null && !appProviderNodes.empty) {
@@ -94,7 +80,7 @@ class QigsawProcessManifestTask extends DefaultTask {
                         Element splitProviderEle = splitProviderNode.right()
                         String appProviderName = appProviderEle.attribute("name").value
                         String splitProviderName = splitProviderEle.attribute("name").value
-                        if (appProviderName.equals(splitProviderName)) {
+                        if (appProviderName == splitProviderName) {
                             appProviderEle.attribute("name").setValue(appProviderName + "_Decorated_" + splitProviderNode.left())
                         }
                     }
@@ -111,10 +97,10 @@ class QigsawProcessManifestTask extends DefaultTask {
 
     private List<Pair<String, Node>> getSplitProviderNodes() {
         List<Pair<String, Node>> splitProviderNodes = new ArrayList<>()
-        if (!splitManifestOutputDir.exists()) {
-            throw new GradleException("Can't read split manifests from dir ${splitManifestOutputDir.absolutePath}")
+        if (!splitManifestDir.exists()) {
+            throw new GradleException("Can't read split manifests from dir ${splitManifestDir.absolutePath}")
         }
-        File[] splitManifests = splitManifestOutputDir.listFiles(new FileFilter() {
+        File[] splitManifests = splitManifestDir.listFiles(new FileFilter() {
             @Override
             boolean accept(File file) {
                 return file.name.endsWith(SdkConstants.DOT_XML)
@@ -135,5 +121,4 @@ class QigsawProcessManifestTask extends DefaultTask {
         }
         return splitProviderNodes
     }
-
 }

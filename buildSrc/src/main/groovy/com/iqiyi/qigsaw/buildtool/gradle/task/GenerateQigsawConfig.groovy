@@ -24,59 +24,41 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
+import com.android.utils.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.compiling.QigsawConfigGenerator
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.QigsawLogger
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TypeClassFileParser
-import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
-class GenerateQigsawConfig extends DefaultTask {
+class GenerateQigsawConfig extends ProcessOldOutputsBaseTask {
 
     @Input
     String qigsawId
 
     @Input
-    String versionName
+    boolean qigsawMode
 
     @Input
-    boolean qigsawMode
+    String applicationId
+
+    @Input
+    String versionName
 
     @Input
     String defaultSplitInfoVersion
 
     @Input
-    List<String> dfNames
-
-    @Input
-    String applicationId
-
-    File sourceOutputDir
-
-    @InputDirectory
-    File oldApkOutputDir
+    Set<String> dynamicFeatureNames
 
     @OutputDirectory
     File outputDir
 
-    void initArgs(boolean qigsawMode,
-                  String qigsawId,
-                  String applicationId,
-                  String versionName,
-                  String defaultSplitInfoVersion,
-                  List<String> dfNames) {
-        this.qigsawMode = qigsawMode
-        this.qigsawId = qigsawId
-        this.applicationId = applicationId
-        this.versionName = versionName
-        this.defaultSplitInfoVersion = defaultSplitInfoVersion
-        this.dfNames = dfNames
-    }
+    @OutputDirectory
+    File buildConfigDir
 
     @TaskAction
     void generate() throws IOException {
@@ -85,18 +67,19 @@ class GenerateQigsawConfig extends DefaultTask {
         if (qigsawConfigFile.exists()) {
             qigsawConfigFile.delete()
         }
-
-        List<String> dfNameJoinList = new ArrayList<>()
-        for (String dfName : dfNames) {
-            dfNameJoinList.add("\"" + dfName + "\"")
+        List<String> jointList = new ArrayList<>()
+        for (String name : dynamicFeatureNames) {
+            jointList.add("\"" + name + "\"")
         }
-        File oldSplitJsonFile = new File(oldApkOutputDir, QigsawProcessOldApkTask.OUTPUT_NAME)
-        if (oldSplitJsonFile.exists()) {
-            qigsawId = TypeClassFileParser.parseFile(oldSplitJsonFile, SplitDetails.class).qigsawId
-            if (qigsawId == null) {
-                throw new GradleException("Can't read qigsaw id from old apk!")
+        if (oldOutputsExtractedDir != null) {
+            File oldSplitDetailsFile = getOldSplitDetailsFile()
+            if (oldSplitDetailsFile != null && oldSplitDetailsFile.exists()) {
+                qigsawId = TypeClassFileParser.parseFile(oldSplitDetailsFile, SplitDetails.class).qigsawId
+                if (qigsawId == null) {
+                    throw new GradleException("Qigsaw Error: Can't read qigsaw id from old apk!")
+                }
+                SplitLogger.w("Read qigsaw id ${qigsawId} from old apk!")
             }
-            QigsawLogger.w("Read qigsaw id ${qigsawId} from old apk!")
         }
         generator
                 .addField(
@@ -106,9 +89,9 @@ class GenerateQigsawConfig extends DefaultTask {
                 .addField("String", "QIGSAW_ID", '"' + qigsawId + '"')
                 .addField("String", "VERSION_NAME", '"' + versionName + '"')
                 .addField("String", "DEFAULT_SPLIT_INFO_VERSION", '"' + defaultSplitInfoVersion + '"')
-                .addField("String[]", "DYNAMIC_FEATURES", "{" + dfNameJoinList.join(",") + "}")
+                .addField("String[]", "DYNAMIC_FEATURES", "{" + jointList.join(",") + "}")
         generator.generate()
-        File destDir = new File(sourceOutputDir, applicationId.replace(".", File.separator))
+        File destDir = new File(buildConfigDir, applicationId.replace(".", File.separator))
         if (!destDir.exists()) {
             destDir.mkdirs()
         }
@@ -117,6 +100,5 @@ class GenerateQigsawConfig extends DefaultTask {
             destFile.delete()
         }
         FileUtils.copyFile(qigsawConfigFile, destFile)
-
     }
 }

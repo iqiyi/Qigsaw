@@ -33,6 +33,8 @@ public class SplitConstants {
 
     public static final String QIGSAW = "qigsaw";
 
+    public static final String NONE_ABI = "none";
+
     public static final int MAX_RETRY_ATTEMPTS = 3;
 
     public static final String QIGSAW_PREFIX = "qigsaw_";
@@ -56,6 +58,10 @@ public class SplitConstants {
     public static final String KEY_APK = "apk";
 
     public static final String KEY_ADDED_DEX = "added-dex";
+
+    public static final String KEY_NATIVE_LIB_DIR = "native-lib-dir";
+
+    public static final String KEY_DEX_OPT_DIR = "dex-opt-dir";
 
     public static final String URL_ASSETS = "assets://";
 

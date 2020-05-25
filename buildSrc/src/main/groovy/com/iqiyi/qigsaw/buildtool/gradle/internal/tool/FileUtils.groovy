@@ -102,7 +102,7 @@ class FileUtils {
             throws IOException {
         copyFile(new FileInputStream(source), new FileOutputStream(dest))
         if (log) {
-            QigsawLogger.w("Succeed to copy ${source.absolutePath} to ${dest.absolutePath}")
+            SplitLogger.w("Succeed to copy ${source.absolutePath} to ${dest.absolutePath}")
         }
     }
 

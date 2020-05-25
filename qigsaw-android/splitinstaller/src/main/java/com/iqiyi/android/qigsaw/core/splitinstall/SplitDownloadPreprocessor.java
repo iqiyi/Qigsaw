@@ -27,10 +27,12 @@ package com.iqiyi.android.qigsaw.core.splitinstall;
 import android.content.Context;
 import android.text.TextUtils;
 
+import com.iqiyi.android.qigsaw.core.common.AbiUtil;
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
+import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
 import java.io.Closeable;
@@ -41,6 +43,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.util.List;
 
 final class SplitDownloadPreprocessor implements Closeable {
 
@@ -81,31 +84,30 @@ final class SplitDownloadPreprocessor implements Closeable {
         }
     }
 
-
     void load(Context context, SplitInfo info, boolean verifySignature) throws IOException {
         if (!cacheLock.isValid()) {
             throw new IllegalStateException("FileCheckerAndCopier was closed");
         } else {
             String splitName = info.getSplitName();
+            SplitInfo.ApkData primaryApkData = info.getPrimaryApkData(context);
             if (info.isBuiltIn()) {
-                boolean builtInSplitInAssets = info.getUrl().startsWith(SplitConstants.URL_ASSETS);
+                boolean builtInSplitInAssets = primaryApkData.getUrl().startsWith(SplitConstants.URL_ASSETS);
                 if (!splitApk.exists()) {
-                    SplitLog.v(TAG, "Built-in split %s is not existing, copy it from asset to [%s]", splitName, splitApk.getAbsolutePath());
-                    //copy build in spilt apk file to splitDir
+                    SplitLog.v(TAG, "Built-in split %s is not existing, copy it from asset to %s", splitName, splitApk.getAbsolutePath());
                     if (builtInSplitInAssets) {
-                        copyBuiltInSplit(context, info);
+                        copyBuiltInSplit(context, info.getSplitName(), primaryApkData);
                     }
                     //check size
-                    if (!verifySplitApk(context, info, verifySignature)) {
+                    if (!verifySplitApk(context, primaryApkData, verifySignature)) {
                         throw new IOException(String.format("Failed to check built-in split %s, it may be corrupted", splitName));
                     }
                 } else {
                     SplitLog.v(TAG, "Built-in split %s is existing", splitApk.getAbsolutePath());
-                    if (!verifySplitApk(context, info, verifySignature)) {
+                    if (!verifySplitApk(context, primaryApkData, verifySignature)) {
                         if (builtInSplitInAssets) {
-                            copyBuiltInSplit(context, info);
+                            copyBuiltInSplit(context, info.getSplitName(), primaryApkData);
                         }
-                        if (!verifySplitApk(context, info, verifySignature)) {
+                        if (!verifySplitApk(context, primaryApkData, verifySignature)) {
                             throw new IOException(String.format("Failed to check built-in split %s, it may be corrupted", splitApk.getAbsolutePath()));
                         }
                     }
@@ -113,7 +115,7 @@ final class SplitDownloadPreprocessor implements Closeable {
             } else {
                 if (splitApk.exists()) {
                     SplitLog.v(TAG, "split %s is downloaded", splitName);
-                    verifySplitApk(context, info, verifySignature);
+                    verifySplitApk(context, primaryApkData, verifySignature);
                 } else {
                     SplitLog.v(TAG, " split %s is not downloaded", splitName);
                 }
@@ -121,19 +123,19 @@ final class SplitDownloadPreprocessor implements Closeable {
         }
     }
 
-    private boolean verifySplitApk(Context context, SplitInfo info, boolean verifySignature) {
+    private boolean verifySplitApk(Context context, SplitInfo.ApkData apkData, boolean verifySignature) {
         if (FileUtil.isLegalFile(splitApk)) {
             boolean ret;
             if (verifySignature) {
                 ret = SignatureValidator.validateSplit(context, splitApk);
                 if (ret) {
-                    ret = checkSplitMD5(info);
+                    ret = checkSplitMD5(apkData);
                 }
             } else {
-                ret = checkSplitMD5(info);
+                ret = checkSplitMD5(apkData);
             }
             if (!ret) {
-                SplitLog.w(TAG, "Oops! Failed to check split %s signature and md5", info.getSplitName());
+                SplitLog.w(TAG, "Oops! Failed to check file %s signature or md5", splitApk.getAbsoluteFile());
                 deleteCorruptedOrObsoletedSplitApk();
             }
             return ret;
@@ -141,13 +143,13 @@ final class SplitDownloadPreprocessor implements Closeable {
         return false;
     }
 
-    private boolean checkSplitMD5(SplitInfo info) {
+    private boolean checkSplitMD5(SplitInfo.ApkData apkData) {
         String apkMd5 = FileUtil.getMD5(splitApk);
         if (TextUtils.isEmpty(apkMd5)) {
             //fallback to check apk length.
-            return info.getSize() == splitApk.length();
+            return apkData.getSize() == splitApk.length();
         } else {
-            return info.getMd5().equals(apkMd5);
+            return apkData.getMd5().equals(apkMd5);
         }
     }
 
@@ -158,39 +160,45 @@ final class SplitDownloadPreprocessor implements Closeable {
         }
     }
 
-    private void copyBuiltInSplit(Context context, SplitInfo info) throws IOException {
+    private void copyBuiltInSplit(Context context, String splitName, SplitInfo.ApkData apkData) throws IOException {
         int numAttempts = 0;
         boolean isCopySuccessful = false;
-        String splitFileName = info.getSplitName() + SplitConstants.DOT_ZIP;
         File tmpDir = SplitPathManager.require().getSplitTmpDir();
-        File tmp = File.createTempFile("tmp-" + info.getSplitName(), SplitConstants.DOT_APK, tmpDir);
+        File tmp = File.createTempFile("tmp-" + splitName, SplitConstants.DOT_APK, tmpDir);
+        String fileName = SplitConstants.QIGSAW + "/" + splitName + "-" + apkData.getAbi() + SplitConstants.DOT_ZIP;
         while (!isCopySuccessful && numAttempts < MAX_RETRY_ATTEMPTS) {
             ++numAttempts;
+            InputStream is = null;
             try {
-                InputStream is = context.getAssets().open(splitFileName);
-                FileUtil.copyFile(is, new FileOutputStream(tmp));
-                if (!tmp.renameTo(splitApk)) {
-                    SplitLog.w(TAG, "Failed to rename \"" + tmp.getAbsolutePath() + "\" to \"" + splitApk.getAbsolutePath() + "\"");
-                } else {
-                    isCopySuccessful = true;
+                is = context.getAssets().open(fileName);
+            } catch (IOException e1) {
+                SplitLog.w(TAG, "Built-in split apk " + fileName + " is not existing, attempts times : " + numAttempts);
+            }
+            if (is != null) {
+                try {
+                    FileUtil.copyFile(is, new FileOutputStream(tmp));
+                    if (!tmp.renameTo(splitApk)) {
+                        SplitLog.w(TAG, "Failed to rename " + tmp.getAbsolutePath() + " to " + splitApk.getAbsolutePath());
+                    } else {
+                        isCopySuccessful = true;
+                    }
+                } catch (IOException e) {
+                    SplitLog.w(TAG, "Failed to copy built-in split apk, attempts times : " + numAttempts);
                 }
-            } catch (IOException e) {
-                SplitLog.w(TAG, "Failed to copy built-in split apk, attempts times : " + numAttempts);
             }
             SplitLog.i(TAG, "Copy built-in split " + (isCopySuccessful ? "succeeded" : "failed") + " '" + splitApk.getAbsolutePath() + "': length " + splitApk.length());
             if (!isCopySuccessful) {
                 FileUtil.deleteFileSafely(splitApk);
                 if (splitApk.exists()) {
-                    SplitLog.w(TAG, "Failed to delete copied split apk which has been corrupted'" + splitApk.getPath() + "'");
+                    SplitLog.w(TAG, "Failed to delete copied file %s which has been corrupted ", splitApk.getPath());
                 }
             }
         }
         FileUtil.deleteFileSafely(tmp);
         if (!isCopySuccessful) {
-            throw new IOException(String.format("Failed to copy built-in file %s to path %s", splitFileName, splitApk.getPath()));
+            throw new IOException(String.format("Failed to copy built-in file %s to path %s", fileName, splitApk.getPath()));
         }
     }
-
 
     @Override
     public void close() throws IOException {

@@ -36,11 +36,14 @@ class QigsawSplitExtensionHelper {
         }
     }
 
-    static String getOldApk(Project project) {
+    static File getOldApkFile(Project project) {
         try {
             String oldApk = project.extensions.qigsawSplit.oldApk
-            if (oldApk != null && new File(oldApk).exists()) {
-                return oldApk
+            if (oldApk != null) {
+                File oldApkFile = new File(oldApk)
+                if (oldApkFile.exists()) {
+                    return oldApkFile
+                }
             }
         } catch (Throwable ignored) {
 
@@ -56,19 +59,33 @@ class QigsawSplitExtensionHelper {
         }
     }
 
-    static List<String> getRestrictWorkProcessesForSplits(Project project) {
+    static boolean isMultipleApkForABIs(Project project) {
         try {
-            return project.extensions.qigsawSplit.restrictWorkProcessesForSplits
+            return project.extensions.qigsawSplit.multipleApkForABIs
         } catch (Throwable ignored) {
-            return null
+            return false
         }
     }
 
-    static String getApplyMapping(Project project) {
+    static List<String> getRestrictWorkProcessesForSplits(Project project) {
+        try {
+            List<String> value = project.extensions.qigsawSplit.restrictWorkProcessesForSplits
+            if (value != null && !value.isEmpty()) {
+                return value
+            }
+        } catch (Throwable ignored) {
+        }
+        return null
+    }
+
+    static File getApplyMappingFile(Project project) {
         try {
             String mapping = project.extensions.qigsawSplit.applyMapping
-            if (mapping != null && new File(mapping).exists()) {
-                return mapping
+            if (mapping != null) {
+                File mappingFile = new File(mapping)
+                if (mappingFile.exists()) {
+                    return mappingFile
+                }
             }
         } catch (Throwable ignored) {
 
@@ -86,17 +103,25 @@ class QigsawSplitExtensionHelper {
 
     static Set<String> getSplitEntryFragments(Project project) {
         try {
-            return project.extensions.qigsawSplit.splitEntryFragments
+            List<String> value = project.extensions.qigsawSplit.splitEntryFragments
+            if (value != null && !value.isEmpty()) {
+                return value
+            }
         } catch (Throwable ignored) {
-            return null
+
         }
+        return null
     }
 
     static Set<String> getBaseContainerActivities(Project project) {
         try {
-            return project.extensions.qigsawSplit.baseContainerActivities
+            List<String> value = project.extensions.qigsawSplit.baseContainerActivities
+            if (value != null && !value.isEmpty()) {
+                return value
+            }
         } catch (Throwable ignored) {
-            return null
+
         }
+        return null
     }
 }

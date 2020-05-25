@@ -69,6 +69,8 @@ public final class SplitInstallError extends SplitBriefInfo {
      */
     public static final int DEX_OAT_FAILED = -18;
 
+    public static final int INTERNAL_ERROR = -100;
+
     /**
      * error code of this exception.
      */

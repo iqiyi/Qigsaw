@@ -31,7 +31,7 @@ class QigsawSplitExtension {
     final static String EMPTY = ""
 
     /**
-     * Whether repack base apk with 7z format when you use qigsawUploadSplit${VariantName} task to upload split apk files.
+     * Whether repack base apk with 7z format.
      * default value is {@code false}
      */
     boolean use7z = false
@@ -50,6 +50,11 @@ class QigsawSplitExtension {
      * Whether release split apk to server if it need dynamic delivery
      */
     boolean releaseSplitApk = false
+
+    /**
+     * Whether build multiple APKs for ABIs
+     */
+    boolean multipleApkForABIs = false
 
     /**
      * Specifies the version of json file of split-info, default value is 1.0.0
@@ -71,16 +76,4 @@ class QigsawSplitExtension {
      * Activities of base apk which would load split's fragments or resources.
      */
     List<String> baseContainerActivities = Collections.emptyList()
-
-    @Override
-    String toString() {
-        """| applyMapping = ${applyMapping}
-           | splitInfoVersion = ${splitInfoVersion}
-           | oldApk = ${oldApk}
-           | releaseSplitApk = ${releaseSplitApk}
-           | restrictWorkProcessesForSplits = ${restrictWorkProcessesForSplits}
-           | splitEntryFragments = ${splitEntryFragments}
-           | baseContainerActivities = ${baseContainerActivities}
-        """.stripMargin()
-    }
 }

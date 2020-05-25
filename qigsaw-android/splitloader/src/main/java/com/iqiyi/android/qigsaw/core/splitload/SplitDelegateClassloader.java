@@ -26,6 +26,8 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
 
+import androidx.annotation.Keep;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
@@ -34,6 +36,7 @@ import java.util.Set;
 import dalvik.system.BaseDexClassLoader;
 import dalvik.system.PathClassLoader;
 
+@Keep
 final class SplitDelegateClassloader extends PathClassLoader {
 
     private static BaseDexClassLoader originClassLoader;

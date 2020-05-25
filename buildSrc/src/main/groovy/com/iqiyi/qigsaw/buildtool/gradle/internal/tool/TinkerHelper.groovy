@@ -28,11 +28,14 @@ import org.gradle.api.Project
 
 class TinkerHelper {
 
-    static String getOldApk(Project project) {
+    static File getOldApkFile(Project project) {
         try {
             String oldApk = project.extensions.tinkerPatch.oldApk
-            if (oldApk != null && new File(oldApk).exists()) {
-                return oldApk
+            if (oldApk != null) {
+                File oldApkFile = new File(oldApk)
+                if (oldApkFile.exists()) {
+                    return oldApkFile
+                }
             }
         } catch (Throwable ignored) {
 

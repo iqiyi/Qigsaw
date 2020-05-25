@@ -30,6 +30,8 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Looper;
 import android.os.MessageQueue;
+
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
 import com.google.android.play.core.splitcompat.SplitCompat;
@@ -51,6 +53,7 @@ import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitUpdateReporterM
 
 import java.util.concurrent.atomic.AtomicReference;
 
+@Keep
 public class Qigsaw {
 
     private static final AtomicReference<Qigsaw> sReference = new AtomicReference<>();

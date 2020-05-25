@@ -28,6 +28,8 @@ import android.content.Context;
 import android.os.Build;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.OEMCompat;
 import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
@@ -65,10 +67,18 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    public InstallResult install(boolean startInstall, SplitInfo info) throws InstallException {
+    public InstallResult install(boolean startInstall, @NonNull SplitInfo info) throws InstallException {
         File splitDir = SplitPathManager.require().getSplitDir(info);
         File sourceApk;
-        if (info.isBuiltIn() && info.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+        SplitInfo.ApkData apkData;
+        SplitInfo.LibData libData;
+        try {
+            apkData = info.getPrimaryApkData(appContext);
+            libData = info.getPrimaryLibData(appContext);
+        } catch (IOException e) {
+            throw new InstallException(SplitInstallError.INTERNAL_ERROR, e);
+        }
+        if (info.isBuiltIn() && apkData.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
             sourceApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + info.getSplitName()));
         } else {
             sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
@@ -83,26 +93,28 @@ final class SplitInstallerImpl extends SplitInstaller {
             SplitLog.d(TAG, "Need to verify split %s signature!", sourceApk.getAbsolutePath());
             verifySignature(sourceApk);
         }
-        checkSplitMD5(sourceApk, info.getMd5());
+        checkSplitMD5(sourceApk, apkData.getMd5());
         File splitLibDir = null;
-        if (isLibExtractNeeded(info)) {
-            extractLib(info, sourceApk);
-            splitLibDir = SplitPathManager.require().getSplitLibDir(info);
+        if (libData != null) {
+            splitLibDir = SplitPathManager.require().getSplitLibDir(info, libData);
+            extractLib(sourceApk, splitLibDir, libData);
         }
         List<String> addedDexPaths = null;
+        File optimizedDirectory = null;
         if (info.hasDex()) {
+            optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
             addedDexPaths = new ArrayList<>();
             addedDexPaths.add(sourceApk.getAbsolutePath());
             if (!isVMMultiDexCapable()) {
-                if (isMultiDexExtractNeeded(info)) {
-                    addedDexPaths.addAll(extractMultiDex(info, sourceApk));
+                if (info.isMultiDex()) {
+                    File codeCacheDir = SplitPathManager.require().getSplitCodeCacheDir(info);
+                    addedDexPaths.addAll(extractMultiDex(sourceApk, codeCacheDir, info));
                 }
             }
         }
-        File markFile = SplitPathManager.require().getSplitMarkFile(info);
+        File markFile = SplitPathManager.require().getSplitMarkFile(info, apkData);
         if (addedDexPaths != null) {
             String dexPath = TextUtils.join(File.pathSeparator, addedDexPaths);
-            File optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
             String librarySearchPath = splitLibDir == null ? null : splitLibDir.getAbsolutePath();
             //trigger oat if need
             if (!markFile.exists()) {
@@ -142,18 +154,18 @@ final class SplitInstallerImpl extends SplitInstaller {
                 } else {
                     if (specialManufacturer) {
                         SplitLog.v(TAG, "Oat file %s is not exist in vivo & oppo, system would use interpreter mode.", oatFile.getAbsoluteFile());
-                        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(info);
+                        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(info, apkData);
                         if (!markFile.exists() && !specialMarkFile.exists()) {
                             File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
                             boolean firstInstalled = createInstalledMarkLock(specialMarkFile, lockFile);
-                            return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstalled);
+                            return new InstallResult(info.getSplitName(), sourceApk, optimizedDirectory, splitLibDir, addedDexPaths, firstInstalled);
                         }
                     }
                 }
             }
         }
         boolean firstInstalled = createInstalledMark(markFile);
-        return new InstallResult(info.getSplitName(), sourceApk, addedDexPaths, firstInstalled);
+        return new InstallResult(info.getSplitName(), sourceApk, optimizedDirectory, splitLibDir, addedDexPaths, firstInstalled);
     }
 
     @Override
@@ -177,12 +189,11 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected List<String> extractMultiDex(SplitInfo info, File splitApk) throws InstallException {
+    protected List<String> extractMultiDex(File splitApk, File codeCacheDir, @NonNull SplitInfo splitInfo) throws InstallException {
         SplitLog.w(TAG,
                 "VM do not support multi-dex, but split %s has multi dex files, so we need install other dex files manually",
                 splitApk.getName());
-        File codeCacheDir = SplitPathManager.require().getSplitCodeCacheDir(info);
-        String prefsKeyPrefix = info.getSplitName() + "@" + SplitBaseInfoProvider.getVersionName() + "@" + info.getSplitVersion();
+        String prefsKeyPrefix = splitInfo.getSplitName() + "@" + SplitBaseInfoProvider.getVersionName() + "@" + splitInfo.getSplitVersion();
         try {
             SplitMultiDexExtractor extractor = new SplitMultiDexExtractor(splitApk, codeCacheDir);
             try {
@@ -205,12 +216,11 @@ final class SplitInstallerImpl extends SplitInstaller {
     }
 
     @Override
-    protected void extractLib(SplitInfo info, File sourceApk) throws InstallException {
+    protected void extractLib(File splitApk, File libDir, @NonNull SplitInfo.LibData libData) throws InstallException {
         try {
-            File splitLibDir = SplitPathManager.require().getSplitLibDir(info);
-            SplitLibExtractor extractor = new SplitLibExtractor(sourceApk, splitLibDir);
+            SplitLibExtractor extractor = new SplitLibExtractor(splitApk, libDir);
             try {
-                List<File> libFiles = extractor.load(info, false);
+                List<File> libFiles = extractor.load(libData, false);
                 SplitLog.i(TAG, "Succeed to extract libs:  %s", libFiles.toString());
             } catch (IOException e) {
                 SplitLog.w(TAG, "Failed to load or extract lib files", e);
@@ -256,24 +266,6 @@ final class SplitInstallerImpl extends SplitInstaller {
      */
     private boolean isVMMultiDexCapable() {
         return IS_VM_MULTIDEX_CAPABLE;
-    }
-
-    /**
-     * check whether split apk has multi dexes.
-     *
-     * @param info {@link SplitInfo}
-     */
-    private boolean isMultiDexExtractNeeded(SplitInfo info) {
-        return info.isMultiDex();
-    }
-
-    /**
-     * check whether split apk has native libraries.
-     *
-     * @param info {@link SplitInfo}
-     */
-    private boolean isLibExtractNeeded(SplitInfo info) {
-        return info.hasLibs();
     }
 
     /**

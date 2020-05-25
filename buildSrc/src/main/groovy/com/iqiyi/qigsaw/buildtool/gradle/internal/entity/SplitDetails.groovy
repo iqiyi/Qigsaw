@@ -26,89 +26,33 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.entity
 
 class SplitDetails {
 
-    transient boolean updateMode
-
-    transient boolean updateModeButNoVersionChanged
+    transient UpdateRecord updateRecord
 
     String qigsawId
 
     String appVersionName
 
-    String builtInUrlPrefix
-
-    List<SplitInfo> splits
-
     List<String> updateSplits
-
-    Set<String> abiFilters
 
     Set<String> splitEntryFragments
 
-    static Builder newBuilder() {
-        return new Builder()
-    }
+    List<SplitInfo> splits
 
-    SplitDetails(Builder builder) {
-        this.qigsawId = builder.qigsawId
-        this.appVersionName = builder.appVersionName
-        this.abiFilters = builder.abiFilters
-        this.builtInUrlPrefix = builder.builtInUrlPrefix
-        this.splitEntryFragments = builder.splitEntryFragments
-    }
+    static class UpdateRecord {
 
-    @Override
-    String toString() {
-        """| qigsawId = ${qigsawId}
-           | appVersionName = ${appVersionName}
-           | builtInUrlPrefix = ${builtInUrlPrefix}
-           | abiFilters = ${abiFilters}
-           | updateSplits = ${updateSplits}
-           | splitEntryFragments = ${splitEntryFragments}
-           | splits = \n${splits}
-        """.stripMargin()
-    }
+        static final int DEFAULT = 0
 
+        static final int VERSION_CHANGED = 1
 
-    static class Builder {
+        static final int VERSION_NO_CHANGED = 2
 
-        private String qigsawId
+        int updateMode
 
-        private String appVersionName
-
-        private Set<String> abiFilters
-
-        private String builtInUrlPrefix
-
-        private Set<String> splitEntryFragments
-
-        Builder qigsawId(String qigsawId) {
-            this.qigsawId = qigsawId
-            return this
+        UpdateRecord() {
+            updateMode = DEFAULT
         }
 
-        Builder builtInUrlPrefix(String builtInUrlPrefix) {
-            this.builtInUrlPrefix = builtInUrlPrefix
-            return this
-        }
+        List<String> updateSplits
 
-        Builder appVersionName(String appVersionName) {
-            this.appVersionName = appVersionName
-            return this
-        }
-
-        Builder abiFilters(Set<String> abiFilters) {
-            this.abiFilters = (abiFilters == null || abiFilters.isEmpty() ? null : abiFilters)
-            return this
-        }
-
-        Builder splitEntryFragments(Set<String> splitEntryFragments) {
-            this.splitEntryFragments = (splitEntryFragments == null
-                    || splitEntryFragments.isEmpty() ? null : splitEntryFragments)
-            return this
-        }
-
-        SplitDetails build() {
-            return new SplitDetails(this)
-        }
     }
 }

@@ -40,7 +40,7 @@ abstract class SplitInstaller {
      * @param startInstall whether install splits immediately.
      * @param splitInfo    {@link SplitInfo}
      */
-    public abstract InstallResult install(boolean startInstall, SplitInfo splitInfo) throws InstallException;
+    public abstract InstallResult install(boolean startInstall, @NonNull SplitInfo splitInfo) throws InstallException;
 
     /**
      * Check whether the signature of split apk is consistent with base app.
@@ -60,19 +60,21 @@ abstract class SplitInstaller {
     /**
      * Extract split apk dex files if current platform does't support multi dex.
      *
-     * @param splitInfo {@link SplitInfo}
-     * @param splitApk  file of split apk.
+     * @param splitApk     file of split apk.
+     * @param codeCacheDir directory of split dex files
+     * @param splitInfo    {@link SplitInfo}
      * @return a list of extracted dex file path.
      */
-    protected abstract List<String> extractMultiDex(SplitInfo splitInfo, File splitApk) throws InstallException;
+    protected abstract List<String> extractMultiDex(File splitApk, File codeCacheDir, @NonNull SplitInfo splitInfo) throws InstallException;
 
     /**
      * Extract split native library files.
      *
-     * @param info     {@link   SplitInfo}
      * @param splitApk file of split apk.
+     * @param libDir   directory of split so files.
+     * @param libData  {@link SplitInfo.LibData}
      */
-    protected abstract void extractLib(SplitInfo info, File splitApk) throws InstallException;
+    protected abstract void extractLib(File splitApk, File libDir, @NonNull SplitInfo.LibData libData) throws InstallException;
 
     /**
      * create a mark file to record that this split has been installed successfully.
@@ -89,16 +91,24 @@ abstract class SplitInstaller {
 
         final File apkFile;
 
+        final File splitDexOptDir;
+
+        final File splitLibDir;
+
         final List<String> addedDexPaths;
 
         final boolean firstInstalled;
 
         InstallResult(@NonNull String splitName,
                       @NonNull File apkFile,
+                      @Nullable File splitDexOptDir,
+                      @Nullable File splitLibDir,
                       @Nullable List<String> addedDexPaths,
                       boolean firstInstalled) {
             this.splitName = splitName;
             this.apkFile = apkFile;
+            this.splitDexOptDir = splitDexOptDir;
+            this.splitLibDir = splitLibDir;
             this.addedDexPaths = addedDexPaths;
             this.firstInstalled = firstInstalled;
         }
