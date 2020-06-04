@@ -64,10 +64,10 @@ def qigsawPath = file("qigsaw/")
 qigsawSplit {
 
     /**
-     * Whether repack base apk with 7z format when you use qigsawUploadSplit${VariantName} task to upload split apk files.
+     * Whether repack base apk with 7z format.
      * default value is {@code false}
      */
-    use7z = true
+    use7z = false
 
     /**
      * optional，default 'null'
@@ -90,7 +90,7 @@ qigsawSplit {
     /**
      * Whether build multiple APKs for ABIs
      */
-    multipleApkForABIs = false
+    multipleApkForABIs = true
 
     /**
      * optional, default '1.0.0'
