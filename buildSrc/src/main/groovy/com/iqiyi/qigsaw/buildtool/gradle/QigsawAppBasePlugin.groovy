@@ -277,7 +277,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         throw new GradleException("Qigsaw Error: Can't obtain variant ${baseVariant.name} for dynamic-feature project ${splitProject.name}, " +
                                 "have you config the same flavor or buildType with base?")
                     }
-                    String versionName = splitVariant.versionName
+                    String versionName = splitVariant.mergedFlavor.versionName
                     if (versionName == null) {
                         throw new GradleException("Qigsaw Error:versionName must be set in ${splitProject.name}/build.gradle!")
                     }
@@ -290,8 +290,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     splitVariant.outputs.each {
                         splitApks.add(it.outputFile)
                     }
-                    String splitVersion = versionName + "@" + splitVariant.versionCode
-                    int minApiLevel = splitProject.extensions.android.defaultConfig.minSdkVersion.apiLevel
+                    String splitVersion = versionName + "@" + splitVariant.mergedFlavor.versionCode
+                    int minApiLevel = splitVariant.mergedFlavor.minSdkVersion.apiLevel
                     Set<String> splitProjectDependencies = new HashSet<>()
                     Configuration configuration = splitProject.configurations."${splitVariant.name}CompileClasspath"
                     configuration.incoming.dependencies.each {
