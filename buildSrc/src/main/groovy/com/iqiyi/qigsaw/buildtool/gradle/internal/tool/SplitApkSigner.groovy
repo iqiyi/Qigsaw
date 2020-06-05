@@ -26,11 +26,11 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.android.apksig.ApkSigner
 import com.android.apksig.ApkVerifier
-import com.android.build.gradle.internal.dsl.SigningConfig
+import com.android.build.gradle.api.ApplicationVariant
+import com.android.builder.model.SigningConfig
 import com.android.ide.common.signing.CertificateInfo
 import com.android.ide.common.signing.KeystoreHelper
 import com.google.common.base.Preconditions
-import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
 
 import java.security.PrivateKey
@@ -38,13 +38,10 @@ import java.security.cert.X509Certificate
 
 class SplitApkSigner {
 
-    final Project baseProject
+    final ApplicationVariant baseVariant
 
-    final String variantName
-
-    SplitApkSigner(Project project, String variantName) {
-        this.baseProject = project
-        this.variantName = variantName
+    SplitApkSigner(def variantName) {
+        this.baseVariant = variantName
     }
 
     boolean signApkIfNeed(File unsignedApk, File signedApk) {
@@ -52,10 +49,10 @@ class SplitApkSigner {
         if (!apkVerifier.verify().verified) {
             SigningConfig signingConfig
             try {
-                signingConfig = baseProject.extensions.android.signingConfigs.getByName(variantName.uncapitalize())
+                signingConfig = baseVariant.signingConfig
             } catch (UnknownDomainObjectException e) {
                 //Catch block
-                throw new RuntimeException("Can't get " + variantName.uncapitalize() + " signingConfigs in app project", e)
+                throw new RuntimeException("Can't get " + baseVariant.uncapitalize() + " signingConfigs in app project", e)
             }
             CertificateInfo certificateInfo = KeystoreHelper.getCertificateInfo(
                     signingConfig.getStoreType(),

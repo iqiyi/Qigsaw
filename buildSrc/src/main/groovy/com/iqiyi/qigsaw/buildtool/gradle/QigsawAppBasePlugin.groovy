@@ -93,7 +93,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 String qigsawId = createQigsawId(project, baseVariant.versionName)
                 String completeSplitInfoVersion = jointCompleteSplitInfoVersion(project, baseVariant.versionName)
                 Set<String> baseAbiFilters = getAbiFilters(project, baseVariant)
-                SplitApkSigner apkSigner = new SplitApkSigner(project, baseVariant.name)
+                SplitApkSigner apkSigner = new SplitApkSigner(baseVariant)
 
                 Task processManifest = AGPCompat.getProcessManifestTask(project, baseVariant.name.capitalize())
                 Task mergeAssets = AGPCompat.getMergeAssetsTask(project, baseVariant.name.capitalize())
