@@ -39,6 +39,8 @@ abstract class QigsawPlugin implements Plugin<Project> {
 
     public static final String QIGSAW_INSTALL_TASK_PREFIX = QIGSAW + INSTALL
 
+    static final List<String> CUSTOM_SUPPORTED_ABIS = ["none", "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+
     static boolean hasQigsawTask(Project project) {
         List<String> startTaskNames = project.gradle.startParameter.taskNames
         for (String taskName : startTaskNames) {

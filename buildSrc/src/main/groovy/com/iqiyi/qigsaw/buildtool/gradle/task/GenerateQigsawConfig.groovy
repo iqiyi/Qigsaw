@@ -71,7 +71,7 @@ class GenerateQigsawConfig extends ProcessOldOutputsBaseTask {
         for (String name : dynamicFeatureNames) {
             jointList.add("\"" + name + "\"")
         }
-        if (oldOutputsExtractedDir != null) {
+        if (targetFilesExtractedDir != null) {
             File oldSplitDetailsFile = getOldSplitDetailsFile()
             if (oldSplitDetailsFile != null && oldSplitDetailsFile.exists()) {
                 qigsawId = TypeClassFileParser.parseFile(oldSplitDetailsFile, SplitDetails.class).qigsawId

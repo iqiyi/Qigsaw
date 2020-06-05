@@ -107,7 +107,7 @@ class DexReMergeHandler {
                         new ToolOutputParser(new DexParser(), logger),
                         messageR)
         if (outputDir.exists()) {
-            outputDir.deleteDir()
+            FileUtils.deleteDir(outputDir)
         }
         outputDir.mkdirs()
         List<ForkJoinTask<Void>> mergeTasks = ImmutableList.of(submitForMerging(outputHandler.createOutput(), outputDir, dexPaths, mainDexPath))

@@ -25,7 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
+import com.iqiyi.qigsaw.buildtool.gradle.QigsawPlugin
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
@@ -72,6 +72,9 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
     @InputDirectory
     File splitInfoDir
 
+    @InputDirectory
+    File mergedJniLibsBaseDir
+
     @OutputFile
     File splitDetailsFile
 
@@ -84,15 +87,25 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
     @OutputDirectory
     File qigsawMergedAssetsDir
 
-    @OutputDirectory
-    File mergedJniLibsBaseDir
-
     CreateSplitDetailsFileTask() {
         this.splitEntryFragments = QigsawSplitExtensionHelper.getSplitEntryFragments(project)
     }
 
     @TaskAction
     void doCreation() {
+        if (splitDetailsFile.exists()) {
+            splitDetailsFile.delete()
+        }
+        if (updateRecordFile.exists()) {
+            updateRecordFile.delete()
+        }
+        if (baseAppCpuAbiListFile.exists()) {
+            baseAppCpuAbiListFile.delete()
+        }
+        if (qigsawMergedAssetsDir.exists()) {
+            FileUtils.deleteDir(qigsawMergedAssetsDir)
+        }
+        qigsawMergedAssetsDir.mkdirs()
         List<SplitInfo> splitInfoList = new ArrayList<>()
         dynamicFeaturesNames.each {
             File splitInfoFile = new File(splitInfoDir, it + SdkConstants.DOT_JSON)
@@ -105,24 +118,16 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         splitInfoList.each {
             it.dependencies = fixSplitDependencies(it.splitName, splitInfoList)
         }
-        splitInfoList = rearrangeSplits(splitInfoList)
         File oldSplitDetailsFile = getOldSplitDetailsFile()
         SplitDetails details = createSplitDetails(splitInfoList, oldSplitDetailsFile)
-        if (splitDetailsFile.exists()) {
-            splitDetailsFile.delete()
-        }
+
+        details.splits = rearrangeSplits(details.splits)
         FileUtils.createFileForTypeClass(details, splitDetailsFile)
-        if (updateRecordFile.exists()) {
-            updateRecordFile.delete()
-        }
         FileUtils.createFileForTypeClass(details.updateRecord, updateRecordFile)
         moveOutputsToMergedAssetsDir(oldSplitDetailsFile, details)
     }
 
     void moveOutputsToMergedAssetsDir(File oldSplitDetailsFile, SplitDetails splitDetails) {
-        if (qigsawMergedAssetsDir.exists()) {
-            com.android.utils.FileUtils.deleteDirectoryContents(qigsawMergedAssetsDir)
-        }
         File destSplitDetailsFile = new File(qigsawMergedAssetsDir, "qigsaw_${completeSplitInfoVersion + SdkConstants.DOT_JSON}")
         if (splitDetails.updateRecord.updateMode == SplitDetails.UpdateRecord.VERSION_NO_CHANGED) {
             FileUtils.copyFile(oldSplitDetailsFile, destSplitDetailsFile)
@@ -130,9 +135,6 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
             FileUtils.copyFile(splitDetailsFile, destSplitDetailsFile)
         }
         Set<String> mergedAbiFilters = getMergedAbiFilters()
-        if (baseAppCpuAbiListFile.exists()) {
-            baseAppCpuAbiListFile.delete()
-        }
         baseAppCpuAbiListFile.write("abiList=${mergedAbiFilters.join(",")}")
         FileUtils.copyFile(baseAppCpuAbiListFile, new File(qigsawMergedAssetsDir.parentFile, baseAppCpuAbiListFile.name))
         splitDetails.splits.each { SplitInfo info ->
@@ -167,7 +169,7 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
                 targetAbi = apkDataList[0].abi
             } else {
                 apkDataList.each { SplitInfo.SplitApkData apkData ->
-                    if (!QigsawAppBasePlugin.CUSTOM_SUPPORTED_ABIS.contains(apkData.abi)) {
+                    if (!QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(apkData.abi)) {
                         targetAbi = apkData.abi
                     }
                 }
@@ -224,13 +226,14 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
             SplitDetails oldSplitDetails = TypeClassFileParser.parseFile(oldSplitDetailsFile, SplitDetails)
             if (hasSplitVersionChanged(oldSplitDetails.splits, splitInfoList)) {
                 qigsawId = oldSplitDetails.qigsawId
-                updateSplits = analyzeUpdateSplits(oldSplitDetails.splits, splitInfoList)
+                List<String> updatedSplits = processAndAnalyzeUpdatedSplits(oldSplitDetails.splits, splitInfoList)
                 updateRecord.updateMode = SplitDetails.UpdateRecord.VERSION_CHANGED
-                updateRecord.updateSplits = updateSplits
-                SplitLogger.w("Splits ${updateSplits} need to be updated!")
+                updateRecord.updateSplits = updatedSplits
+                SplitLogger.w("Splits ${updatedSplits} need to be updated!")
             } else {
                 updateRecord.updateMode = SplitDetails.UpdateRecord.VERSION_NO_CHANGED
                 SplitLogger.w("No splits need to be updated, just using old Apks!")
+                oldSplitDetails.updateRecord = updateRecord
                 return oldSplitDetails
             }
         }
@@ -253,7 +256,7 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
             if (splitInfo.apkData.size() > 1) {
                 List<SplitInfo> tempList = new ArrayList<>()
                 splitInfo.apkData.each {
-                    if (QigsawAppBasePlugin.CUSTOM_SUPPORTED_ABIS.contains(it.abi)) {
+                    if (QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(it.abi)) {
                         tempList.add(it)
                     }
                 }
@@ -269,7 +272,7 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
                 for (SplitInfo.SplitApkData data : info.apkData) {
                     if (!data.url.startsWith("http")) {
                         //like ["universal", "armeabi-v7a", "arm64-v8a"], "universal" don't need to be uploaded.
-                        if (info.apkData.size() > 1 && !QigsawAppBasePlugin.CUSTOM_SUPPORTED_ABIS.contains(data.abi)) {
+                        if (info.apkData.size() > 1 && !QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(data.abi)) {
                             continue
                         }
                         File apkFile = new File(splitApksDir, info.splitName + "-${data.abi}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
@@ -359,23 +362,28 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         return versionChanged
     }
 
-    static List<String> analyzeUpdateSplits(List<SplitInfo> oldSplits, List<SplitInfo> newSplits) {
+    static List<String> processAndAnalyzeUpdatedSplits(List<SplitInfo> oldSplits, List<SplitInfo> splits) {
         List<String> updateSplits = new ArrayList<>(0)
-        for (SplitInfo newInfo : newSplits) {
-            for (SplitInfo oldInfo : oldSplits) {
-                if (newInfo.splitName == oldInfo.splitName) {
-                    if (newInfo.version == oldInfo.version) {
-                        SplitLogger.w("Split ${newInfo.splitName} version ${newInfo.version} is not changed, using old info!")
-                        newInfo = oldInfo.clone()
+        List<SplitInfo> newSplits = new ArrayList<>()
+        splits.each { info ->
+            oldSplits.each { oldInfo ->
+                if (info.splitName == oldInfo.splitName) {
+                    if (info.version == oldInfo.version) {
+                        newSplits.add(oldInfo)
+                        SplitLogger.w("Split ${info.splitName} version ${info.version} is not changed, using old info!")
                     } else {
-                        SplitLogger.w("Split ${newInfo.splitName} version ${newInfo.version} is changed, it need to be updated!")
+                        SplitInfo newInfo = info.clone()
                         newInfo.builtIn = false
                         newInfo.onDemand = true
-                        updateSplits.add(newInfo.splitName)
+                        newSplits.add(newInfo)
+                        updateSplits.add(info.splitName)
+                        SplitLogger.w("Split ${info.splitName} version ${info.version} is changed, it need to be updated!")
                     }
                 }
             }
         }
+        splits.clear()
+        splits.addAll(newSplits)
         return updateSplits
     }
 

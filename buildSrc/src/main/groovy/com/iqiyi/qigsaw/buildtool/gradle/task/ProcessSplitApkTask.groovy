@@ -25,7 +25,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
+import com.iqiyi.qigsaw.buildtool.gradle.QigsawPlugin
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
@@ -87,12 +87,11 @@ class ProcessSplitApkTask extends DefaultTask {
         }
         File unzipSplitApkDir = new File(unzipSplitApkBaseDir, project.name)
         if (unzipSplitApkDir.exists()) {
-            unzipSplitApkDir.deleteDir()
+            FileUtils.deleteDir(unzipSplitApkDir)
         }
         File sourceSplitApk = splitApks.get(0)
         HashMap<String, Integer> compressData = ZipUtils.unzipApk(sourceSplitApk, unzipSplitApkDir)
         Set<String> supportedABIs = getSupportedABIs(unzipSplitApkDir)
-
         List<SplitInfo.SplitApkData> apkDataList = new ArrayList<>()
         supportedABIs.each { String abi ->
             File unsignedAbiApk = new File(splitApksDir, project.name + "-${abi}-unsigned" + SdkConstants.DOT_ANDROID_PACKAGE)
@@ -103,7 +102,7 @@ class ProcessSplitApkTask extends DefaultTask {
             if (unsignedAbiApk.exists()) {
                 unsignedAbiApk.delete()
             }
-            if (supportedABIs.size() == 1 || !QigsawAppBasePlugin.CUSTOM_SUPPORTED_ABIS.contains(abi)) {
+            if (supportedABIs.size() == 1 || !QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(abi)) {
                 boolean needSign = apkSigner.signApkIfNeed(sourceSplitApk, signedAbiApk)
                 if (!needSign) {
                     FileUtils.copyFile(sourceSplitApk, signedAbiApk)

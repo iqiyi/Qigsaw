@@ -47,8 +47,6 @@ import org.gradle.util.VersionNumber
 
 class QigsawAppBasePlugin extends QigsawPlugin {
 
-    static final List<String> CUSTOM_SUPPORTED_ABIS = ["none", "armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
-
     @Override
     void apply(Project project) {
         //create qigsaw extension.
@@ -113,7 +111,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File packageAppDir = AGPCompat.getPackageApplicationDirCompat(packageApp)
                 File mergedJniLibsBaseDir = AGPCompat.getMergeJniLibsBaseDirCompat(mergeJniLibs)
 
-                File oldOutputsExtractedDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/old-outputs/extraction/${baseVariant.name}")
+                File targetFilesExtractedDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/old-apk/target-files/${baseVariant.name}")
                 File qigsawConfigDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/qigsaw-config/${baseVariant.name}")
                 File splitApksDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-outputs/apks/${baseVariant.name}")
                 File unzipSplitApkBaseDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-outputs/unzip/${baseVariant.name}")
@@ -127,14 +125,12 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File splitDetailsFile = new File(splitDetailsDir, "qigsaw" + "_" + completeSplitInfoVersion + SdkConstants.DOT_JSON)
                 File updateRecordFile = new File(splitDetailsDir, "_update_record_${SdkConstants.DOT_JSON}")
                 File baseAppCpuAbiListFile = new File(splitDetailsDir, "base.app.cpu.abilist${SdkConstants.DOT_PROPERTIES}")
-
                 File oldApk = getOldApkCompat(project)
-                Task extractOldOutputsFromOldApk = project.tasks.create("name": "extractOldOutputsWithOldApk${baseVariant.name.capitalize()}", "type": ExtractOldOutputsTask) {
-                    customFrom(oldApk)
-                    include("assets/qigsaw/**")
-                    into(oldOutputsExtractedDir)
-                }
-                extractOldOutputsFromOldApk.setGroup(QIGSAW)
+
+                ExtractTargetFilesFromOldApk extractTargetFilesFromOldApk = project.tasks.create("extractTargetFilesFromOldApk${baseVariant.name.capitalize()}", ExtractTargetFilesFromOldApk)
+                extractTargetFilesFromOldApk.oldApk = oldApk
+                extractTargetFilesFromOldApk.targetFilesExtractedDir = targetFilesExtractedDir
+                extractTargetFilesFromOldApk.setGroup(QIGSAW)
 
                 //create ${applicationId}QigsawConfig.java
                 GenerateQigsawConfig generateQigsawConfig = project.tasks.create("generate${baseVariant.name.capitalize()}QigsawConfig", GenerateQigsawConfig)
@@ -146,7 +142,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 generateQigsawConfig.dynamicFeatureNames = dynamicFeaturesNames
                 generateQigsawConfig.outputDir = qigsawConfigDir
                 generateQigsawConfig.buildConfigDir = baseVariant.variantData.scope.buildConfigSourceOutputDir
-                generateQigsawConfig.oldOutputsExtractedDir = oldOutputsExtractedDir.exists() ? oldOutputsExtractedDir : null
+                generateQigsawConfig.targetFilesExtractedDir = targetFilesExtractedDir
                 generateQigsawConfig.setGroup(QIGSAW)
 
                 //create split-details file.
@@ -158,7 +154,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawAssemble.dynamicFeaturesNames = dynamicFeaturesNames
                 qigsawAssemble.splitApksDir = splitApksDir
                 qigsawAssemble.splitInfoDir = splitInfoDir
-                qigsawAssemble.oldOutputsExtractedDir = oldOutputsExtractedDir.exists() ? oldOutputsExtractedDir : null
+                qigsawAssemble.targetFilesExtractedDir = targetFilesExtractedDir
                 qigsawAssemble.splitDetailsFile = splitDetailsFile
                 qigsawAssemble.updateRecordFile = updateRecordFile
                 qigsawAssemble.baseAppCpuAbiListFile = baseAppCpuAbiListFile
@@ -175,8 +171,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawInstall.baseApkFiles = baseApkFiles
                 qigsawInstall.setGroup(QIGSAW)
 
-                qigsawAssemble.dependsOn extractOldOutputsFromOldApk
-                generateQigsawConfig.dependsOn extractOldOutputsFromOldApk
+                qigsawAssemble.dependsOn extractTargetFilesFromOldApk
+                generateQigsawConfig.dependsOn extractTargetFilesFromOldApk
                 generateQigsawConfig.dependsOn generateBuildConfig
                 generateBuildConfig.finalizedBy generateQigsawConfig
 

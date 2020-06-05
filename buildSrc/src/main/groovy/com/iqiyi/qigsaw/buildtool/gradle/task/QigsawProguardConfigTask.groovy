@@ -26,6 +26,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.annotations.Nullable
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.InputFile
@@ -52,7 +53,7 @@ class QigsawProguardConfigTask extends DefaultTask {
     @TaskAction
     void updateQigsawProguardConfig() {
         if (outputFile.exists()) {
-            outputFile.deleteDir()
+            FileUtils.deleteDir(outputFile)
         }
         if (!outputFile.parentFile.exists()) {
             outputFile.parentFile.mkdirs()

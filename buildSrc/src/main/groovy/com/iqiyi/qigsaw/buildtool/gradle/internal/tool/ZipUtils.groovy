@@ -12,26 +12,10 @@ class ZipUtils {
     private static final int BUFFER = 8192
 
     static boolean checkDirectory(File dir) {
-        deleteDir(dir)
+        FileUtils.deleteDir(dir)
         if (!dir.exists()) {
             dir.mkdirs()
         }
-        return true
-    }
-
-    static boolean deleteDir(File file) {
-        if (file == null || (!file.exists())) {
-            return false
-        }
-        if (file.isFile()) {
-            file.delete()
-        } else if (file.isDirectory()) {
-            File[] files = file.listFiles()
-            for (int i = 0; i < files.length; i++) {
-                deleteDir(files[i])
-            }
-        }
-        file.delete()
         return true
     }
 
@@ -59,9 +43,6 @@ class ZipUtils {
                 String compatibaleResult = entry.getName()
                 if (compatibaleResult.contains("\\")) {
                     compatibaleResult = compatibaleResult.replace("\\", "/")
-                }
-                if (!compatibaleResult.startsWith("res/")) {
-                    println("name = " + compatibaleResult + "   method " + entry.getMethod())
                 }
                 compress.put(compatibaleResult, entry.getMethod())
                 FileOutputStream fos = new FileOutputStream(file)

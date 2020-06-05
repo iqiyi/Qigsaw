@@ -2,7 +2,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawAppBasePlugin
+import com.iqiyi.qigsaw.buildtool.gradle.QigsawPlugin
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.CommandUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
@@ -55,13 +55,16 @@ class SplitBaseApkForABIsTask extends DefaultTask {
             throw new GradleException("Qigsaw Error: Qigsaw don't support multi-apks.")
         }
         if (unzipBaseApkDir.exists()) {
-            unzipBaseApkDir.deleteDir()
+            FileUtils.deleteDir(unzipBaseApkDir)
         }
         if (baseApksDir.exists()) {
-            baseApksDir.deleteDir()
+            FileUtils.deleteDir(baseApksDir)
         }
         File baseApk = baseApkFiles[0]
         Properties properties = new Properties()
+        if (!baseAppCpuAbiListFile.exists()) {
+            throw new GradleException("Unable to find file ${baseAppCpuAbiListFile.absolutePath}")
+        }
         baseAppCpuAbiListFile.withInputStream {
             properties.load(it)
         }
@@ -82,16 +85,17 @@ class SplitBaseApkForABIsTask extends DefaultTask {
         abiList.each { String abi ->
             File unzipBaseApkDirForAbi = new File(unzipBaseApkDir, abi)
             if (unzipBaseApkDirForAbi.exists()) {
-                unzipBaseApkDirForAbi.deleteDir()
+                FileUtils.deleteDir(unzipBaseApkDirForAbi)
             }
+            unzipBaseApkDirForAbi.mkdirs()
             HashMap<String, Integer> compress = ZipUtils.unzipApk(baseApk, unzipBaseApkDirForAbi)
-            if (QigsawAppBasePlugin.CUSTOM_SUPPORTED_ABIS.contains(abi)) {
+            if (QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(abi)) {
                 File baseAppCpuAbiListFileForAbi = new File(unzipBaseApkDirForAbi, "assets/${baseAppCpuAbiListFile.name}")
                 baseAppCpuAbiListFileForAbi.write("abiList=${abi}")
                 File[] libDirs = new File(unzipBaseApkDirForAbi, "lib").listFiles()
                 libDirs.each { File abiDir ->
                     if (abiDir.name != abi) {
-                        abiDir.deleteDir()
+                        FileUtils.deleteDir(abiDir)
                     }
                 }
                 dynamicFeaturesNames.each { String splitName ->
@@ -114,6 +118,9 @@ class SplitBaseApkForABIsTask extends DefaultTask {
                 }
             }
             File unsignedBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}-${use7z ? "7z" : "non7z"}-unsigned${SdkConstants.DOT_ANDROID_PACKAGE}")
+            if (!unsignedBaseApk.parentFile.exists()) {
+                unsignedBaseApk.parentFile.mkdirs()
+            }
             if (use7z) {
                 run7zCmd("7za", "a", "-tzip", unsignedBaseApk.absolutePath, unzipBaseApkDirForAbi.absolutePath + File.separator + "*", "-mx9")
             } else {

@@ -34,13 +34,13 @@ class ProcessOldOutputsBaseTask extends DefaultTask {
 
     @InputDirectory
     @Optional
-    File oldOutputsExtractedDir
+    File targetFilesExtractedDir
 
     File getOldSplitDetailsFile() {
-        if (oldOutputsExtractedDir == null) {
+        if (targetFilesExtractedDir == null) {
             return null
         }
-        File oldSplitDetailsDir = new File(oldOutputsExtractedDir, "assets/qigsaw/")
+        File oldSplitDetailsDir = new File(targetFilesExtractedDir, "assets/qigsaw/")
         File oldSplitDetailsFile = null
         if (oldSplitDetailsDir.exists()) {
             File[] files = oldSplitDetailsDir.listFiles(new FileFilter() {
@@ -61,7 +61,7 @@ class ProcessOldOutputsBaseTask extends DefaultTask {
     }
 
     File getOldSplitApk(String splitName, String abi) {
-        return new File(oldOutputsExtractedDir, "assets/qigsaw/${splitName}-${abi + SdkConstants.DOT_ZIP}")
+        return new File(targetFilesExtractedDir, "assets/qigsaw/${splitName}-${abi + SdkConstants.DOT_ZIP}")
     }
 
 }

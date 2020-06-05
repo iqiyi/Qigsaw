@@ -24,15 +24,34 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
-import org.gradle.api.tasks.AbstractCopyTask
-import org.gradle.api.tasks.Copy
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 
-class ExtractOldOutputsTask extends Copy {
+class ExtractTargetFilesFromOldApk extends DefaultTask {
 
-    AbstractCopyTask customFrom(File sourceFile) {
-        if (sourceFile == null) {
-            return this
+    @InputFile
+    @Optional
+    File oldApk
+
+    @OutputDirectory
+    File targetFilesExtractedDir
+
+    @TaskAction
+    void extractTargetFiles() {
+        if (targetFilesExtractedDir.exists()) {
+            FileUtils.deleteDir(targetFilesExtractedDir)
         }
-        return from(project.zipTree(sourceFile))
+        targetFilesExtractedDir.mkdirs()
+        if (oldApk != null) {
+            project.copy { spec ->
+                spec.from(project.zipTree(oldApk))
+                spec.include("assets/qigsaw/**")
+                spec.into(targetFilesExtractedDir)
+            }
+        }
     }
 }
