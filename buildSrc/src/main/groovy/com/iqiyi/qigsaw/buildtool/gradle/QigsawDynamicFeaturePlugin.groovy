@@ -25,13 +25,11 @@
 package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.build.gradle.AppExtension
-import com.android.build.gradle.api.ApplicationVariant
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
+import com.android.builder.model.AndroidProject
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitLibraryLoaderTransform
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitResourcesLoaderTransform
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.Task
 
 class QigsawDynamicFeaturePlugin extends QigsawPlugin {
 
@@ -42,32 +40,13 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
         }
         boolean hasQigsawTask = hasQigsawTask(project)
         AppExtension android = project.extensions.getByType(AppExtension)
-        SplitResourcesLoaderTransform resourcesLoaderTransform = null
         if (hasQigsawTask) {
-            resourcesLoaderTransform = new SplitResourcesLoaderTransform(project)
+            SplitResourcesLoaderTransform resourcesLoaderTransform = new SplitResourcesLoaderTransform(project)
             SplitLibraryLoaderTransform libraryLoaderTransform = new SplitLibraryLoaderTransform(project)
             android.registerTransform(resourcesLoaderTransform)
             android.registerTransform(libraryLoaderTransform)
+            File manifestBaseDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/merged_manifests")
+            resourcesLoaderTransform.setManifestBaseDir(manifestBaseDir)
         }
-        project.afterEvaluate {
-            android.applicationVariants.all { variant ->
-                ApplicationVariant appVariant = variant
-                String variantName = appVariant.name.capitalize()
-                Task processManifestTask = AGPCompat.getProcessManifestTask(project, variantName)
-                File manifestFile = AGPCompat.getMergedManifestFileCompat(processManifestTask)
-                Task splitResourcesTransformTask = getSplitResourcesTransformTask(project, variantName)
-                if (splitResourcesTransformTask != null) {
-                    splitResourcesTransformTask.doFirst {
-                        if (resourcesLoaderTransform != null) {
-                            resourcesLoaderTransform.setManifest(manifestFile)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    static Task getSplitResourcesTransformTask(Project project, String variantName) {
-        return project.tasks.findByName("transformClassesWith${SplitResourcesLoaderTransform.NAME.capitalize()}For${variantName}")
     }
 }

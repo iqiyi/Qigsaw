@@ -24,6 +24,7 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
+import com.android.SdkConstants
 import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.Format
 import com.android.build.api.transform.JarInput
@@ -49,7 +50,7 @@ class SplitResourcesLoaderTransform extends Transform {
 
     Project project
 
-    File manifest
+    File manifestBaseDir
 
     boolean isBaseModule
 
@@ -104,8 +105,8 @@ class SplitResourcesLoaderTransform extends Transform {
         return super.getParameterInputs()
     }
 
-    void setManifest(File manifest) {
-        this.manifest = manifest
+    void setManifestBaseDir(File manifestBaseDir) {
+        this.manifestBaseDir = manifestBaseDir
     }
 
     @Override
@@ -121,8 +122,12 @@ class SplitResourcesLoaderTransform extends Transform {
                 resourcesLoaderInjector = new SplitResourcesLoaderInjector(waitableExecutor, baseContainerActivities)
             }
         } else {
-            if (manifest == null || !manifest.exists()) {
-                throw new GradleException("SplitResourcesLoaderTransform Task of project ${project.name} has no manifest file!")
+            if (manifestBaseDir == null || !manifestBaseDir.exists()) {
+                throw new GradleException("manifestBaseDir must be set!")
+            }
+            File manifest = new File(manifestBaseDir, transformInvocation.context.variantName.uncapitalize() + "/" + SdkConstants.ANDROID_MANIFEST_XML)
+            if (!manifest.exists()) {
+                throw new GradleException("${manifest.absolutePath}} is not found!")
             }
             ManifestReader manifestReader = new ManifestReader(manifest)
             Set<String> activities = manifestReader.readActivityNames()
