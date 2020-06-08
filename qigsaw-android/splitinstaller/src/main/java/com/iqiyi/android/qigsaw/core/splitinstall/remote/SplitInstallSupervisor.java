@@ -63,14 +63,14 @@ public abstract class SplitInstallSupervisor {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         List<SplitInfo> realUninstallSplits = null;
         if (uninstallSplits != null && manager != null) {
-            List<SplitInfo> uninstallSplitInfos = manager.getSplitInfos(context, uninstallSplits);
-            if (uninstallSplitInfos != null) {
+            List<SplitInfo> uninstallSplitInfoList = manager.getSplitInfos(context, uninstallSplits);
+            if (uninstallSplitInfoList != null) {
                 ProcessUtil.killAllOtherProcess(context);
-                realUninstallSplits = new ArrayList<>(uninstallSplitInfos.size());
-                for (SplitInfo uninstallSplitInfo : uninstallSplitInfos) {
+                realUninstallSplits = new ArrayList<>(uninstallSplitInfoList.size());
+                for (SplitInfo uninstallSplitInfo : uninstallSplitInfoList) {
                     try {
-                        SplitInfo.ApkData apkData = uninstallSplitInfo.getPrimaryApkData(context);
-                        File installedMarkFile = SplitPathManager.require().getSplitMarkFile(uninstallSplitInfo, apkData);
+                        String installedMark = uninstallSplitInfo.obtainInstalledMark(context);
+                        File installedMarkFile = SplitPathManager.require().getSplitMarkFile(uninstallSplitInfo, installedMark);
                         boolean ret = FileUtil.deleteFileSafely(installedMarkFile);
                         if (ret) {
                             realUninstallSplits.add(uninstallSplitInfo);

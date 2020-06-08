@@ -25,7 +25,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawPlugin
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitDetails
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
@@ -120,7 +119,6 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         }
         File oldSplitDetailsFile = getOldSplitDetailsFile()
         SplitDetails details = createSplitDetails(splitInfoList, oldSplitDetailsFile)
-
         details.splits = rearrangeSplits(details.splits)
         FileUtils.createFileForTypeClass(details, splitDetailsFile)
         FileUtils.createFileForTypeClass(details.updateRecord, updateRecordFile)
@@ -139,19 +137,16 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         FileUtils.copyFile(baseAppCpuAbiListFile, new File(qigsawMergedAssetsDir.parentFile, baseAppCpuAbiListFile.name))
         splitDetails.splits.each { SplitInfo info ->
             if (info.builtIn) {
-                String targetAbi = findTargetAbiForBuiltInSplitApk(info.apkData, mergedAbiFilters)
-                if (targetAbi == null) {
-                    SplitLogger.e("There is no target abi for 'abiFilters' ${mergedAbiFilters}, dynamic-feature ${info.splitName} can't be 'built-in'!")
-                } else {
-                    File destSplitApk = new File(qigsawMergedAssetsDir, "${info.splitName}-${targetAbi}${SdkConstants.DOT_ZIP}")
+                info.apkData.each {
+                    File destSplitApk = new File(qigsawMergedAssetsDir, "${info.splitName}-${it.abi + SdkConstants.DOT_ZIP}")
                     if (splitDetails.updateRecord.updateMode != SplitDetails.UpdateRecord.DEFAULT) {
-                        File oldSplitApk = getOldSplitApk(info.splitName, targetAbi)
+                        File oldSplitApk = getOldSplitApk(info.splitName, it.abi)
                         if (!oldSplitApk.exists()) {
-                            throw new GradleException("Old split apk ${oldSplitApk.absolutePath} is not found, make sure oldApk is matching!")
+                            throw new GradleException("Old split apk ${oldSplitApk.absolutePath} is not found, make sure oldApk is existing!")
                         }
                         FileUtils.copyFile(oldSplitApk, destSplitApk)
                     } else {
-                        File sourceSplitApk = new File(splitApksDir, "${info.splitName}-${targetAbi}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
+                        File sourceSplitApk = new File(splitApksDir, "${info.splitName}-${it.abi + SdkConstants.DOT_ANDROID_PACKAGE}")
                         if (!sourceSplitApk.exists()) {
                             throw new GradleException("Split apk ${sourceSplitApk.absolutePath} is not found!")
                         }
@@ -160,29 +155,6 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
                 }
             }
         }
-    }
-
-    static String findTargetAbiForBuiltInSplitApk(List<SplitInfo.SplitApkData> apkDataList, Set<String> mergedAbiFilters) {
-        String targetAbi = null
-        if (mergedAbiFilters.isEmpty()) {
-            if (apkDataList.size() == 1) {
-                targetAbi = apkDataList[0].abi
-            } else {
-                apkDataList.each { SplitInfo.SplitApkData apkData ->
-                    if (!QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(apkData.abi)) {
-                        targetAbi = apkData.abi
-                    }
-                }
-            }
-        } else {
-            String joinMergedAbiFilters = mergedAbiFilters.join("-")
-            apkDataList.each { SplitInfo.SplitApkData apkData ->
-                if (apkData.abi == joinMergedAbiFilters || apkData.abi == "none") {
-                    targetAbi = apkData.abi
-                }
-            }
-        }
-        return targetAbi
     }
 
     Set<String> getMergedAbiFilters() {
@@ -239,7 +211,6 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         }
         splitInfoList.each { SplitInfo info ->
             uploadSplitApkIfNeed(info)
-            removeRedundantSplitApkData(info)
         }
         SplitDetails splitDetails = new SplitDetails()
         splitDetails.updateRecord = updateRecord
@@ -251,31 +222,13 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         return splitDetails
     }
 
-    static void removeRedundantSplitApkData(SplitInfo splitInfo) {
-        if (!splitInfo.builtIn) {
-            if (splitInfo.apkData.size() > 1) {
-                List<SplitInfo> tempList = new ArrayList<>()
-                splitInfo.apkData.each {
-                    if (QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(it.abi)) {
-                        tempList.add(it)
-                    }
-                }
-                splitInfo.apkData = tempList
-            }
-        }
-    }
-
     void uploadSplitApkIfNeed(SplitInfo info) {
         if (!info.builtIn) {
             SplitApkUploader uploader = SplitApkUploaderInstance.get()
             if (uploader != null) {
                 for (SplitInfo.SplitApkData data : info.apkData) {
                     if (!data.url.startsWith("http")) {
-                        //like ["universal", "armeabi-v7a", "arm64-v8a"], "universal" don't need to be uploaded.
-                        if (info.apkData.size() > 1 && !QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(data.abi)) {
-                            continue
-                        }
-                        File apkFile = new File(splitApksDir, info.splitName + "-${data.abi}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
+                        File apkFile = new File(splitApksDir, info.splitName + "-${data.abi + SdkConstants.DOT_ANDROID_PACKAGE}")
                         if (!apkFile.exists()) {
                             throw new GradleException("Split apk ${apkFile.absolutePath} is not existing!")
                         }

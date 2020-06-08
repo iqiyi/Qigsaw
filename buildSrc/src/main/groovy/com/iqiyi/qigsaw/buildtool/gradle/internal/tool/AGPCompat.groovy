@@ -24,15 +24,17 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
+import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
+import com.android.build.gradle.internal.scope.GlobalScope
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.util.VersionNumber
 
-class AGPCompat {
+import java.lang.reflect.Method
 
-    static final String ANDROIDMANIFEST_DOT_XML = "AndroidManifest.xml"
+class AGPCompat {
 
     static String getMergedAssetsBaseDirCompat(Task mergeAssetsTask) {
         String mergedAssetsOutputDir
@@ -45,6 +47,18 @@ class AGPCompat {
             throw new GradleException("Can't read 'outputDir' from " + mergeAssetsTask == null ? null : mergeAssetsTask.class.name)
         }
         return mergedAssetsOutputDir
+    }
+
+    static File getAapt2FromMavenCompat(def variant) {
+        try {
+            Class class_Aapt2MavenUtils = Class.forName("com.android.build.gradle.internal.res.Aapt2MavenUtils")
+            Method method_getAapt2FromMaven = class_Aapt2MavenUtils.getDeclaredMethod("getAapt2FromMaven", GlobalScope)
+            method_getAapt2FromMaven.setAccessible(true)
+            def aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.scope.globalScope).singleFile
+            return aapt2
+        } catch (Throwable e) {
+            throw new GradleException("Unable to obtain aapt2", e)
+        }
     }
 
     static File getPackageApplicationDirCompat(Task packageApplicationTask) {
@@ -69,7 +83,7 @@ class AGPCompat {
     }
 
     static File getMergedManifestFileCompat(Task processManifestTask) {
-        return new File(getMergedManifestDirCompat(processManifestTask), ANDROIDMANIFEST_DOT_XML)
+        return new File(getMergedManifestDirCompat(processManifestTask), SdkConstants.ANDROID_MANIFEST_XML)
     }
 
     static File getBundleManifestDirCompat(Task processManifestTask, def versionAGP) {

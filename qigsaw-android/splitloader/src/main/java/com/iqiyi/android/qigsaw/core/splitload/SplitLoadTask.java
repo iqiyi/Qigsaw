@@ -143,7 +143,11 @@ abstract class SplitLoadTask implements Runnable {
                 SplitLog.i(TAG, "Split %s has been loaded!", splitName);
                 continue;
             }
+            File splitDir = SplitPathManager.require().getSplitDir(info);
             String splitApkPath = splitFileIntent.getStringExtra(SplitConstants.KEY_APK);
+            String dexOptPath = splitFileIntent.getStringExtra(SplitConstants.KEY_DEX_OPT_DIR);
+            String nativeLibPath = splitFileIntent.getStringExtra(SplitConstants.KEY_NATIVE_LIB_DIR);
+            List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
             try {
                 //load split's resources.
                 loader.loadResources(splitApkPath);
@@ -152,26 +156,22 @@ abstract class SplitLoadTask implements Runnable {
                 loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 continue;
             }
-            String dexOptPath = splitFileIntent.getStringExtra(SplitConstants.KEY_DEX_OPT_DIR);
             if (info.hasDex() && dexOptPath == null) {
                 SplitLog.w(TAG, "Failed to %s get dex-opt-dir", splitName);
-                loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("internal error")));
+                loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("dex-opt-dir of " + splitName + " is missing!")));
                 continue;
             }
-            String nativeLibPath = splitFileIntent.getStringExtra(SplitConstants.KEY_NATIVE_LIB_DIR);
             try {
                 SplitInfo.LibData libData = info.getPrimaryLibData(appContext);
                 if (libData != null && nativeLibPath == null) {
                     SplitLog.w(TAG, "Failed to %s get native-lib-dir", splitName);
-                    loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("internal error")));
+                    loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("native-lib-dir of " + splitName + " is missing!")));
                     continue;
                 }
             } catch (IOException e) {
                 loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, e));
                 continue;
             }
-            List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
-            File splitDir = SplitPathManager.require().getSplitDir(info);
             ClassLoader classLoader;
             try {
                 classLoader = loadCode(loader, splitName,

@@ -105,9 +105,9 @@ public final class SplitPathManager {
      *
      * @param info split info.
      */
-    public File getSplitMarkFile(SplitInfo info, SplitInfo.ApkData apkData) {
+    public File getSplitMarkFile(SplitInfo info, String mark) {
         File splitDir = getSplitDir(info);
-        return new File(splitDir, apkData.getMd5());
+        return new File(splitDir, mark);
     }
 
     /**
@@ -115,9 +115,9 @@ public final class SplitPathManager {
      *
      * @param info split info.
      */
-    public File getSplitSpecialMarkFile(SplitInfo info, SplitInfo.ApkData apkData) {
+    public File getSplitSpecialMarkFile(SplitInfo info, String mark) {
         File splitDir = getSplitDir(info);
-        return new File(splitDir, apkData.getMd5() + ".ov");
+        return new File(splitDir, mark + ".ov");
     }
 
     public File getSplitSpecialLockFile(SplitInfo info) {
@@ -154,11 +154,9 @@ public final class SplitPathManager {
 
     /**
      * get storage path of split extracted so
-     *
-     * @param info split info
      */
-    public File getSplitLibDir(SplitInfo info, SplitInfo.LibData libData) {
-        File libDir = new File(getSplitDir(info), "nativeLib" + File.separator + libData.getAbi());
+    public File getSplitLibDir(SplitInfo info, String abi) {
+        File libDir = new File(getSplitDir(info), "nativeLib" + File.separator + abi);
         if (!libDir.exists()) {
             libDir.mkdirs();
         }

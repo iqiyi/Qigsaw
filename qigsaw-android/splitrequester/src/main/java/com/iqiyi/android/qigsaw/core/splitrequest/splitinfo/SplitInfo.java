@@ -65,9 +65,11 @@ public class SplitInfo {
 
     private final List<SplitInfo.LibData> libDataList;
 
-    private ApkData primaryApkData;
-
     private LibData primaryLibData;
+
+    private List<SplitInfo.ApkData> primaryApkDataList;
+
+    private String installedMark;
 
     SplitInfo(String splitName,
               String appVersion,
@@ -96,47 +98,60 @@ public class SplitInfo {
         return splitName;
     }
 
-    public ApkData getPrimaryApkData(Context context) throws IOException {
-        if (primaryApkData != null) {
-            return primaryApkData;
+    public List<ApkData> getApkDataList(Context context) throws IOException {
+        if (primaryApkDataList != null) {
+            return primaryApkDataList;
         }
-        String baseAbi = AbiUtil.getBasePrimaryAbi(context);
-        if (builtIn) {
-            if (libDataList == null) {
-                String primaryBuiltInPath = SplitConstants.QIGSAW + "/" + splitName + "-" + SplitConstants.NONE_ABI + SplitConstants.DOT_ZIP;
-                InputStream is = context.getAssets().open(primaryBuiltInPath);
-                FileUtil.closeQuietly(is);
-                primaryApkData = apkDataList.get(0);
-            } else {
-                for (SplitInfo.ApkData apkData : apkDataList) {
-                    if (apkData.abi.contains(baseAbi)) {
-                        String primaryBuiltInPath = SplitConstants.QIGSAW + "/" + splitName + "-" + apkData.abi + SplitConstants.DOT_ZIP;
-                        try {
-                            InputStream is = context.getAssets().open(primaryBuiltInPath);
-                            FileUtil.closeQuietly(is);
-                            primaryApkData = apkData;
-                            break;
-                        } catch (IOException ignored) {
+        primaryApkDataList = new ArrayList<>();
+        LibData primaryAbi = getPrimaryLibData(context);
+        for (ApkData apkData : apkDataList) {
+            if (apkData.abi.equals(SplitConstants.MASTER)) {
+                primaryApkDataList.add(apkData);
+            }
+            if (primaryAbi != null && primaryAbi.abi.equals(apkData.abi)) {
+                primaryApkDataList.add(apkData);
+            }
+        }
+        if (primaryAbi != null && primaryApkDataList.size() <= 1) {
+            throw new RuntimeException("Unable to find split config apk for abi" + primaryAbi.abi);
+        }
+        return primaryApkDataList;
+    }
 
-                        }
-                    }
-                }
-            }
-            if (primaryApkData == null) {
-                throw new IOException("Failed to find primary apk data for built-in split " + splitName);
-            }
-        } else {
-            for (SplitInfo.ApkData apkData : apkDataList) {
-                if (apkData.abi.equals(baseAbi) || SplitConstants.NONE_ABI.equals(apkData.abi)) {
-                    primaryApkData = apkData;
-                    break;
-                }
-            }
-            if (primaryApkData == null) {
-                throw new IOException("Failed to find primary apk data for remote split " + splitName);
+    public String obtainInstalledMark(Context context) throws IOException {
+        if (installedMark != null) {
+            return installedMark;
+        }
+        List<ApkData> apkDataList = getApkDataList(context);
+        String markStart = null;
+        long markEnd = 0L;
+        for (ApkData apkData : apkDataList) {
+            if (SplitConstants.MASTER.equals(apkData.getAbi())) {
+                markStart = apkData.md5;
+            } else {
+                markEnd = apkData.size;
             }
         }
-        return primaryApkData;
+        installedMark = markStart + "." + markEnd;
+        return installedMark;
+    }
+
+    public long getApkTotalSize(Context context) throws IOException {
+        List<ApkData> apkDataList = getApkDataList(context);
+        long totalSize = 0L;
+        for (ApkData apkData : apkDataList) {
+            totalSize = totalSize + apkData.size;
+        }
+        return totalSize;
+    }
+
+    public ApkData getApkDataForMaster() {
+        for (ApkData apkData : apkDataList) {
+            if (apkData.abi.equals(SplitConstants.MASTER)) {
+                return apkData;
+            }
+        }
+        throw new RuntimeException("Unable to find master apk for " + splitName);
     }
 
     public String getSplitVersion() {

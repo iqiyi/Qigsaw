@@ -69,103 +69,111 @@ final class SplitInstallerImpl extends SplitInstaller {
     @Override
     public InstallResult install(boolean startInstall, @NonNull SplitInfo info) throws InstallException {
         File splitDir = SplitPathManager.require().getSplitDir(info);
-        File sourceApk;
-        SplitInfo.ApkData apkData;
+        List<SplitInfo.ApkData> apkDataList;
         SplitInfo.LibData libData;
+        String installedMark;
         try {
-            apkData = info.getPrimaryApkData(appContext);
+            apkDataList = info.getApkDataList(appContext);
             libData = info.getPrimaryLibData(appContext);
+            installedMark = info.obtainInstalledMark(appContext);
         } catch (IOException e) {
             throw new InstallException(SplitInstallError.INTERNAL_ERROR, e);
         }
-        if (info.isBuiltIn() && apkData.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
-            sourceApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + info.getSplitName()));
-        } else {
-            sourceApk = new File(splitDir, info.getSplitName() + SplitConstants.DOT_APK);
-        }
-        if (!FileUtil.isLegalFile(sourceApk)) {
-            throw new InstallException(
-                    SplitInstallError.APK_FILE_ILLEGAL,
-                    new FileNotFoundException("Split apk " + sourceApk.getAbsolutePath() + " is illegal!")
-            );
-        }
-        if (verifySignature) {
-            SplitLog.d(TAG, "Need to verify split %s signature!", sourceApk.getAbsolutePath());
-            verifySignature(sourceApk);
-        }
-        checkSplitMD5(sourceApk, apkData.getMd5());
         File splitLibDir = null;
-        if (libData != null) {
-            splitLibDir = SplitPathManager.require().getSplitLibDir(info, libData);
-            extractLib(sourceApk, splitLibDir, libData);
-        }
         List<String> addedDexPaths = null;
         File optimizedDirectory = null;
-        if (info.hasDex()) {
-            optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
-            addedDexPaths = new ArrayList<>();
-            addedDexPaths.add(sourceApk.getAbsolutePath());
-            if (!isVMMultiDexCapable()) {
-                if (info.isMultiDex()) {
-                    File codeCacheDir = SplitPathManager.require().getSplitCodeCacheDir(info);
-                    addedDexPaths.addAll(extractMultiDex(sourceApk, codeCacheDir, info));
-                }
+        File splitMasterApk = null;
+        File markFile = SplitPathManager.require().getSplitMarkFile(info, installedMark);
+        for (SplitInfo.ApkData apkData : apkDataList) {
+            File splitApk;
+            if (info.isBuiltIn() && apkData.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
+                splitApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + info.getSplitName()));
+            } else {
+                splitApk = new File(splitDir, info.getSplitName() + "-" + apkData.getAbi() + SplitConstants.DOT_APK);
             }
-        }
-        File markFile = SplitPathManager.require().getSplitMarkFile(info, apkData);
-        if (addedDexPaths != null) {
-            String dexPath = TextUtils.join(File.pathSeparator, addedDexPaths);
-            String librarySearchPath = splitLibDir == null ? null : splitLibDir.getAbsolutePath();
-            //trigger oat if need
-            if (!markFile.exists()) {
-                try {
-                    new DexClassLoader(dexPath, optimizedDirectory.getAbsolutePath(), librarySearchPath, SplitInstallerImpl.class.getClassLoader());
-                } catch (Throwable error) {
-                    throw new InstallException(
-                            SplitInstallError.CLASSLOADER_CREATE_FAILED,
-                            error);
-                }
+            if (!FileUtil.isLegalFile(splitApk)) {
+                throw new InstallException(
+                        SplitInstallError.APK_FILE_ILLEGAL,
+                        new FileNotFoundException("Split apk " + splitApk.getAbsolutePath() + " is illegal!")
+                );
             }
-            //check oat file. We found many native crash in libart.so, especially vivo & oppo.
-            if (OEMCompat.shouldCheckOatFileInCurrentSys()) {
-                SplitLog.v(TAG, "Start to check oat file, current api level is " + Build.VERSION.SDK_INT);
-                boolean specialManufacturer = OEMCompat.isSpecialManufacturer();
-                File oatFile = OEMCompat.getOatFilePath(sourceApk, optimizedDirectory);
-                if (FileUtil.isLegalFile(oatFile)) {
-                    boolean checkResult = OEMCompat.checkOatFile(oatFile);
-                    SplitLog.v(TAG, "Result of oat file %s is " + checkResult, oatFile.getAbsoluteFile());
-                    if (!checkResult) {
-                        SplitLog.w(TAG, "Failed to check oat file " + oatFile.getAbsolutePath());
-                        if (specialManufacturer) {
-                            File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
-                            try {
-                                FileUtil.deleteFileSafelyLock(oatFile, lockFile);
-                            } catch (IOException error) {
-                                SplitLog.w(TAG, "Failed to delete corrupted oat file " + oatFile.exists());
+            if (verifySignature) {
+                SplitLog.d(TAG, "Need to verify split %s signature!", splitApk.getAbsolutePath());
+                verifySignature(splitApk);
+            }
+            checkSplitMD5(splitApk, apkData.getMd5());
+            if (!SplitConstants.MASTER.equals(apkData.getAbi())) {
+                if (libData != null) {
+                    splitLibDir = SplitPathManager.require().getSplitLibDir(info, libData.getAbi());
+                    extractLib(splitApk, splitLibDir, libData);
+                }
+            } else {
+                splitMasterApk = splitApk;
+                if (info.hasDex()) {
+                    optimizedDirectory = SplitPathManager.require().getSplitOptDir(info);
+                    addedDexPaths = new ArrayList<>();
+                    addedDexPaths.add(splitApk.getAbsolutePath());
+                    if (!isVMMultiDexCapable()) {
+                        if (info.isMultiDex()) {
+                            File codeCacheDir = SplitPathManager.require().getSplitCodeCacheDir(info);
+                            addedDexPaths.addAll(extractMultiDex(splitApk, codeCacheDir, info));
+                        }
+                    }
+                    String dexPath = TextUtils.join(File.pathSeparator, addedDexPaths);
+                    String librarySearchPath = splitLibDir == null ? null : splitLibDir.getAbsolutePath();
+                    //trigger oat if need
+                    if (!markFile.exists()) {
+                        try {
+                            new DexClassLoader(dexPath, optimizedDirectory.getAbsolutePath(), librarySearchPath, SplitInstallerImpl.class.getClassLoader());
+                        } catch (Throwable error) {
+                            throw new InstallException(
+                                    SplitInstallError.CLASSLOADER_CREATE_FAILED,
+                                    error);
+                        }
+                    }
+                    //check oat file. We found many native crash in libart.so, especially vivo & oppo.
+                    if (OEMCompat.shouldCheckOatFileInCurrentSys()) {
+                        SplitLog.v(TAG, "Start to check oat file, current api level is " + Build.VERSION.SDK_INT);
+                        boolean specialManufacturer = OEMCompat.isSpecialManufacturer();
+                        File oatFile = OEMCompat.getOatFilePath(splitApk, optimizedDirectory);
+                        if (FileUtil.isLegalFile(oatFile)) {
+                            boolean checkResult = OEMCompat.checkOatFile(oatFile);
+                            SplitLog.v(TAG, "Result of oat file %s is " + checkResult, oatFile.getAbsoluteFile());
+                            if (!checkResult) {
+                                SplitLog.w(TAG, "Failed to check oat file " + oatFile.getAbsolutePath());
+                                if (specialManufacturer) {
+                                    File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
+                                    try {
+                                        FileUtil.deleteFileSafelyLock(oatFile, lockFile);
+                                    } catch (IOException error) {
+                                        SplitLog.w(TAG, "Failed to delete corrupted oat file " + oatFile.exists());
+                                    }
+                                } else {
+                                    FileUtil.deleteFileSafely(oatFile);
+                                }
+                                throw new InstallException(
+                                        SplitInstallError.DEX_OAT_FAILED,
+                                        new FileNotFoundException("System generate split " + info.getSplitName() + " oat file failed!")
+                                );
                             }
                         } else {
-                            FileUtil.deleteFileSafely(oatFile);
-                        }
-                        throw new InstallException(
-                                SplitInstallError.DEX_OAT_FAILED,
-                                new FileNotFoundException("System generate split " + info.getSplitName() + " oat file failed!")
-                        );
-                    }
-                } else {
-                    if (specialManufacturer) {
-                        SplitLog.v(TAG, "Oat file %s is not exist in vivo & oppo, system would use interpreter mode.", oatFile.getAbsoluteFile());
-                        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(info, apkData);
-                        if (!markFile.exists() && !specialMarkFile.exists()) {
-                            File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
-                            boolean firstInstalled = createInstalledMarkLock(specialMarkFile, lockFile);
-                            return new InstallResult(info.getSplitName(), sourceApk, optimizedDirectory, splitLibDir, addedDexPaths, firstInstalled);
+                            if (specialManufacturer) {
+                                SplitLog.v(TAG, "Oat file %s is not exist in vivo & oppo, system would use interpreter mode.", oatFile.getAbsoluteFile());
+                                File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(info, installedMark);
+                                if (!markFile.exists() && !specialMarkFile.exists()) {
+                                    File lockFile = SplitPathManager.require().getSplitSpecialLockFile(info);
+                                    boolean firstInstalled = createInstalledMarkLock(specialMarkFile, lockFile);
+                                    return new InstallResult(info.getSplitName(), splitApk, optimizedDirectory, splitLibDir, addedDexPaths, firstInstalled);
+                                }
+                            }
                         }
                     }
                 }
             }
         }
+        assert splitMasterApk != null;
         boolean firstInstalled = createInstalledMark(markFile);
-        return new InstallResult(info.getSplitName(), sourceApk, optimizedDirectory, splitLibDir, addedDexPaths, firstInstalled);
+        return new InstallResult(info.getSplitName(), splitMasterApk, optimizedDirectory, splitLibDir, addedDexPaths, firstInstalled);
     }
 
     @Override

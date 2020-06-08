@@ -158,9 +158,15 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     continue;
                 }
                 try {
-                    SplitInfo.ApkData apkData = splitInfo.getPrimaryApkData(getContext());
+                    SplitInfo.ApkData masterApkData = splitInfo.getApkDataForMaster();
                     SplitInfo.LibData libData = splitInfo.getPrimaryLibData(getContext());
-                    Intent splitFileIntent = createLastInstalledSplitFileIntent(splitInfo, apkData, libData);
+                    String installedMark = splitInfo.obtainInstalledMark(getContext());
+                    File splitLibDir = null;
+                    if (libData != null) {
+                        splitLibDir = SplitPathManager.require().getSplitLibDir(splitInfo, libData.getAbi());
+                    }
+                    boolean assetsBuiltIn = splitInfo.isBuiltIn() && masterApkData.getUrl().startsWith(SplitConstants.URL_ASSETS);
+                    Intent splitFileIntent = createLastInstalledSplitFileIntent(assetsBuiltIn, installedMark, splitLibDir, splitInfo);
                     if (splitFileIntent != null) {
                         splitFileIntents.add(splitFileIntent);
                     }
@@ -205,16 +211,16 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     /**
      * fast check operation
      */
-    private Intent createLastInstalledSplitFileIntent(SplitInfo splitInfo, SplitInfo.ApkData apkData, SplitInfo.LibData libData) {
+    private Intent createLastInstalledSplitFileIntent(boolean assetsBuiltIn, String mark, File splitLibDir, SplitInfo splitInfo) {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
-        File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo, apkData);
-        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo, apkData);
+        File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo, mark);
+        File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo, mark);
         File splitApk;
-        if (splitInfo.isBuiltIn() && apkData.getUrl().startsWith(SplitConstants.URL_NATIVE)) {
-            splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
+        if (assetsBuiltIn) {
+            splitApk = new File(splitDir, splitName + "-" + SplitConstants.MASTER + SplitConstants.DOT_APK);
         } else {
-            splitApk = new File(splitDir, splitName + SplitConstants.DOT_APK);
+            splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
         }
         //check oat file if special mark file is exist.
         if (specialMarkFile.exists() && !markFile.exists()) {
@@ -247,11 +253,11 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             if (dependencies != null) {
                 SplitLog.i(TAG, "Split %s has dependencies %s !", splitName, dependencies);
                 for (String dependency : dependencies) {
-                    SplitInfo dependencySplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getContext(), dependency);
+                    SplitInfo dependSplitInfo = SplitInfoManagerService.getInstance().getSplitInfo(getContext(), dependency);
                     try {
-                        SplitInfo.ApkData dependencyApkData = dependencySplitInfo.getPrimaryApkData(getContext());
-                        File dependencyMarkFile = SplitPathManager.require().getSplitMarkFile(dependencySplitInfo, dependencyApkData);
-                        if (!dependencyMarkFile.exists()) {
+                        String dependInstalledMark = dependSplitInfo.obtainInstalledMark(getContext());
+                        File dependMarkFile = SplitPathManager.require().getSplitMarkFile(dependSplitInfo, dependInstalledMark);
+                        if (!dependMarkFile.exists()) {
                             SplitLog.i(TAG, "Dependency %s mark file is not existed!", dependency);
                             return null;
                         }
@@ -277,10 +283,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                         addedDexPaths.add(result.getAbsolutePath());
                     }
                 }
-            }
-            File splitLibDir = null;
-            if (libData != null) {
-                splitLibDir = SplitPathManager.require().getSplitLibDir(splitInfo, libData);
             }
             Intent splitFileIntent = new Intent();
             splitFileIntent.putExtra(SplitConstants.KET_NAME, splitName);

@@ -455,17 +455,18 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
     private List<DownloadRequest> createDownloadRequests(Collection<SplitInfo> splitInfoList) throws IOException {
         List<DownloadRequest> requests = new ArrayList<>(splitInfoList.size());
         for (SplitInfo splitInfo : splitInfoList) {
-            SplitInfo.ApkData apkData = splitInfo.getPrimaryApkData(appContext);
-            File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
-            String fileName = splitInfo.getSplitName() + SplitConstants.DOT_APK;
-            DownloadRequest request = DownloadRequest.newBuilder()
-                    .url(apkData.getUrl())
-                    .fileDir(splitDir.getAbsolutePath())
-                    .fileName(fileName)
-                    .fileMD5(apkData.getMd5())
-                    .moduleName(splitInfo.getSplitName())
-                    .build();
-            requests.add(request);
+            List<SplitInfo.ApkData> apkDataList = splitInfo.getApkDataList(appContext);
+            for (SplitInfo.ApkData apkData : apkDataList) {
+                File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
+                DownloadRequest request = DownloadRequest.newBuilder()
+                        .url(apkData.getUrl())
+                        .fileDir(splitDir.getAbsolutePath())
+                        .fileName(splitInfo.getSplitName() + "-" + apkData.getAbi() + SplitConstants.DOT_APK)
+                        .fileMD5(apkData.getMd5())
+                        .moduleName(splitInfo.getSplitName())
+                        .build();
+                requests.add(request);
+            }
         }
         return requests;
     }
@@ -475,23 +476,19 @@ final class SplitInstallSupervisorImpl extends SplitInstallSupervisor {
         long realTotalBytesNeedToDownload = 0L;
         for (SplitInfo splitInfo : splitInfoList) {
             File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
-            String fileName = splitInfo.getSplitName() + SplitConstants.DOT_APK;
-            File splitApk;
-            if (splitInfo.getPrimaryApkData(appContext).getUrl().startsWith(SplitConstants.URL_NATIVE)) {
-                splitApk = new File(appContext.getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
-            } else {
-                splitApk = new File(splitDir, fileName);
-            }
-            SplitDownloadPreprocessor processor = new SplitDownloadPreprocessor(splitDir, splitApk);
+            SplitDownloadPreprocessor processor = new SplitDownloadPreprocessor(splitDir);
+            List<SplitDownloadPreprocessor.SplitFile> splitApkList;
             try {
-                processor.load(appContext, splitInfo, verifySignature);
+                splitApkList = processor.load(appContext, splitInfo, verifySignature);
             } finally {
                 FileUtil.closeQuietly(processor);
             }
             //calculate splits total download size.
-            totalBytesToDownload = totalBytesToDownload + splitInfo.getPrimaryApkData(appContext).getSize();
-            if (!splitApk.exists()) {
-                realTotalBytesNeedToDownload = realTotalBytesNeedToDownload + splitInfo.getPrimaryApkData(appContext).getSize();
+            totalBytesToDownload = totalBytesToDownload + splitInfo.getApkTotalSize(appContext);
+            for (SplitDownloadPreprocessor.SplitFile splitApk : splitApkList) {
+                if (!splitApk.exists()) {
+                    realTotalBytesNeedToDownload = realTotalBytesNeedToDownload + splitApk.realSize;
+                }
             }
         }
         return new long[]{totalBytesToDownload, realTotalBytesNeedToDownload};

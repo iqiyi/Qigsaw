@@ -33,7 +33,7 @@ public class SplitConstants {
 
     public static final String QIGSAW = "qigsaw";
 
-    public static final String NONE_ABI = "none";
+    public static final String MASTER = "master";
 
     public static final int MAX_RETRY_ATTEMPTS = 3;
 

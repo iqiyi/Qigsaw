@@ -42,7 +42,6 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
         }
         boolean hasQigsawTask = hasQigsawTask(project)
         AppExtension android = project.extensions.getByType(AppExtension)
-
         SplitResourcesLoaderTransform resourcesLoaderTransform = null
         if (hasQigsawTask) {
             resourcesLoaderTransform = new SplitResourcesLoaderTransform(project)

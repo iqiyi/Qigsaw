@@ -25,12 +25,12 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawPlugin
+import com.android.tools.build.bundletool.model.Aapt2Command
+import com.android.tools.build.bundletool.model.AndroidManifest
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ZipUtils
 import org.gradle.api.DefaultTask
@@ -46,6 +46,8 @@ class ProcessSplitApkTask extends DefaultTask {
 
     SplitApkSigner apkSigner
 
+    File aapt2File
+
     @Input
     boolean releaseSplitApk
 
@@ -58,6 +60,9 @@ class ProcessSplitApkTask extends DefaultTask {
 
     @Input
     String splitVersion
+
+    @Input
+    String applicationId
 
     @Input
     Set<String> splitProjectClassPaths
@@ -89,59 +94,8 @@ class ProcessSplitApkTask extends DefaultTask {
         if (unzipSplitApkDir.exists()) {
             FileUtils.deleteDir(unzipSplitApkDir)
         }
-        File sourceSplitApk = splitApks.get(0)
+        File sourceSplitApk = splitApks[0]
         HashMap<String, Integer> compressData = ZipUtils.unzipApk(sourceSplitApk, unzipSplitApkDir)
-        Set<String> supportedABIs = getSupportedABIs(unzipSplitApkDir)
-        List<SplitInfo.SplitApkData> apkDataList = new ArrayList<>()
-        supportedABIs.each { String abi ->
-            File unsignedAbiApk = new File(splitApksDir, project.name + "-${abi}-unsigned" + SdkConstants.DOT_ANDROID_PACKAGE)
-            File signedAbiApk = new File(splitApksDir, project.name + "-${abi}-signed" + SdkConstants.DOT_ANDROID_PACKAGE)
-            if (signedAbiApk.exists()) {
-                signedAbiApk.delete()
-            }
-            if (unsignedAbiApk.exists()) {
-                unsignedAbiApk.delete()
-            }
-            if (supportedABIs.size() == 1 || !QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(abi)) {
-                boolean needSign = apkSigner.signApkIfNeed(sourceSplitApk, signedAbiApk)
-                if (!needSign) {
-                    FileUtils.copyFile(sourceSplitApk, signedAbiApk)
-                }
-                SplitLogger.w("Split apk ${sourceSplitApk} is signed? ${needSign}")
-            } else {
-                Collection<File> resFiles = new ArrayList<>()
-                File[] files = unzipSplitApkDir.listFiles(new FileFilter() {
-                    @Override
-                    boolean accept(File file) {
-                        return file.name != "lib"
-                    }
-                })
-                Collections.addAll(resFiles, files)
-                File splitAbiDir = new File(unzipSplitApkDir, "lib/${abi}")
-                if (splitAbiDir.exists()) {
-                    resFiles.add(splitAbiDir)
-                }
-                ZipUtils.zipFiles(resFiles, unzipSplitApkDir, unsignedAbiApk, compressData)
-                apkSigner.signApkIfNeed(unsignedAbiApk, signedAbiApk)
-            }
-            SplitInfo.SplitApkData apkData = new SplitInfo.SplitApkData()
-            apkData.abi = abi
-            apkData.url = "assets://qigsaw/${project.name}-${abi + SdkConstants.DOT_ZIP}"
-            apkData.size = signedAbiApk.length()
-            apkData.md5 = FileUtils.getMD5(signedAbiApk)
-            apkDataList.add(apkData)
-        }
-        List<SplitInfo.SplitLibData> libDataList = createSplitLibInfo(unzipSplitApkDir)
-        //create split-info json file
-        File splitInfoFile = new File(splitInfoDir, project.name + SdkConstants.DOT_JSON)
-        if (splitInfoFile.exists()) {
-            splitInfoFile.delete()
-        }
-        SplitInfo info = createSplitInfo(apkDataList, libDataList, unzipSplitApkDir)
-        FileUtils.createFileForTypeClass(info, splitInfoFile)
-    }
-
-    static Set<String> getSupportedABIs(File unzipSplitApkDir) {
         Set<String> supportedABIs = new HashSet<>()
         File splitLibsDir = new File(unzipSplitApkDir, "lib")
         if (splitLibsDir.exists()) {
@@ -153,13 +107,69 @@ class ProcessSplitApkTask extends DefaultTask {
                 }
             })
         }
-        if (supportedABIs.size() > 1) {
-            supportedABIs.add(supportedABIs.join("-"))
+        List<SplitInfo.SplitApkData> apkDataList = new ArrayList<>()
+        Aapt2Command aapt2 = Aapt2Command.createFromExecutablePath(aapt2File.toPath())
+        File tmpDir = new File(splitApksDir, "tmp/${project.name}")
+        tmpDir.mkdirs()
+        supportedABIs.each { String abi ->
+            File protoAbiApk = new File(tmpDir, project.name + "-${abi}-proto" + SdkConstants.DOT_ANDROID_PACKAGE)
+            File binaryAbiApk = new File(tmpDir, project.name + "-${abi}-binary" + SdkConstants.DOT_ANDROID_PACKAGE)
+            File configAndroidManifest = new File(tmpDir, SdkConstants.ANDROID_MANIFEST_XML)
+            createSplitConfigApkAndroidManifest(project.name, abi, configAndroidManifest)
+            Collection<File> resFiles = new ArrayList<>()
+            resFiles.add(new File(splitLibsDir, abi))
+            resFiles.add(configAndroidManifest)
+            ZipUtils.zipFiles(resFiles, unzipSplitApkDir, protoAbiApk, compressData)
+            aapt2.convertApkProtoToBinary(protoAbiApk.toPath(), binaryAbiApk.toPath())
+            File signedAbiApk = new File(splitApksDir, project.name + "-${abi}" + SdkConstants.DOT_ANDROID_PACKAGE)
+            if (signedAbiApk.exists()) {
+                signedAbiApk.delete()
+            }
+            apkSigner.signApkIfNeed(binaryAbiApk, signedAbiApk)
+            SplitInfo.SplitApkData configApkData = new SplitInfo.SplitApkData()
+            configApkData.abi = abi
+            configApkData.url = "assets://qigsaw/${project.name}-${abi + SdkConstants.DOT_ZIP}"
+            configApkData.size = signedAbiApk.length()
+            configApkData.md5 = FileUtils.getMD5(signedAbiApk)
+            apkDataList.add(configApkData)
         }
-        if (supportedABIs.size() == 0) {
-            supportedABIs.add("none")
+        //create split master apk
+        Collection<File> resFiles = new ArrayList<>()
+        File[] files = unzipSplitApkDir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File file) {
+                return file.name != "lib"
+            }
+        })
+        Collections.addAll(resFiles, files)
+        File unsignedMasterApk = new File(tmpDir, project.name + "-master-unsigned" + SdkConstants.DOT_ANDROID_PACKAGE)
+        ZipUtils.zipFiles(resFiles, unzipSplitApkDir, unsignedMasterApk, compressData)
+        File signedMasterApk = new File(splitApksDir, project.name + "-master" + SdkConstants.DOT_ANDROID_PACKAGE)
+        apkSigner.signApkIfNeed(unsignedMasterApk, signedMasterApk)
+        SplitInfo.SplitApkData masterApkData = new SplitInfo.SplitApkData()
+        masterApkData.abi = "master"
+        masterApkData.url = "assets://qigsaw/${project.name}-master${SdkConstants.DOT_ZIP}"
+        masterApkData.size = signedMasterApk.length()
+        masterApkData.md5 = FileUtils.getMD5(signedMasterApk)
+        apkDataList.add(masterApkData)
+        //create split native-library data list.
+        List<SplitInfo.SplitLibData> libDataList = createSplitLibInfo(unzipSplitApkDir)
+        //create split-info json file
+        File splitInfoFile = new File(splitInfoDir, project.name + SdkConstants.DOT_JSON)
+        if (splitInfoFile.exists()) {
+            splitInfoFile.delete()
         }
-        return supportedABIs
+        SplitInfo info = createSplitInfo(apkDataList, libDataList, unzipSplitApkDir)
+        FileUtils.createFileForTypeClass(info, splitInfoFile)
+        FileUtils.deleteDir(tmpDir)
+    }
+
+    void createSplitConfigApkAndroidManifest(String splitName, String abi, File androidManifestFile) {
+        AndroidManifest androidManifest = AndroidManifest.createForConfigSplit(
+                applicationId, splitVersion.split("@")[1].toInteger(), "${splitName}.config.${abi}", splitName, java.util.Optional.of(true))
+        androidManifestFile.withOutputStream {
+            it.write(androidManifest.manifestRoot.proto.toByteArray())
+        }
     }
 
     SplitInfo createSplitInfo(List<SplitInfo.SplitApkData> apkDataList, List<SplitInfo.SplitLibData> libDataList, File unzipSplitApkDir) {

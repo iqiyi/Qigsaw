@@ -60,8 +60,8 @@ final class SplitDeleteRedundantVersionTask implements Runnable {
                 File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
                 File splitRootDir = SplitPathManager.require().getSplitRootDir(splitInfo);
                 try {
-                    SplitInfo.ApkData apkData = splitInfo.getPrimaryApkData(appContext);
-                    File installedMarkFile = SplitPathManager.require().getSplitMarkFile(splitInfo, apkData);
+                    String installedMark = splitInfo.obtainInstalledMark(appContext);
+                    File installedMarkFile = SplitPathManager.require().getSplitMarkFile(splitInfo, installedMark);
                     deleteRedundantSplitVersionDirs(splitDir, splitRootDir, installedMarkFile);
                 } catch (IOException ignored) {
 

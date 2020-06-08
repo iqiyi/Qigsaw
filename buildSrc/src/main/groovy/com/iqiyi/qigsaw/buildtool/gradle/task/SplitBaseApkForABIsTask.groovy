@@ -1,8 +1,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
-import com.android.build.gradle.api.ApplicationVariant
-import com.iqiyi.qigsaw.buildtool.gradle.QigsawPlugin
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.CommandUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
@@ -11,17 +9,16 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ZipUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
-import java.util.zip.ZipEntry
-
 class SplitBaseApkForABIsTask extends DefaultTask {
 
-    ApplicationVariant baseVariant
+    static final List<String> SUPPORTED_ABIS = ["armeabi", "armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+
+    def baseVariant
 
     SplitApkSigner apkSigner
 
@@ -36,9 +33,6 @@ class SplitBaseApkForABIsTask extends DefaultTask {
 
     @InputFiles
     List<File> baseApkFiles
-
-    @InputDirectory
-    File splitApksDir
 
     @OutputDirectory
     File packageAppDir
@@ -89,7 +83,7 @@ class SplitBaseApkForABIsTask extends DefaultTask {
             }
             unzipBaseApkDirForAbi.mkdirs()
             HashMap<String, Integer> compress = ZipUtils.unzipApk(baseApk, unzipBaseApkDirForAbi)
-            if (QigsawPlugin.CUSTOM_SUPPORTED_ABIS.contains(abi)) {
+            if (SUPPORTED_ABIS.contains(abi)) {
                 File baseAppCpuAbiListFileForAbi = new File(unzipBaseApkDirForAbi, "assets/${baseAppCpuAbiListFile.name}")
                 baseAppCpuAbiListFileForAbi.write("abiList=${abi}")
                 File[] libDirs = new File(unzipBaseApkDirForAbi, "lib").listFiles()
@@ -100,18 +94,16 @@ class SplitBaseApkForABIsTask extends DefaultTask {
                 }
                 dynamicFeaturesNames.each { String splitName ->
                     File baseApkQigsawAssetsDir = new File(unzipBaseApkDirForAbi, "assets/qigsaw")
-                    File[] files = baseApkQigsawAssetsDir.listFiles()
-                    files.each { File file ->
-                        if (file.name.startsWith("${splitName}") && !file.name.startsWith("${splitName}-none") && file.name.endsWith(SdkConstants.DOT_ZIP)) {
-                            file.delete()
-                            File splitSignedApk = new File(splitApksDir, "${splitName}-${abi}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
-                            if (splitSignedApk.exists()) {
-                                File destSplitApk = new File(baseApkQigsawAssetsDir, "${splitName}-${abi}${SdkConstants.DOT_ZIP}")
-                                FileUtils.copyFile(splitSignedApk, destSplitApk)
-                                String entryName = "assets/qigsaw/${splitName}-${abi}${SdkConstants.DOT_ZIP}"
-                                compress.put(entryName, ZipEntry.STORED)
-                            } else {
-                                SplitLogger.e("Split apk ${splitSignedApk} isn't found, just ignored!")
+                    File[] splitApkFiles = baseApkQigsawAssetsDir.listFiles(new FileFilter() {
+                        @Override
+                        boolean accept(File file) {
+                            return file.name.endsWith(SdkConstants.DOT_ZIP)
+                        }
+                    })
+                    if (splitApkFiles != null) {
+                        splitApkFiles.each { File file ->
+                            if (file.name.startsWith(splitName) && !file.name.contains(abi) && !file.name.startsWith("${splitName}-master")) {
+                                file.delete()
                             }
                         }
                     }

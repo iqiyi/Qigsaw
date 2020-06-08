@@ -28,18 +28,13 @@ import com.android.SdkConstants
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.Optional
 
 class ProcessOldOutputsBaseTask extends DefaultTask {
 
     @InputDirectory
-    @Optional
     File targetFilesExtractedDir
 
     File getOldSplitDetailsFile() {
-        if (targetFilesExtractedDir == null) {
-            return null
-        }
         File oldSplitDetailsDir = new File(targetFilesExtractedDir, "assets/qigsaw/")
         File oldSplitDetailsFile = null
         if (oldSplitDetailsDir.exists()) {

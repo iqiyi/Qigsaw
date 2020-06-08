@@ -40,7 +40,7 @@ public class OEMCompat {
     private static final String TAG = "Split.OEMCompat";
 
     public static boolean isSpecialManufacturer() {
-        return "vivo".equalsIgnoreCase(Build.MANUFACTURER) || "oppo".equalsIgnoreCase(Build.MANUFACTURER);
+        return "vivo".equalsIgnoreCase(Build.MANUFACTURER) || "oppo".equalsIgnoreCase(Build.MANUFACTURER) || "EEBBK".equalsIgnoreCase(Build.MANUFACTURER);
     }
 
     public static boolean shouldCheckOatFileInCurrentSys() {
