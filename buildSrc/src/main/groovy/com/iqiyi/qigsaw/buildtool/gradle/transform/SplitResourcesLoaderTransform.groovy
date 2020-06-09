@@ -24,7 +24,6 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.transform
 
-import com.android.SdkConstants
 import com.android.build.api.transform.DirectoryInput
 import com.android.build.api.transform.Format
 import com.android.build.api.transform.JarInput
@@ -37,11 +36,12 @@ import com.android.build.gradle.internal.pipeline.TransformManager
 import com.android.ide.common.internal.WaitableExecutor
 import com.google.common.collect.ImmutableSet
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
-import org.gradle.api.GradleException
 import org.gradle.api.Project
 
 import org.apache.commons.io.FileUtils
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 
 class SplitResourcesLoaderTransform extends Transform {
@@ -49,8 +49,6 @@ class SplitResourcesLoaderTransform extends Transform {
     final static String NAME = "splitResourcesLoader"
 
     Project project
-
-    File manifestBaseDir
 
     boolean isBaseModule
 
@@ -105,10 +103,6 @@ class SplitResourcesLoaderTransform extends Transform {
         return super.getParameterInputs()
     }
 
-    void setManifestBaseDir(File manifestBaseDir) {
-        this.manifestBaseDir = manifestBaseDir
-    }
-
     @Override
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
         super.transform(transformInvocation)
@@ -122,14 +116,9 @@ class SplitResourcesLoaderTransform extends Transform {
                 resourcesLoaderInjector = new SplitResourcesLoaderInjector(waitableExecutor, baseContainerActivities)
             }
         } else {
-            if (manifestBaseDir == null || !manifestBaseDir.exists()) {
-                throw new GradleException("manifestBaseDir must be set!")
-            }
-            File manifest = new File(manifestBaseDir, transformInvocation.context.variantName.uncapitalize() + "/" + SdkConstants.ANDROID_MANIFEST_XML)
-            if (!manifest.exists()) {
-                throw new GradleException("${manifest.absolutePath}} is not found!")
-            }
-            ManifestReader manifestReader = new ManifestReader(manifest)
+            Task processManifest = AGPCompat.getProcessManifestTask(project, transformInvocation.context.variantName.capitalize())
+            File mergedManifest = AGPCompat.getMergedManifestFileCompat(processManifest)
+            ManifestReader manifestReader = new ManifestReader(mergedManifest)
             Set<String> activities = manifestReader.readActivityNames()
             Set<String> services = manifestReader.readServiceNames()
             Set<String> receivers = manifestReader.readReceiverNames()

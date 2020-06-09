@@ -31,6 +31,7 @@ import com.android.builder.model.SigningConfig
 import com.android.ide.common.signing.CertificateInfo
 import com.android.ide.common.signing.KeystoreHelper
 import com.google.common.base.Preconditions
+import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
 
 import java.security.PrivateKey
@@ -38,9 +39,12 @@ import java.security.cert.X509Certificate
 
 class SplitApkSigner {
 
+    final Project baseProject
+
     final ApplicationVariant baseVariant
 
-    SplitApkSigner(def variantName) {
+    SplitApkSigner(Project project, def variantName) {
+        this.baseProject = project
         this.baseVariant = variantName
     }
 
@@ -49,10 +53,15 @@ class SplitApkSigner {
         if (!apkVerifier.verify().verified) {
             SigningConfig signingConfig
             try {
-                signingConfig = baseVariant.signingConfig
+                signingConfig = baseProject.extensions.android.signingConfigs.getByName(baseVariant.name.uncapitalize())
             } catch (UnknownDomainObjectException e) {
                 //Catch block
-                throw new RuntimeException("Can't get " + baseVariant.uncapitalize() + " signingConfigs in app project", e)
+            }
+            if (signingConfig == null) {
+                signingConfig = baseVariant.signingConfig
+            }
+            if (signingConfig == null) {
+                throw new RuntimeException("Can't get " + baseVariant.name.uncapitalize() + " signingConfigs in app/build.gradle")
             }
             CertificateInfo certificateInfo = KeystoreHelper.getCertificateInfo(
                     signingConfig.getStoreType(),

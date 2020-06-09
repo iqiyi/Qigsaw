@@ -25,7 +25,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle
 
 import com.android.build.gradle.AppExtension
-import com.android.builder.model.AndroidProject
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitLibraryLoaderTransform
 import com.iqiyi.qigsaw.buildtool.gradle.transform.SplitResourcesLoaderTransform
 import org.gradle.api.GradleException
@@ -45,8 +44,6 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
             SplitLibraryLoaderTransform libraryLoaderTransform = new SplitLibraryLoaderTransform(project)
             android.registerTransform(resourcesLoaderTransform)
             android.registerTransform(libraryLoaderTransform)
-            File manifestBaseDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/merged_manifests")
-            resourcesLoaderTransform.setManifestBaseDir(manifestBaseDir)
         }
     }
 }
