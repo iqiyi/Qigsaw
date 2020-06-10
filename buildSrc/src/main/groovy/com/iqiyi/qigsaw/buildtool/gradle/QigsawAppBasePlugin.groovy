@@ -58,16 +58,16 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         if (versionAGP < VersionNumber.parse("3.2.0")) {
             throw new GradleException('Qigsaw Error: Android Gradle Version is required 3.2.0 at least!')
         }
-        boolean hasQigsawTask = hasQigsawTask(project)
+        boolean isQigsawBuild = isQigsawBuild(project)
         def android = project.extensions.android
         //create ComponentInfo.class to record Android Component of dynamic features.
         SplitComponentTransform componentTransform = new SplitComponentTransform(project)
         SplitResourcesLoaderTransform resourcesLoaderTransform = new SplitResourcesLoaderTransform(project, true)
         android.registerTransform(componentTransform)
-        if (hasQigsawTask) {
+        if (isQigsawBuild) {
             android.registerTransform(resourcesLoaderTransform)
         }
-        project.gradle.projectsEvaluated {
+        project.rootProject.gradle.projectsEvaluated {
             if (!AGPCompat.isAapt2EnabledCompat(project)) {
                 throw new GradleException('Qigsaw Error: AAPT2 required')
             }
@@ -134,7 +134,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                 //create ${applicationId}QigsawConfig.java
                 GenerateQigsawConfig generateQigsawConfig = project.tasks.create("generate${baseVariant.name.capitalize()}QigsawConfig", GenerateQigsawConfig)
-                generateQigsawConfig.qigsawMode = hasQigsawTask
+                generateQigsawConfig.qigsawMode = isQigsawBuild
                 generateQigsawConfig.qigsawId = qigsawId
                 generateQigsawConfig.applicationId = baseVariant.applicationId
                 generateQigsawConfig.versionName = baseVariant.versionName
@@ -176,7 +176,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 generateQigsawConfig.dependsOn generateBuildConfig
                 generateBuildConfig.finalizedBy generateQigsawConfig
 
-                if (hasQigsawTask) {
+                if (isQigsawBuild) {
                     qigsawAssemble.dependsOn mergeJniLibs
                     qigsawAssemble.finalizedBy baseAssemble
                     mergeJniLibs.dependsOn mergeAssets

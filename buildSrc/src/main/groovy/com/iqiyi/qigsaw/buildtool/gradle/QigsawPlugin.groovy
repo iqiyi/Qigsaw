@@ -29,6 +29,8 @@ import org.gradle.api.Project
 
 abstract class QigsawPlugin implements Plugin<Project> {
 
+    public static final String QIGSAW_BUILD = "qigsaw-build"
+
     public static final String QIGSAW = "qigsaw"
 
     public static final String ASSEMBLE = "Assemble"
@@ -39,12 +41,16 @@ abstract class QigsawPlugin implements Plugin<Project> {
 
     public static final String QIGSAW_INSTALL_TASK_PREFIX = QIGSAW + INSTALL
 
-    static boolean hasQigsawTask(Project project) {
+    static boolean isQigsawBuild(Project project) {
         List<String> startTaskNames = project.gradle.startParameter.taskNames
         for (String taskName : startTaskNames) {
             if (taskName.contains(QIGSAW_ASSEMBLE_TASK_PREFIX) || taskName.contains(QIGSAW_INSTALL_TASK_PREFIX)) {
                 return true
             }
+        }
+        if (project.hasProperty(QIGSAW_BUILD) || System.getenv().containsKey(QIGSAW_BUILD)
+                || System.properties.containsKey(QIGSAW_BUILD)) {
+            return true
         }
         return false
     }

@@ -37,7 +37,7 @@ class QigsawDynamicFeaturePlugin extends QigsawPlugin {
         if (!project.getPlugins().hasPlugin("com.android.dynamic-feature")) {
             throw new GradleException("generateQigsawApk: Dynamic-feature plugin required")
         }
-        boolean hasQigsawTask = hasQigsawTask(project)
+        boolean hasQigsawTask = isQigsawBuild(project)
         AppExtension android = project.extensions.getByType(AppExtension)
         if (hasQigsawTask) {
             SplitResourcesLoaderTransform resourcesLoaderTransform = new SplitResourcesLoaderTransform(project)
