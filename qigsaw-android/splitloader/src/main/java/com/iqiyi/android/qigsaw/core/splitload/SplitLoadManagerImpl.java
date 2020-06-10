@@ -165,8 +165,8 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
                     if (libData != null) {
                         splitLibDir = SplitPathManager.require().getSplitLibDir(splitInfo, libData.getAbi());
                     }
-                    boolean assetsBuiltIn = splitInfo.isBuiltIn() && masterApkData.getUrl().startsWith(SplitConstants.URL_ASSETS);
-                    Intent splitFileIntent = createLastInstalledSplitFileIntent(assetsBuiltIn, installedMark, splitLibDir, splitInfo);
+                    boolean libBuiltIn = splitInfo.isBuiltIn() && masterApkData.getUrl().startsWith(SplitConstants.URL_NATIVE);
+                    Intent splitFileIntent = createLastInstalledSplitFileIntent(libBuiltIn, installedMark, splitLibDir, splitInfo);
                     if (splitFileIntent != null) {
                         splitFileIntents.add(splitFileIntent);
                     }
@@ -211,13 +211,13 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     /**
      * fast check operation
      */
-    private Intent createLastInstalledSplitFileIntent(boolean assetsBuiltIn, String mark, File splitLibDir, SplitInfo splitInfo) {
+    private Intent createLastInstalledSplitFileIntent(boolean libBuiltIn, String mark, File splitLibDir, SplitInfo splitInfo) {
         String splitName = splitInfo.getSplitName();
         File splitDir = SplitPathManager.require().getSplitDir(splitInfo);
         File markFile = SplitPathManager.require().getSplitMarkFile(splitInfo, mark);
         File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo, mark);
         File splitApk;
-        if (assetsBuiltIn) {
+        if (libBuiltIn) {
             splitApk = new File(splitDir, splitName + "-" + SplitConstants.MASTER + SplitConstants.DOT_APK);
         } else {
             splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
