@@ -218,9 +218,9 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         File specialMarkFile = SplitPathManager.require().getSplitSpecialMarkFile(splitInfo, mark);
         File splitApk;
         if (libBuiltIn) {
-            splitApk = new File(splitDir, splitName + "-" + SplitConstants.MASTER + SplitConstants.DOT_APK);
-        } else {
             splitApk = new File(getContext().getApplicationInfo().nativeLibraryDir, System.mapLibraryName(SplitConstants.SPLIT_PREFIX + splitInfo.getSplitName()));
+        } else {
+            splitApk = new File(splitDir, splitName + "-" + SplitConstants.MASTER + SplitConstants.DOT_APK);
         }
         //check oat file if special mark file is exist.
         if (specialMarkFile.exists() && !markFile.exists()) {
