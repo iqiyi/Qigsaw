@@ -29,7 +29,7 @@ import org.gradle.api.Project
 
 abstract class QigsawPlugin implements Plugin<Project> {
 
-    public static final String QIGSAW_BUILD = "qigsaw-build"
+    public static final String QIGSAW_BUILD = "QIGSAW_BUILD"
 
     public static final String QIGSAW = "qigsaw"
 
