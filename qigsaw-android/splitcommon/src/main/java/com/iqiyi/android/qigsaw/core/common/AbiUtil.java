@@ -119,8 +119,8 @@ public class AbiUtil {
             InputStream is = context.getAssets().open("base.app.cpu.abilist.properties");
             Properties properties = new Properties();
             properties.load(is);
-            String abis = properties.getProperty("abilist");
-            if (TextUtils.isEmpty(abis)) {
+            String abis = properties.getProperty("abiList");
+            if (!TextUtils.isEmpty(abis)) {
                 String[] abiArray = abis.split(",");
                 Set<String> abiList = new HashSet<>();
                 Collections.addAll(abiList, abiArray);
