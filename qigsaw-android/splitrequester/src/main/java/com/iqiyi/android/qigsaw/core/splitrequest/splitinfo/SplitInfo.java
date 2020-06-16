@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -65,11 +66,9 @@ public class SplitInfo {
 
     private final List<SplitInfo.LibData> libDataList;
 
-    private LibData primaryLibData;
+    private AtomicReference<LibData> primaryLibData = new AtomicReference<>();
 
     private List<SplitInfo.ApkData> primaryApkDataList;
-
-    private String installedMark;
 
     SplitInfo(String splitName,
               String appVersion,
@@ -102,26 +101,25 @@ public class SplitInfo {
         if (primaryApkDataList != null) {
             return primaryApkDataList;
         }
-        primaryApkDataList = new ArrayList<>();
-        LibData primaryAbi = getPrimaryLibData(context);
-        for (ApkData apkData : apkDataList) {
-            if (apkData.abi.equals(SplitConstants.MASTER)) {
-                primaryApkDataList.add(apkData);
+        synchronized (this) {
+            primaryApkDataList = new ArrayList<>();
+            LibData primaryAbi = getPrimaryLibData(context);
+            for (ApkData apkData : apkDataList) {
+                if (apkData.abi.equals(SplitConstants.MASTER)) {
+                    primaryApkDataList.add(apkData);
+                }
+                if (primaryAbi != null && primaryAbi.abi.equals(apkData.abi)) {
+                    primaryApkDataList.add(apkData);
+                }
             }
-            if (primaryAbi != null && primaryAbi.abi.equals(apkData.abi)) {
-                primaryApkDataList.add(apkData);
+            if (primaryAbi != null && primaryApkDataList.size() <= 1) {
+                throw new RuntimeException("Unable to find split config apk for abi" + primaryAbi.abi);
             }
+            return primaryApkDataList;
         }
-        if (primaryAbi != null && primaryApkDataList.size() <= 1) {
-            throw new RuntimeException("Unable to find split config apk for abi" + primaryAbi.abi);
-        }
-        return primaryApkDataList;
     }
 
     public String obtainInstalledMark(Context context) throws IOException {
-        if (installedMark != null) {
-            return installedMark;
-        }
         List<ApkData> apkDataList = getApkDataList(context);
         String markStart = null;
         long markEnd = 0L;
@@ -132,8 +130,7 @@ public class SplitInfo {
                 markEnd = apkData.size;
             }
         }
-        installedMark = markStart + "." + markEnd;
-        return installedMark;
+        return markStart + "." + markEnd;
     }
 
     public long getApkTotalSize(Context context) throws IOException {
@@ -164,8 +161,8 @@ public class SplitInfo {
 
     @Nullable
     public LibData getPrimaryLibData(Context context) throws IOException {
-        if (primaryLibData != null) {
-            return primaryLibData;
+        if (primaryLibData.get() != null) {
+            return primaryLibData.get();
         }
         String baseAbi = AbiUtil.getBasePrimaryAbi(context);
         if (libDataList == null) {
@@ -181,11 +178,11 @@ public class SplitInfo {
         }
         for (SplitInfo.LibData libData : libDataList) {
             if (libData.abi.equals(splitPrimaryAbi)) {
-                primaryLibData = libData;
+                primaryLibData.compareAndSet(null, libData);
                 break;
             }
         }
-        return primaryLibData;
+        return primaryLibData.get();
     }
 
     public List<String> getDependencies() {
