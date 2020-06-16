@@ -31,7 +31,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ApkSigner
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ZipUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -44,7 +44,7 @@ import org.gradle.api.tasks.TaskAction
 
 class ProcessSplitApkTask extends DefaultTask {
 
-    SplitApkSigner apkSigner
+    ApkSigner apkSigner
 
     File aapt2File
 

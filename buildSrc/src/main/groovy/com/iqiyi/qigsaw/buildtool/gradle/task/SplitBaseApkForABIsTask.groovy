@@ -3,7 +3,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 import com.android.SdkConstants
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.CommandUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ApkSigner
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ZipUtils
 import org.gradle.api.DefaultTask
@@ -20,7 +20,7 @@ class SplitBaseApkForABIsTask extends DefaultTask {
 
     def baseVariant
 
-    SplitApkSigner apkSigner
+    ApkSigner apkSigner
 
     @Input
     boolean use7z

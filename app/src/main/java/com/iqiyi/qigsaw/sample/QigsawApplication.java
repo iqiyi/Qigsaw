@@ -35,7 +35,7 @@ public class QigsawApplication extends Application {
         super.attachBaseContext(base);
         MultiDex.install(base);
         //Using QigsawConfig.java to get same info about splits, for example
-        Log.d(TAG, String.format("There are %d splits in your app!", QigsawConfig.DYNAMIC_FEATURES.length));
+//        Log.d(TAG, String.format("There are %d splits in your app!", QigsawConfig.DYNAMIC_FEATURES.length));
         SplitConfiguration configuration = SplitConfiguration.newBuilder()
                 .splitLoadMode(SplitLoad.MULTIPLE_CLASSLOADER)
                 .workProcesses(workProcesses)

@@ -33,7 +33,7 @@ import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtension
 import com.iqiyi.qigsaw.buildtool.gradle.extension.QigsawSplitExtensionHelper
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitApkSigner
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ApkSigner
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.TinkerHelper
 import com.iqiyi.qigsaw.buildtool.gradle.task.*
@@ -66,10 +66,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         SplitComponentTransform componentTransform = new SplitComponentTransform(project)
         SplitResourcesLoaderTransform resourcesLoaderTransform = new SplitResourcesLoaderTransform(project, true)
         android.registerTransform(componentTransform)
+
         if (isQigsawBuild) {
             android.registerTransform(resourcesLoaderTransform)
         }
-        project.rootProject.gradle.projectsEvaluated {
+        project.afterEvaluate {
             if (!AGPCompat.isAapt2EnabledCompat(project)) {
                 throw new GradleException('Qigsaw Error: AAPT2 required')
             }
@@ -95,7 +96,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 String qigsawId = createQigsawId(project, baseVariant.versionName)
                 String completeSplitInfoVersion = jointCompleteSplitInfoVersion(project, baseVariant.versionName)
                 Set<String> baseAbiFilters = getAbiFilters(project, baseVariant)
-                SplitApkSigner apkSigner = new SplitApkSigner(project, baseVariant)
+                ApkSigner apkSigner = new ApkSigner(project, baseVariant)
 
                 Task processManifest = AGPCompat.getProcessManifestTask(project, baseVariant.name.capitalize())
                 Task mergeAssets = AGPCompat.getMergeAssetsTask(project, baseVariant.name.capitalize())
@@ -204,6 +205,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
                     //for supporting split content-provider
                     QigsawProcessManifestTask qigsawProcessManifest = project.tasks.create("qigsawProcess${baseVariant.name.capitalize()}Manifest", QigsawProcessManifestTask)
+                    qigsawProcessManifest.dynamicFeatureNames = dynamicFeaturesNames
                     qigsawProcessManifest.splitManifestDir = splitManifestDir
                     qigsawProcessManifest.mergedManifestFile = mergedManifestFile
                     qigsawProcessManifest.bundleManifestFile = bundleManifestFile
@@ -269,76 +271,144 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 }
                 dynamicFeatures.each { String dynamicFeature ->
                     Project splitProject = project.rootProject.project(dynamicFeature)
-                    ApplicationVariant splitVariant = null
-                    splitProject.extensions.android.applicationVariants.all { ApplicationVariant variant ->
-                        if (variant.name == baseVariant.name) {
-                            splitVariant = variant
-                        }
+                    ProcessTaskDependenciesBetweenBaseAndSplits taskDependenciesProcessor = new ProcessTaskDependenciesBetweenBaseAndSplits()
+                    boolean isProjectEvaluated
+                    try {
+                        splitProject.extensions.android
+                        isProjectEvaluated = true
+                    } catch (Throwable ignored) {
+                        isProjectEvaluated = false
                     }
-                    if (splitVariant != null) {
-                        Task processSplitManifest = AGPCompat.getProcessManifestTask(splitProject, splitVariant.name.capitalize())
-                        Task copySplitManifest = splitProject.tasks.create("name": "copySplitManifest${splitVariant.name.capitalize()}", "type": Copy) {
-                            destinationDir splitManifestDir
-                            from(AGPCompat.getMergedManifestFileCompat(processSplitManifest)) {
-                                rename {
-                                    String fileName ->
-                                        return splitProject.name + SdkConstants.DOT_XML
-                                }
-                            }
-                            into(splitManifestDir)
+                    if (isProjectEvaluated) {
+                        taskDependenciesProcessor.isQigsawBuild = isQigsawBuild
+                        taskDependenciesProcessor.apkSigner = apkSigner
+                        taskDependenciesProcessor.baseProject = project
+                        taskDependenciesProcessor.splitProject = splitProject
+                        taskDependenciesProcessor.baseVariant = baseVariant
+                        taskDependenciesProcessor.baseMergeJinLibs = mergeJniLibs
+                        taskDependenciesProcessor.splitApksDir = splitApksDir
+                        taskDependenciesProcessor.splitInfoDir = splitInfoDir
+                        taskDependenciesProcessor.splitManifestDir = splitManifestDir
+                        taskDependenciesProcessor.unzipSplitApkBaseDir = unzipSplitApkBaseDir
+                        taskDependenciesProcessor.baseAbiFilters = baseAbiFilters
+                        taskDependenciesProcessor.splitProjectClassPaths = splitProjectClassPaths
+                        taskDependenciesProcessor.run()
+                    } else {
+                        splitProject.afterEvaluate {
+                            taskDependenciesProcessor.isQigsawBuild = isQigsawBuild
+                            taskDependenciesProcessor.apkSigner = apkSigner
+                            taskDependenciesProcessor.baseProject = project
+                            taskDependenciesProcessor.splitProject = splitProject
+                            taskDependenciesProcessor.baseVariant = baseVariant
+                            taskDependenciesProcessor.baseMergeJinLibs = mergeJniLibs
+                            taskDependenciesProcessor.splitApksDir = splitApksDir
+                            taskDependenciesProcessor.splitInfoDir = splitInfoDir
+                            taskDependenciesProcessor.splitManifestDir = splitManifestDir
+                            taskDependenciesProcessor.unzipSplitApkBaseDir = unzipSplitApkBaseDir
+                            taskDependenciesProcessor.baseAbiFilters = baseAbiFilters
+                            taskDependenciesProcessor.splitProjectClassPaths = splitProjectClassPaths
+                            taskDependenciesProcessor.run()
                         }
-                        processSplitManifest.finalizedBy copySplitManifest
-                        copySplitManifest.dependsOn processSplitManifest
-                        copySplitManifest.setGroup(QIGSAW)
-                    }
-
-                    if (isQigsawBuild) {
-                        if (splitVariant == null) {
-                            throw new GradleException("Qigsaw Error: Can't obtain variant ${baseVariant.name} for dynamic-feature project ${splitProject.name}, " +
-                                    "have you config the same flavor or buildType with base?")
-                        }
-                        String versionName = splitVariant.mergedFlavor.versionName
-                        if (versionName == null) {
-                            throw new GradleException("Qigsaw Error:versionName must be set in ${splitProject.name}/build.gradle!")
-                        }
-                        Set<String> splitAbiFilters = getAbiFilters(splitProject, splitVariant)
-                        if (!baseAbiFilters.isEmpty() && !baseAbiFilters.containsAll(splitAbiFilters)) {
-                            throw new GradleException("abiFilters config in project ${splitProject.name} must be less than base project.")
-                        }
-                        //copy and sign and unzip split apk
-                        List<File> splitApks = new ArrayList<>()
-                        splitVariant.outputs.each {
-                            splitApks.add(it.outputFile)
-                        }
-                        String splitVersion = versionName + "@" + splitVariant.mergedFlavor.versionCode
-                        int minApiLevel = splitVariant.mergedFlavor.minSdkVersion.apiLevel
-                        Set<String> splitProjectDependencies = new HashSet<>()
-                        Configuration configuration = splitProject.configurations."${splitVariant.name}CompileClasspath"
-                        configuration.incoming.dependencies.each {
-                            splitProjectDependencies.add("${it.group}:${it.name}:${it.version}")
-                        }
-
-                        Task splitAssemble = AGPCompat.getAssemble(splitVariant)
-                        ProcessSplitApkTask processSplitApk = splitProject.tasks.create("processSplitApk${splitVariant.name.capitalize()}", ProcessSplitApkTask)
-                        processSplitApk.apkSigner = apkSigner
-                        processSplitApk.aapt2File = new File(AGPCompat.getAapt2FromMavenCompat(baseVariant), SdkConstants.FN_AAPT2)
-                        processSplitApk.releaseSplitApk = QigsawSplitExtensionHelper.isReleaseSplitApk(project)
-                        processSplitApk.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(project)
-                        processSplitApk.minApiLevel = minApiLevel
-                        processSplitApk.splitVersion = splitVersion
-                        processSplitApk.applicationId = baseVariant.applicationId
-                        processSplitApk.splitProjectClassPaths = splitProjectClassPaths
-                        processSplitApk.splitProjectDependencies = splitProjectDependencies
-                        processSplitApk.splitApks = splitApks
-                        processSplitApk.splitManifestDir = splitManifestDir
-                        processSplitApk.splitApksDir = splitApksDir
-                        processSplitApk.splitInfoDir = splitInfoDir
-                        processSplitApk.unzipSplitApkBaseDir = unzipSplitApkBaseDir
-
-                        processSplitApk.dependsOn splitAssemble
-                        mergeJniLibs.dependsOn processSplitApk
                     }
                 }
+            }
+        }
+    }
+
+    static class ProcessTaskDependenciesBetweenBaseAndSplits implements Runnable {
+
+        boolean isQigsawBuild
+
+        ApkSigner apkSigner
+
+        Project baseProject
+
+        Project splitProject
+
+        ApplicationVariant baseVariant
+
+        Task baseMergeJinLibs
+
+        File splitApksDir
+
+        File splitInfoDir
+
+        File splitManifestDir
+
+        File unzipSplitApkBaseDir
+
+        Set<String> baseAbiFilters
+
+        Set<String> splitProjectClassPaths
+
+        @Override
+        void run() {
+            splitProject.extensions.android.applicationVariants.all { ApplicationVariant variant ->
+                if (variant.name == baseVariant.name) {
+                    onTargetVariantFound(variant)
+                }
+            }
+        }
+
+        void onTargetVariantFound(ApplicationVariant splitVariant) {
+            if (splitVariant != null) {
+                Task processSplitManifest = AGPCompat.getProcessManifestTask(splitProject, splitVariant.name.capitalize())
+                Task copySplitManifest = splitProject.tasks.create("name": "copySplitManifest${splitVariant.name.capitalize()}", "type": Copy) {
+                    destinationDir splitManifestDir
+                    from(AGPCompat.getMergedManifestFileCompat(processSplitManifest)) {
+                        rename {
+                            String fileName ->
+                                return splitProject.name + SdkConstants.DOT_XML
+                        }
+                    }
+                    into(splitManifestDir)
+                }
+                processSplitManifest.finalizedBy copySplitManifest
+                copySplitManifest.dependsOn processSplitManifest
+                copySplitManifest.setGroup(QIGSAW)
+            }
+
+            if (isQigsawBuild) {
+                String versionName = splitVariant.mergedFlavor.versionName
+                if (versionName == null) {
+                    throw new GradleException("Qigsaw Error:versionName must be set in ${splitProject.name}/build.gradle!")
+                }
+                Set<String> splitAbiFilters = getAbiFilters(splitProject, splitVariant)
+                if (!baseAbiFilters.isEmpty() && !baseAbiFilters.containsAll(splitAbiFilters)) {
+                    throw new GradleException("abiFilters config in project ${splitProject.name} must be less than base project.")
+                }
+                //copy and sign and unzip split apk
+                List<File> splitApks = new ArrayList<>()
+                splitVariant.outputs.each {
+                    splitApks.add(it.outputFile)
+                }
+                String splitVersion = versionName + "@" + splitVariant.mergedFlavor.versionCode
+                int minApiLevel = splitVariant.mergedFlavor.minSdkVersion.apiLevel
+                Set<String> splitProjectDependencies = new HashSet<>()
+                Configuration configuration = splitProject.configurations."${splitVariant.name}CompileClasspath"
+                configuration.incoming.dependencies.each {
+                    splitProjectDependencies.add("${it.group}:${it.name}:${it.version}")
+                }
+
+                Task splitAssemble = AGPCompat.getAssemble(splitVariant)
+                ProcessSplitApkTask processSplitApk = splitProject.tasks.create("processSplitApk${splitVariant.name.capitalize()}", ProcessSplitApkTask)
+                processSplitApk.apkSigner = apkSigner
+                processSplitApk.aapt2File = new File(AGPCompat.getAapt2FromMavenCompat(baseVariant), SdkConstants.FN_AAPT2)
+                processSplitApk.releaseSplitApk = QigsawSplitExtensionHelper.isReleaseSplitApk(baseProject)
+                processSplitApk.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(baseProject)
+                processSplitApk.minApiLevel = minApiLevel
+                processSplitApk.splitVersion = splitVersion
+                processSplitApk.applicationId = baseVariant.applicationId
+                processSplitApk.splitProjectClassPaths = splitProjectClassPaths
+                processSplitApk.splitProjectDependencies = splitProjectDependencies
+                processSplitApk.splitApks = splitApks
+                processSplitApk.splitManifestDir = splitManifestDir
+                processSplitApk.splitApksDir = splitApksDir
+                processSplitApk.splitInfoDir = splitInfoDir
+                processSplitApk.unzipSplitApkBaseDir = unzipSplitApkBaseDir
+
+                processSplitApk.dependsOn splitAssemble
+                baseMergeJinLibs.dependsOn processSplitApk
             }
         }
     }

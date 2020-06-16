@@ -24,7 +24,6 @@
 
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
-import com.android.apksig.ApkSigner
 import com.android.apksig.ApkVerifier
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.builder.model.SigningConfig
@@ -37,13 +36,13 @@ import org.gradle.api.UnknownDomainObjectException
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
 
-class SplitApkSigner {
+class ApkSigner {
 
     final Project baseProject
 
     final ApplicationVariant baseVariant
 
-    SplitApkSigner(Project project, def variantName) {
+    ApkSigner(Project project, def variantName) {
         this.baseProject = project
         this.baseVariant = variantName
     }
@@ -71,12 +70,12 @@ class SplitApkSigner {
                     Preconditions.checkNotNull(signingConfig.getKeyAlias()))
             PrivateKey key = certificateInfo.getKey()
             X509Certificate certificate = certificateInfo.getCertificate()
-            ApkSigner.SignerConfig signerConfig = new ApkSigner.SignerConfig.Builder("CERT", key, [certificate]).build()
-            ApkSigner.Builder signerBuilder = new ApkSigner.Builder([signerConfig])
+            com.android.apksig.ApkSigner.SignerConfig signerConfig = new com.android.apksig.ApkSigner.SignerConfig.Builder("CERT", key, [certificate]).build()
+            com.android.apksig.ApkSigner.Builder signerBuilder = new com.android.apksig.ApkSigner.Builder([signerConfig])
             if (signedApk == null) {
                 signedApk = new File(unsignedApk.path.toString() + ".signed")
             }
-            ApkSigner apkSigner = signerBuilder
+            com.android.apksig.ApkSigner apkSigner = signerBuilder
                     .setInputApk(unsignedApk)
                     .setOutputApk(signedApk)
                     .setV1SigningEnabled(signingConfig.isV1SigningEnabled())

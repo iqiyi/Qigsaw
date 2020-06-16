@@ -34,6 +34,7 @@ import org.dom4j.io.SAXReader
 import org.dom4j.io.XMLWriter
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
@@ -43,6 +44,9 @@ import org.gradle.internal.Pair
 class QigsawProcessManifestTask extends DefaultTask {
 
     final SAXReader saxReader = new SAXReader()
+
+    @Input
+    Set<String> dynamicFeatureNames
 
     @InputDirectory
     File splitManifestDir
@@ -97,15 +101,14 @@ class QigsawProcessManifestTask extends DefaultTask {
 
     private List<Pair<String, Node>> getSplitProviderNodes() {
         List<Pair<String, Node>> splitProviderNodes = new ArrayList<>()
-        if (!splitManifestDir.exists()) {
-            throw new GradleException("Can't read split manifests from dir ${splitManifestDir.absolutePath}")
-        }
-        File[] splitManifests = splitManifestDir.listFiles(new FileFilter() {
-            @Override
-            boolean accept(File file) {
-                return file.name.endsWith(SdkConstants.DOT_XML)
+        List<File> splitManifests = new ArrayList<>()
+        dynamicFeatureNames.each {
+            File splitManifest = new File(splitManifestDir, it + SdkConstants.DOT_XML)
+            if (!splitManifest.exists()) {
+                throw new GradleException("Qigsaw Error: ${splitManifest} does not exist!")
             }
-        })
+            splitManifests.add(splitManifest)
+        }
         for (File splitManifest : splitManifests) {
             if (splitManifest.exists()) {
                 String splitName = splitManifest.name.split("\\.")[0]
