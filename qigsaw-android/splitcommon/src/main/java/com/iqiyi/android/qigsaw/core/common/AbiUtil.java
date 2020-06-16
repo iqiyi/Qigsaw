@@ -45,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -65,9 +66,9 @@ public class AbiUtil {
 
     private static List<String> abis;
 
-    private static String basePrimaryAbi = null;
+    private static AtomicReference<String> basePrimaryAbi = new AtomicReference<>();
 
-    private static String currentInstructionSet = null;
+    private static AtomicReference<String> currentInstructionSet = new AtomicReference<>();
 
     private static List<String> getSupportedAbis() {
         if (abis != null) {
@@ -83,18 +84,18 @@ public class AbiUtil {
 
     @SuppressLint("DiscouragedPrivateApi")
     private static String getCurrentInstructionSet() {
-        if (!TextUtils.isEmpty(currentInstructionSet)) {
-            return currentInstructionSet;
+        if (!TextUtils.isEmpty(currentInstructionSet.get())) {
+            return currentInstructionSet.get();
         } else {
             try {
                 Class<?> clazz = Class.forName("dalvik.system.VMRuntime");
                 Method currentGet = clazz.getDeclaredMethod("getCurrentInstructionSet");
                 currentGet.setAccessible(true);
-                currentInstructionSet = (String) currentGet.invoke(null);
+                currentInstructionSet.compareAndSet(null, (String) currentGet.invoke(null));
             } catch (Throwable ignored) {
 
             }
-            return currentInstructionSet;
+            return currentInstructionSet.get();
         }
     }
 
@@ -198,26 +199,26 @@ public class AbiUtil {
     }
 
     public static String getBasePrimaryAbi(@NonNull Context context) {
-        if (!TextUtils.isEmpty(basePrimaryAbi)) {
-            return basePrimaryAbi;
+        if (!TextUtils.isEmpty(basePrimaryAbi.get())) {
+            return basePrimaryAbi.get();
         }
         synchronized (AbiUtil.class) {
             ApplicationInfo info = context.getApplicationInfo();
             try {
                 Field primaryCpuAbi_Field = ApplicationInfo.class.getField("primaryCpuAbi");
                 primaryCpuAbi_Field.setAccessible(true);
-                basePrimaryAbi = (String) primaryCpuAbi_Field.get(info);
+                basePrimaryAbi.compareAndSet(null, (String) primaryCpuAbi_Field.get(info));
                 SplitLog.i(TAG, "Succeed to get primaryCpuAbi %s from ApplicationInfo.", basePrimaryAbi);
             } catch (Throwable e) {
                 SplitLog.w(TAG, "Failed to get primaryCpuAbi from ApplicationInfo.", e);
             }
-            if (TextUtils.isEmpty(basePrimaryAbi)) {
+            if (TextUtils.isEmpty(basePrimaryAbi.get())) {
                 String currentInstructionSet = getCurrentInstructionSet();
-                basePrimaryAbi = findPrimaryAbiFromCurrentInstructionSet(currentInstructionSet);
-                if (TextUtils.isEmpty(basePrimaryAbi)) {
-                    basePrimaryAbi = findPrimaryAbiFromProperties(context);
-                    if (TextUtils.isEmpty(basePrimaryAbi)) {
-                        basePrimaryAbi = findPrimaryAbiFromBaseApk(context);
+                basePrimaryAbi.compareAndSet(null, findPrimaryAbiFromCurrentInstructionSet(currentInstructionSet));
+                if (TextUtils.isEmpty(basePrimaryAbi.get())) {
+                    basePrimaryAbi.compareAndSet(null, findPrimaryAbiFromProperties(context));
+                    if (TextUtils.isEmpty(basePrimaryAbi.get())) {
+                        basePrimaryAbi.compareAndSet(null, findPrimaryAbiFromBaseApk(context));
                         SplitLog.i(TAG, "Succeed to get primaryCpuAbi %s from BaseApk.", basePrimaryAbi);
                     } else {
                         SplitLog.i(TAG, "Succeed to get primaryCpuAbi %s from Properties.", basePrimaryAbi);
@@ -226,7 +227,7 @@ public class AbiUtil {
                     SplitLog.i(TAG, "Succeed to get primaryCpuAbi %s from CurrentInstructionSet.", basePrimaryAbi);
                 }
             }
-            return basePrimaryAbi;
+            return basePrimaryAbi.get();
         }
     }
 
