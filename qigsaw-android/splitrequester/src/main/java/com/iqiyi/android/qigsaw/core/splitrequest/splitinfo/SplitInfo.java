@@ -97,26 +97,24 @@ public class SplitInfo {
         return splitName;
     }
 
-    public List<ApkData> getApkDataList(Context context) throws IOException {
+    public synchronized List<ApkData> getApkDataList(Context context) throws IOException {
         if (primaryApkDataList != null) {
             return primaryApkDataList;
         }
-        synchronized (this) {
-            primaryApkDataList = new ArrayList<>();
-            LibData primaryAbi = getPrimaryLibData(context);
-            for (ApkData apkData : apkDataList) {
-                if (apkData.abi.equals(SplitConstants.MASTER)) {
-                    primaryApkDataList.add(apkData);
-                }
-                if (primaryAbi != null && primaryAbi.abi.equals(apkData.abi)) {
-                    primaryApkDataList.add(apkData);
-                }
+        primaryApkDataList = new ArrayList<>();
+        LibData primaryAbi = getPrimaryLibData(context);
+        for (ApkData apkData : apkDataList) {
+            if (apkData.abi.equals(SplitConstants.MASTER)) {
+                primaryApkDataList.add(apkData);
             }
-            if (primaryAbi != null && primaryApkDataList.size() <= 1) {
-                throw new RuntimeException("Unable to find split config apk for abi" + primaryAbi.abi);
+            if (primaryAbi != null && primaryAbi.abi.equals(apkData.abi)) {
+                primaryApkDataList.add(apkData);
             }
-            return primaryApkDataList;
         }
+        if (primaryAbi != null && primaryApkDataList.size() <= 1) {
+            throw new RuntimeException("Unable to find split config apk for abi" + primaryAbi.abi);
+        }
+        return primaryApkDataList;
     }
 
     public String obtainInstalledMark(Context context) throws IOException {
