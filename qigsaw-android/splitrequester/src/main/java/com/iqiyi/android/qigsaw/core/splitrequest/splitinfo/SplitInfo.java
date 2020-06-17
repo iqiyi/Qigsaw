@@ -30,11 +30,9 @@ import androidx.annotation.RestrictTo;
 import android.content.Context;
 
 import com.iqiyi.android.qigsaw.core.common.AbiUtil;
-import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
