@@ -47,20 +47,28 @@ class ApkSigner {
         this.baseVariant = variantName
     }
 
+    SigningConfig getSigningConfig() {
+        SigningConfig signingConfig = baseVariant.signingConfig
+        if (signingConfig == null) {
+            signingConfig = baseVariant.buildType.signingConfig
+        }
+        if (signingConfig == null) {
+            try {
+                signingConfig = baseProject.extensions.android.signingConfigs.getByName(baseVariant.name.uncapitalize())
+            } catch (UnknownDomainObjectException e) {
+                //Catch block
+            }
+        }
+        if (signingConfig == null) {
+            throw new RuntimeException("Can't get " + baseVariant.name.uncapitalize() + " signingConfigs in app/build.gradle")
+        }
+        return signingConfig
+    }
+
     boolean signApkIfNeed(File unsignedApk, File signedApk) {
         ApkVerifier apkVerifier = new ApkVerifier.Builder(unsignedApk).build()
         if (!apkVerifier.verify().verified) {
-            SigningConfig signingConfig = baseVariant.signingConfig
-            if (signingConfig == null) {
-                try {
-                    signingConfig = baseProject.extensions.android.signingConfigs.getByName(baseVariant.name.uncapitalize())
-                } catch (UnknownDomainObjectException e) {
-                    //Catch block
-                }
-            }
-            if (signingConfig == null) {
-                throw new RuntimeException("Can't get " + baseVariant.name.uncapitalize() + " signingConfigs in app/build.gradle")
-            }
+            SigningConfig signingConfig = getSigningConfig()
             CertificateInfo certificateInfo = KeystoreHelper.getCertificateInfo(
                     signingConfig.getStoreType(),
                     Preconditions.checkNotNull(signingConfig.getStoreFile()),

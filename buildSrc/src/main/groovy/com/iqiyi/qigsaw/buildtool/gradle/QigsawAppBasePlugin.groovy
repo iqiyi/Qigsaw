@@ -433,7 +433,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         Set<String> mergedAbiFilters = new HashSet<>(0)
         if (project.extensions.android.productFlavors != null) {
             project.extensions.android.productFlavors.each {
-                if (variant.flavorName.contains(it.name.capitalize()) || variant.flavorName.contains(it.name.uncapitalize())) {
+                if (variant.flavorName == it.name.capitalize() || variant.flavorName == it.name.uncapitalize()) {
                     Set<String> flavorAbiFilter = it.ndk.abiFilters
                     if (flavorAbiFilter != null) {
                         mergedAbiFilters.addAll(flavorAbiFilter)

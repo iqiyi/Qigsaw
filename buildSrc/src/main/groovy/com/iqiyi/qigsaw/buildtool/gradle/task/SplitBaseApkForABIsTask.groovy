@@ -1,6 +1,7 @@
 package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.SdkConstants
+import com.android.builder.model.SigningConfig
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.CommandUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ApkSigner
@@ -75,7 +76,13 @@ class SplitBaseApkForABIsTask extends DefaultTask {
         if (use7z) {
             abiList.add(abiList.join("-"))
         }
-        boolean isSigningNeed = baseVariant.buildType.signingConfig != null && baseVariant.buildType.signingConfig.isSigningReady()
+        SigningConfig signingConfig = null
+        try {
+            signingConfig = apkSigner.getSigningConfig()
+        } catch (Throwable ignored) {
+
+        }
+        boolean isSigningNeed = signingConfig != null && signingConfig.isSigningReady()
         abiList.each { String abi ->
             File unzipBaseApkDirForAbi = new File(unzipBaseApkDir, abi)
             if (unzipBaseApkDirForAbi.exists()) {
