@@ -50,14 +50,13 @@ class ApkSigner {
     boolean signApkIfNeed(File unsignedApk, File signedApk) {
         ApkVerifier apkVerifier = new ApkVerifier.Builder(unsignedApk).build()
         if (!apkVerifier.verify().verified) {
-            SigningConfig signingConfig
-            try {
-                signingConfig = baseProject.extensions.android.signingConfigs.getByName(baseVariant.name.uncapitalize())
-            } catch (UnknownDomainObjectException e) {
-                //Catch block
-            }
+            SigningConfig signingConfig = baseVariant.signingConfig
             if (signingConfig == null) {
-                signingConfig = baseVariant.signingConfig
+                try {
+                    signingConfig = baseProject.extensions.android.signingConfigs.getByName(baseVariant.name.uncapitalize())
+                } catch (UnknownDomainObjectException e) {
+                    //Catch block
+                }
             }
             if (signingConfig == null) {
                 throw new RuntimeException("Can't get " + baseVariant.name.uncapitalize() + " signingConfigs in app/build.gradle")
