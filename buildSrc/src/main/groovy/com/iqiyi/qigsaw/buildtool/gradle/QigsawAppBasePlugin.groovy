@@ -270,7 +270,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     }
                     dynamicFeatures.each { String dynamicFeature ->
                         Project splitProject = project.rootProject.project(dynamicFeature)
-                        ProcessTaskDependenciesBetweenBaseAndSplits taskDependenciesProcessor = new ProcessTaskDependenciesBetweenBaseAndSplits()
+                        ProcessTaskDependenciesBetweenBaseAndSplitsWithQigsaw taskDependenciesProcessor = new ProcessTaskDependenciesBetweenBaseAndSplitsWithQigsaw()
                         boolean isProjectEvaluated
                         try {
                             splitProject.extensions.android
@@ -310,6 +310,33 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             }
                         }
                     }
+                } else {
+                    dynamicFeatures.each { String dynamicFeature ->
+                        Project splitProject = project.rootProject.project(dynamicFeature)
+                        ProcessTaskDependenciesBetweenBaseAndSplits taskDependenciesProcessor = new ProcessTaskDependenciesBetweenBaseAndSplits()
+                        boolean isProjectEvaluated
+                        try {
+                            splitProject.extensions.android
+                            isProjectEvaluated = true
+                        } catch (Throwable ignored) {
+                            isProjectEvaluated = false
+                        }
+                        if (isProjectEvaluated) {
+                            taskDependenciesProcessor.baseProject = project
+                            taskDependenciesProcessor.splitProject = splitProject
+                            taskDependenciesProcessor.baseVariant = baseVariant
+                            taskDependenciesProcessor.splitManifestDir = splitManifestDir
+                            taskDependenciesProcessor.run()
+                        } else {
+                            splitProject.afterEvaluate {
+                                taskDependenciesProcessor.baseProject = project
+                                taskDependenciesProcessor.splitProject = splitProject
+                                taskDependenciesProcessor.baseVariant = baseVariant
+                                taskDependenciesProcessor.splitManifestDir = splitManifestDir
+                                taskDependenciesProcessor.run()
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -317,13 +344,45 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
     static class ProcessTaskDependenciesBetweenBaseAndSplits implements Runnable {
 
-        ApkSigner apkSigner
+        ApplicationVariant baseVariant
 
         Project baseProject
 
         Project splitProject
 
-        ApplicationVariant baseVariant
+        File splitManifestDir
+
+        @Override
+        void run() {
+            splitProject.extensions.android.applicationVariants.all { ApplicationVariant variant ->
+                if (variant.name == baseVariant.name) {
+                    Task processSplitManifest = AGPCompat.getProcessManifestTask(splitProject, variant.name.capitalize())
+                    Task copySplitManifest = splitProject.tasks.create("name": "copySplitManifest${variant.name.capitalize()}", "type": Copy) {
+                        destinationDir splitManifestDir
+                        from(AGPCompat.getMergedManifestFileCompat(processSplitManifest)) {
+                            rename {
+                                String fileName ->
+                                    return splitProject.name + SdkConstants.DOT_XML
+                            }
+                        }
+                        into(splitManifestDir)
+                    }
+                    processSplitManifest.finalizedBy copySplitManifest
+                    copySplitManifest.dependsOn processSplitManifest
+                    copySplitManifest.setGroup(QIGSAW)
+                    onTargetVariantFound(variant, copySplitManifest)
+                }
+            }
+        }
+
+        protected void onTargetVariantFound(ApplicationVariant splitVariant, Task copySplitManifest) {
+
+        }
+    }
+
+    static class ProcessTaskDependenciesBetweenBaseAndSplitsWithQigsaw extends ProcessTaskDependenciesBetweenBaseAndSplits {
+
+        ApkSigner apkSigner
 
         Task baseMergeJinLibs
 
@@ -333,8 +392,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
         File splitInfoDir
 
-        File splitManifestDir
-
         File unzipSplitApkBaseDir
 
         Set<String> baseAbiFilters
@@ -342,31 +399,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         Set<String> splitProjectClassPaths
 
         @Override
-        void run() {
-            splitProject.extensions.android.applicationVariants.all { ApplicationVariant variant ->
-                if (variant.name == baseVariant.name) {
-                    onTargetVariantFound(variant)
-                }
-            }
-        }
-
-        void onTargetVariantFound(ApplicationVariant splitVariant) {
-            Task processSplitManifest = AGPCompat.getProcessManifestTask(splitProject, splitVariant.name.capitalize())
-            Task copySplitManifest = splitProject.tasks.create("name": "copySplitManifest${splitVariant.name.capitalize()}", "type": Copy) {
-                destinationDir splitManifestDir
-                from(AGPCompat.getMergedManifestFileCompat(processSplitManifest)) {
-                    rename {
-                        String fileName ->
-                            return splitProject.name + SdkConstants.DOT_XML
-                    }
-                }
-                into(splitManifestDir)
-            }
-            processSplitManifest.finalizedBy copySplitManifest
-            copySplitManifest.dependsOn processSplitManifest
-            copySplitManifest.setGroup(QIGSAW)
+        protected void onTargetVariantFound(ApplicationVariant splitVariant, Task copySplitManifest) {
             qigsawProcessManifest.dependsOn copySplitManifest
-
             String versionName = splitVariant.mergedFlavor.versionName
             if (versionName == null) {
                 throw new GradleException("Qigsaw Error:versionName must be set in ${splitProject.name}/build.gradle!")
