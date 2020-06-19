@@ -244,7 +244,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     }
                     packageApp.doFirst {
                         if (versionAGP < VersionNumber.parse("3.5.0")) {
-                            Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, variantName)
+                            Task dexSplitterTask = AGPCompat.getDexSplitterTask(project, baseVariant.name.capitalize())
                             if (dexSplitterTask != null) {
                                 List<File> dexFiles = new ArrayList<>()
                                 inputs.files.each { File file ->
@@ -254,7 +254,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                                         }
                                     }
                                 }
-                                DexReMergeHandler handler = new DexReMergeHandler(project, variant)
+                                DexReMergeHandler handler = new DexReMergeHandler(project, baseVariant)
                                 handler.reMerge(dexFiles)
                             }
                         }
