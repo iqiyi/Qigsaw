@@ -27,7 +27,6 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 import com.android.SdkConstants
 import com.android.tools.build.bundletool.model.Aapt2Command
 import com.android.tools.build.bundletool.model.AndroidManifest
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.SplitInfo
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ManifestReader
@@ -194,26 +193,24 @@ class ProcessSplitApkTask extends DefaultTask {
             }
         })
         Set<String> splitWorkProcesses = new HashSet<>()
-        Set<ComponentInfo> activities = manifestReader.readActivities()
-        activities.each {
-            splitWorkProcesses.add(it.process)
-        }
-        Set<ComponentInfo> services = manifestReader.readServices()
-        services.each {
-            splitWorkProcesses.add(it.process)
-        }
-        Set<ComponentInfo> receivers = manifestReader.readReceivers()
-        receivers.each {
-            splitWorkProcesses.add(it.process)
-        }
-        Set<ComponentInfo> providers = manifestReader.readProviders()
-        providers.each {
-            splitWorkProcesses.add(it.process)
-        }
-        if (restrictWorkProcessesForSplits != null && !restrictWorkProcessesForSplits.empty) {
-            if (restrictWorkProcessesForSplits.contains(project.name)) {
-                splitWorkProcesses = splitWorkProcesses.isEmpty() ? null : splitWorkProcesses
+        Set<String> activityProcesses = manifestReader.readActivityProcesses()
+        splitWorkProcesses.addAll(activityProcesses)
+        Set<String> serviceProcesses = manifestReader.readServiceProcesses()
+        splitWorkProcesses.addAll(serviceProcesses)
+        Set<String> receiverProcesses = manifestReader.readReceiverProcesses()
+        splitWorkProcesses.addAll(receiverProcesses)
+        Set<String> providerProcesses = manifestReader.readProviderProcesses()
+        splitWorkProcesses.addAll(providerProcesses)
+
+        if (restrictWorkProcessesForSplits != null) {
+            if (!restrictWorkProcessesForSplits.contains(project.name)) {
+                splitWorkProcesses = null
             }
+        } else {
+            splitWorkProcesses = null
+        }
+        if (splitWorkProcesses != null && splitWorkProcesses.empty) {
+            splitWorkProcesses = null
         }
         SplitInfo splitInfo = new SplitInfo()
         splitInfo.splitName = project.name
@@ -224,7 +221,7 @@ class ProcessSplitApkTask extends DefaultTask {
         splitInfo.version = splitVersion
         splitInfo.applicationName = splitApplicationName == "" ? null : splitApplicationName
         splitInfo.dependencies = dependencies.isEmpty() ? null : dependencies
-        splitInfo.workProcesses = splitWorkProcesses.isEmpty() ? null : splitWorkProcesses
+        splitInfo.workProcesses = splitWorkProcesses
         splitInfo.apkData = apkDataList.isEmpty() ? null : apkDataList
         splitInfo.libData = libDataList.isEmpty() ? null : libDataList
         return splitInfo

@@ -25,7 +25,6 @@
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.google.common.collect.ImmutableSet
-import com.iqiyi.qigsaw.buildtool.gradle.internal.entity.ComponentInfo
 
 class ManifestReader {
 
@@ -76,44 +75,40 @@ class ManifestReader {
         return providers.build()
     }
 
-    Set<ComponentInfo> readActivities() {
-        ImmutableSet.Builder activities = ImmutableSet.builder()
+    Set<String> readActivityProcesses() {
+        Set<String> processes = new HashSet<>()
         manifest.application.activity.each {
-            String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
-            activities.add(new ComponentInfo(name, process))
+            processes.add(process)
         }
-        return activities.build()
+        return processes
     }
 
-    Set<ComponentInfo> readServices() {
-        ImmutableSet.Builder services = ImmutableSet.builder()
+    Set<String> readServiceProcesses() {
+        Set<String> processes = new HashSet<>()
         manifest.application.service.each {
-            String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
-            services.add(new ComponentInfo(name, process))
+            processes.add(process)
         }
-        return services.build()
+        return processes
     }
 
-    Set<ComponentInfo> readReceivers() {
-        ImmutableSet.Builder receivers = ImmutableSet.builder()
+    Set<String> readReceiverProcesses() {
+        Set<String> processes = new HashSet<>()
         manifest.application.receiver.each {
-            String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
-            receivers.add(new ComponentInfo(name, process))
+            processes.add(process)
         }
-        return receivers.build()
+        return processes
     }
 
-    Set<ComponentInfo> readProviders() {
-        ImmutableSet.Builder providers = ImmutableSet.builder()
+    Set<String> readProviderProcesses() {
+        Set<String> processes = new HashSet<>()
         manifest.application.provider.each {
-            String name = it.'@android:name'.toString()
             String process = it.'@android:process'.toString()
-            providers.add(new ComponentInfo(name, process))
+            processes.add(process)
         }
-        return providers.build()
+        return processes
     }
 
     boolean readOnDemand() {
