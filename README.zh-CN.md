@@ -15,7 +15,7 @@ Qigsaw是一套基于[Android App Bundles](https://developer.android.com/guide/a
 ```
 buildscript {
     dependencies {
-        classpath 'com.iqiyi.android.qigsaw:gradle-plugin:1.4.0'
+        classpath 'com.iqiyi.android.qigsaw:gradle-plugin:1.4.0-hotfix02'
     }
 }
 ```
@@ -25,7 +25,7 @@ buildscript {
 ```
 dependencies {
     //qigsaw core lib
-    implementation "com.iqiyi.android.qigsaw:splitcore:1.4.0"
+    implementation "com.iqiyi.android.qigsaw:splitcore:1.4.0-hotfix02"
 }
 ...
 ...
