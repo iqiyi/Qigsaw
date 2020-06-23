@@ -47,7 +47,7 @@ final class StartDownloadCallback implements DownloadCallback {
                           List<SplitInfo> splitInfoList) {
         this.sessionId = sessionId;
         this.sessionManager = sessionManager;
-        this.installer = new SplitSessionInstallerImpl(splitInstaller, sessionManager, SplitBackgroundExecutor.getExecutor());
+        this.installer = new SplitSessionInstallerImpl(splitInstaller, sessionManager, SplitInstallerExecutor.getExecutor());
         this.splitInfoList = splitInfoList;
         this.sessionState = sessionManager.getSessionState(sessionId);
     }

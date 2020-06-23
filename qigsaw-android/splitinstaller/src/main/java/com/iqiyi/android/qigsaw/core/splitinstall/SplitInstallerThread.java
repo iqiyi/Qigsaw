@@ -24,14 +24,17 @@
 
 package com.iqiyi.android.qigsaw.core.splitinstall;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import android.annotation.SuppressLint;
 
-final class SplitBackgroundExecutor {
+import androidx.annotation.NonNull;
 
-    private static final Executor sExecutor = Executors.newSingleThreadScheduledExecutor(new SplitBackgroundThread());
+import java.util.concurrent.ThreadFactory;
 
-    static Executor getExecutor() {
-        return sExecutor;
+final class SplitInstallerThread implements ThreadFactory {
+
+    @SuppressLint("NewThreadDirectly")
+    @Override
+    public Thread newThread(@NonNull Runnable r) {
+        return new Thread(r, "split_install_thread");
     }
 }

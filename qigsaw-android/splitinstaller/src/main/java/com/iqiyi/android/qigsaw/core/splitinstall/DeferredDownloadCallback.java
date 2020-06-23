@@ -63,7 +63,7 @@ final class DeferredDownloadCallback implements DownloadCallback {
 
     @Override
     public void onCompleted() {
-        SplitBackgroundExecutor.getExecutor().execute(new SplitDeferredInstallTask(splitInstaller, splitInfoList));
+        SplitInstallerExecutor.getExecutor().execute(new SplitDeferredInstallTask(splitInstaller, splitInfoList));
     }
 
     @Override

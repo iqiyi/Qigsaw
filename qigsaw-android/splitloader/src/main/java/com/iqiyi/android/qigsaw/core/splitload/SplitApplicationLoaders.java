@@ -27,6 +27,7 @@ package com.iqiyi.android.qigsaw.core.splitload;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -47,16 +48,12 @@ final class SplitApplicationLoaders {
         return sInstance.get();
     }
 
-    void addClassLoader(@NonNull SplitDexClassLoader classLoader) {
-        splitDexClassLoaders.add(classLoader);
+    void addClassLoader(@NonNull Collection<SplitDexClassLoader> classLoaders) {
+        splitDexClassLoaders.addAll(classLoaders);
     }
 
     Set<SplitDexClassLoader> getClassLoaders() {
         return splitDexClassLoaders;
-    }
-
-    boolean removeClassLoader(@NonNull SplitDexClassLoader classLoader) {
-        return splitDexClassLoaders.remove(classLoader);
     }
 
     @Nullable

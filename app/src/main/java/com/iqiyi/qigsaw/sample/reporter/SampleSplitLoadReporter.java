@@ -16,12 +16,12 @@ public class SampleSplitLoadReporter extends DefaultSplitLoadReporter {
     }
 
     @Override
-    public void onLoadOK(String processName, @NonNull List<SplitBriefInfo> loadedSplits, long cost) {
-        super.onLoadOK(processName, loadedSplits, cost);
+    public void onLoadOK(String processName, @NonNull List<SplitBriefInfo> loadOKSplits, long cost) {
+        super.onLoadOK(processName, loadOKSplits, cost);
     }
 
     @Override
-    public void onLoadFailed(String processName, @NonNull List<SplitBriefInfo> loadedSplits, @NonNull List<SplitLoadError> errors, long cost) {
-        super.onLoadFailed(processName, loadedSplits, errors, cost);
+    public void onLoadFailed(String processName, @NonNull List<SplitBriefInfo> loadOKSplits, @NonNull List<SplitLoadError> loadErrorSplits, long cost) {
+        super.onLoadFailed(processName, loadOKSplits, loadErrorSplits, cost);
     }
 }

@@ -49,37 +49,51 @@ final class SplitActivator {
         this.aabExtension = AABExtension.getInstance();
     }
 
-    void activate(ClassLoader classLoader, String splitName) throws SplitLoadException {
+    Application createSplitApplication(ClassLoader classLoader, String splitName) throws SplitLoadException {
         Application app;
         try {
             app = aabExtension.createApplication(classLoader, splitName);
             if (app != null) {
                 sSplitApplicationMap.put(splitName, app);
             }
-            aabExtension.activeApplication(app, appContext);
         } catch (Throwable e) {
             if (debuggable()) {
                 if (!(e instanceof AABExtensionException)) {
                     throw new RuntimeException(e);
                 }
             }
+            throw new SplitLoadException(SplitLoadError.CREATE_APPLICATION_FAILED, e);
+        }
+        return app;
+    }
+
+    void attachSplitApplication(Application application) throws SplitLoadException {
+        try {
+            aabExtension.activeApplication(application, appContext);
+        } catch (AABExtensionException e) {
             throw new SplitLoadException(SplitLoadError.ACTIVATE_APPLICATION_FAILED, e);
         }
-        try {
-            aabExtension.activateSplitProviders(classLoader, splitName);
-        } catch (AABExtensionException e) {
-            throw new SplitLoadException(SplitLoadError.ACTIVATE_PROVIDERS_FAILED, e);
-        }
-        if (app != null) {
+    }
+
+    void invokeOnCreateForSplitApplication(Application application) throws SplitLoadException {
+        if (application != null) {
             try {
                 Method method = HiddenApiReflection.findMethod(Application.class, "onCreate");
-                method.invoke(app);
+                method.invoke(application);
             } catch (Throwable e) {
                 if (debuggable()) {
                     throw new RuntimeException(e);
                 }
                 throw new SplitLoadException(SplitLoadError.ACTIVATE_APPLICATION_FAILED, e);
             }
+        }
+    }
+
+    void createAndActivateSplitContentProviders(ClassLoader classLoader, String splitName) throws SplitLoadException {
+        try {
+            aabExtension.createAndActivateSplitProviders(classLoader, splitName);
+        } catch (AABExtensionException e) {
+            throw new SplitLoadException(SplitLoadError.CREATE_PROVIDERS_FAILED, e);
         }
     }
 

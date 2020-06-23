@@ -22,18 +22,22 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitinstall;
+package com.iqiyi.android.qigsaw.core.splitload;
 
-import android.annotation.SuppressLint;
-import androidx.annotation.NonNull;
+import java.io.File;
+import java.util.List;
 
-import java.util.concurrent.ThreadFactory;
+interface SplitLoaderWrapper {
 
-final class SplitBackgroundThread implements ThreadFactory {
+    SplitLoader createSplitLoader();
 
-    @SuppressLint("NewThreadDirectly")
-    @Override
-    public Thread newThread(@NonNull Runnable r) {
-        return new Thread(r, "SplitBackgroundThread");
-    }
+    ClassLoader loadCode(String splitName,
+                         List<String> addedDexPaths,
+                         File optimizedDirectory,
+                         File librarySearchPath,
+                         List<String> dependencies) throws SplitLoadException;
+
+    void unloadCode(ClassLoader classLoader);
+
+    void loadResources(String splitApkPath) throws SplitLoadException;
 }

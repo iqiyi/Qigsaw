@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Intent;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -37,35 +38,31 @@ final class SplitLoadTaskImpl extends SplitLoadTask {
 
     SplitLoadTaskImpl(@NonNull SplitLoadManager loadManager,
                       @NonNull List<Intent> splitFileIntents,
-                      @Nullable OnSplitLoadListener loadListener) {
-        super(loadManager, splitFileIntents, loadListener);
+                      @Nullable OnSplitLoadListener loadListener,
+                      boolean loadSync) {
+        super(loadManager, splitFileIntents, loadListener, loadSync);
     }
 
     @Override
-    SplitLoader createSplitLoader() {
-        return new SplitLoaderImpl(appContext);
+    public SplitLoader createSplitLoader() {
+        return new SplitLoaderImpl(getContext());
     }
 
     @Override
-    ClassLoader loadCode(SplitLoader loader,
-                         String splitName,
-                         List<String> addedDexPaths,
-                         File optimizedDirectory,
-                         File librarySearchPath,
-                         List<String> dependencies) throws SplitLoadException {
-
+    public ClassLoader loadCode(String splitName,
+                                List<String> addedDexPaths,
+                                File optimizedDirectory,
+                                File librarySearchPath,
+                                List<String> dependencies) throws SplitLoadException {
         SplitDexClassLoader classLoader = SplitApplicationLoaders.getInstance().getClassLoader(splitName);
         if (classLoader == null) {
-            classLoader = loader.loadCode(splitName, addedDexPaths, optimizedDirectory, librarySearchPath, dependencies);
-            SplitApplicationLoaders.getInstance().addClassLoader(classLoader);
+            classLoader = getSplitLoader().loadCode(splitName, addedDexPaths, optimizedDirectory, librarySearchPath, dependencies);
         }
         return classLoader;
     }
 
     @Override
-    void onSplitActivateFailed(ClassLoader classLoader) {
-        if (classLoader instanceof SplitDexClassLoader) {
-            SplitApplicationLoaders.getInstance().removeClassLoader((SplitDexClassLoader) classLoader);
-        }
+    public void unloadCode(ClassLoader classLoader) {
+
     }
 }

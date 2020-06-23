@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
+
 import androidx.annotation.Nullable;
 
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
@@ -37,7 +38,7 @@ import java.util.List;
  */
 abstract class SplitLoader {
 
-    final Context context;
+    private final Context context;
 
     SplitLoader(Context context) {
         this.context = context;

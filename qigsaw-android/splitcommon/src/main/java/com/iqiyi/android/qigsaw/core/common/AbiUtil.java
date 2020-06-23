@@ -64,22 +64,18 @@ public class AbiUtil {
 
     private static final String x86_64 = "x86_64";
 
-    private static List<String> abis;
-
     private static AtomicReference<String> basePrimaryAbi = new AtomicReference<>();
 
     private static AtomicReference<String> currentInstructionSet = new AtomicReference<>();
 
     private static List<String> getSupportedAbis() {
-        if (abis != null) {
-            return abis;
-        }
+        List<String> supportedAbis;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            abis = Arrays.asList(Build.SUPPORTED_ABIS);
+            supportedAbis = Arrays.asList(Build.SUPPORTED_ABIS);
         } else {
-            abis = Arrays.asList(Build.CPU_ABI, Build.CPU_ABI2);
+            supportedAbis = Arrays.asList(Build.CPU_ABI, Build.CPU_ABI2);
         }
-        return abis;
+        return supportedAbis;
     }
 
     @SuppressLint("DiscouragedPrivateApi")
@@ -127,6 +123,7 @@ public class AbiUtil {
                 Collections.addAll(abiList, abiArray);
                 if (!abiList.isEmpty()) {
                     Set<String> sortedAbis = sortAbis(abiList);
+                    SplitLog.i(TAG, "sorted abis: " + sortedAbis);
                     return findBasePrimaryAbi(sortedAbis);
                 }
             }
@@ -216,8 +213,10 @@ public class AbiUtil {
                 String currentInstructionSet = getCurrentInstructionSet();
                 basePrimaryAbi.compareAndSet(null, findPrimaryAbiFromCurrentInstructionSet(currentInstructionSet));
                 if (TextUtils.isEmpty(basePrimaryAbi.get())) {
+                    SplitLog.w(TAG, "Failed to get primaryCpuAbi from CurrentInstructionSet.");
                     basePrimaryAbi.compareAndSet(null, findPrimaryAbiFromProperties(context));
                     if (TextUtils.isEmpty(basePrimaryAbi.get())) {
+                        SplitLog.i(TAG, "Failed to get primaryCpuAbi from Properties.");
                         basePrimaryAbi.compareAndSet(null, findPrimaryAbiFromBaseApk(context));
                         SplitLog.i(TAG, "Succeed to get primaryCpuAbi %s from BaseApk.", basePrimaryAbi);
                     } else {
@@ -231,7 +230,7 @@ public class AbiUtil {
         }
     }
 
-    public static String findBasePrimaryAbi(Collection<String> sortedAbis) {
+    private static String findBasePrimaryAbi(Collection<String> sortedAbis) {
         List<String> supportedAbis = getSupportedAbis();
         if (sortedAbis == null || sortedAbis.isEmpty()) {
             return supportedAbis.get(0);
@@ -242,32 +241,32 @@ public class AbiUtil {
                 }
             }
         }
-        throw new RuntimeException("No supported abi for this device.");
+        throw new RuntimeException(String.format("No supported abi for this device, supported abis: %s, sorted abis: %s", supportedAbis.toString(), sortedAbis.toString()));
     }
 
     public static String findSplitPrimaryAbi(@NonNull String basePrimaryAbi, @NonNull List<String> splitAbis) {
         if (splitAbis.contains(basePrimaryAbi)) {
             return basePrimaryAbi;
         }
-        if (basePrimaryAbi.contains(armv8)) {
+        if (basePrimaryAbi.equals(armv8)) {
             return splitAbis.contains(armv8) ? armv8 : null;
-        } else if (basePrimaryAbi.contains(x86_64)) {
+        } else if (basePrimaryAbi.equals(x86_64)) {
             return splitAbis.contains(x86_64) ? x86_64 : null;
-        } else if (basePrimaryAbi.contains(x86)) {
+        } else if (basePrimaryAbi.equals(x86)) {
             if (splitAbis.contains(x86)) {
                 return x86;
             }
             if (splitAbis.contains(armv5)) {
                 return armv5;
             }
-        } else if (basePrimaryAbi.contains(armv7)) {
+        } else if (basePrimaryAbi.equals(armv7)) {
             if (splitAbis.contains(armv7)) {
                 return armv7;
             }
             if (splitAbis.contains(armv5)) {
                 return armv5;
             }
-        } else if (basePrimaryAbi.contains(armv5)) {
+        } else if (basePrimaryAbi.equals(armv5)) {
             if (splitAbis.contains(armv5)) {
                 return armv5;
             }

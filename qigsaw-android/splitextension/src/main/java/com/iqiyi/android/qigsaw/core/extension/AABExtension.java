@@ -123,6 +123,15 @@ public class AABExtension {
         extensionManager.activeApplication(splitApplication, appContext);
     }
 
+    public void createAndActivateSplitProviders(ClassLoader classLoader, String splitName) throws AABExtensionException {
+        List<ContentProviderProxy> providerProxies = sSplitContentProviderMap.get(splitName);
+        if (providerProxies != null) {
+            for (ContentProviderProxy providerProxy : providerProxies) {
+                providerProxy.createAndActivateRealContentProvider(classLoader);
+            }
+        }
+    }
+
     void put(String splitName, ContentProviderProxy providerProxy) {
         List<ContentProviderProxy> providerProxies = sSplitContentProviderMap.get(splitName);
         if (providerProxies == null) {
@@ -130,15 +139,6 @@ public class AABExtension {
             sSplitContentProviderMap.put(splitName, providerProxies);
         }
         providerProxies.add(providerProxy);
-    }
-
-    public void activateSplitProviders(ClassLoader classLoader, String splitName) throws AABExtensionException {
-        List<ContentProviderProxy> providerProxies = sSplitContentProviderMap.get(splitName);
-        if (providerProxies != null) {
-            for (ContentProviderProxy providerProxy : providerProxies) {
-                providerProxy.activateRealContentProvider(classLoader);
-            }
-        }
     }
 
     public Class<?> getFakeComponent(String className) {

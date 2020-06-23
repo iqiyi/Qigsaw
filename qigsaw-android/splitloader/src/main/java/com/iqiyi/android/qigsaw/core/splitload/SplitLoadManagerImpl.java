@@ -29,8 +29,6 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Build;
-import android.os.Looper;
-import android.os.MessageQueue;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -86,7 +84,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         }
         ClassLoader curCl = getContext().getClassLoader();
         if (curCl instanceof SplitDelegateClassloader) {
-            ClassNotFoundInterceptor classNotFoundInterceptor = new DefaultClassNotFoundInterceptor(getContext(), getClass().getClassLoader(), splitLoadMode);
+            ClassNotFoundInterceptor classNotFoundInterceptor = new DefaultClassNotFoundInterceptor(getContext(), getClass().getClassLoader(), splitLoadMode());
             ((SplitDelegateClassloader) curCl).setClassNotFoundInterceptor(classNotFoundInterceptor);
         }
     }
@@ -97,7 +95,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             return;
         }
         if (isProcessAllowedToWork()) {
-            deferredLoadInstalledSplitsIfNeed();
+            loadInstalledSplits(false);
         }
     }
 
@@ -111,16 +109,16 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {
-        if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
-            return new SplitLoadTaskImpl(this, splitFileIntents, loadListener);
+    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean loadSync) {
+        if (splitLoadMode() == SplitLoad.MULTIPLE_CLASSLOADER) {
+            return new SplitLoadTaskImpl(this, splitFileIntents, loadListener, loadSync);
         } else {
-            return new SplitLoadTaskImpl2(this, splitFileIntents, loadListener);
+            return new SplitLoadTaskImpl2(this, splitFileIntents, loadListener, loadSync);
         }
     }
 
     @Override
-    public void loadInstalledSplits() {
+    public void loadInstalledSplits(boolean loadSync) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         if (manager == null) {
             SplitLog.w(TAG, "Failed to get SplitInfoManager instance, have you invoke Qigsaw#install(...) method?");
@@ -137,7 +135,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             SplitLog.w(TAG, "There are no installed splits!");
             return;
         }
-        createSplitLoadTask(splitFileIntents, null).run();
+        createSplitLoadTask(splitFileIntents, null, loadSync).run();
     }
 
     private boolean isInjectPathClassloaderNeeded() {
@@ -192,20 +190,6 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             return workProcesses.contains(simpleProcessName);
         }
         return true;
-    }
-
-    private void deferredLoadInstalledSplitsIfNeed() {
-        if (splitLoadMode == SplitLoad.MULTIPLE_CLASSLOADER) {
-            Looper.myQueue().addIdleHandler(new MessageQueue.IdleHandler() {
-                @Override
-                public boolean queueIdle() {
-                    loadInstalledSplits();
-                    return false;
-                }
-            });
-        } else {
-            loadInstalledSplits();
-        }
     }
 
     /**

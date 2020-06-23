@@ -26,211 +26,112 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadReporter;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManager;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfoManagerService;
-import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitPathManager;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-abstract class SplitLoadTask implements Runnable {
+abstract class SplitLoadTask implements SplitLoaderWrapper, Runnable, SplitLoadHandler.OnSplitLoadFinishListener {
 
     private static final String TAG = "SplitLoadTask";
 
-    final Context appContext;
-
-    private final Handler mainHandler;
-
-    private final SplitActivator activator;
-
-    private final SplitLoadManager loadManager;
-
-    private final SplitInfoManager infoManager;
-
-    private final List<Intent> splitFileIntents;
+    private final SplitLoadHandler loadHandler;
 
     private final OnSplitLoadListener loadListener;
 
-    private final Object mLock = new Object();
+    private final boolean syncLoad;
+
+    private SplitLoader splitLoader;
 
     SplitLoadTask(@NonNull SplitLoadManager loadManager,
                   @NonNull List<Intent> splitFileIntents,
-                  @Nullable OnSplitLoadListener loadListener) {
-        this.loadManager = loadManager;
-        this.splitFileIntents = splitFileIntents;
+                  @Nullable OnSplitLoadListener loadListener,
+                  boolean syncLoad) {
+        this.loadHandler = new SplitLoadHandler(this, loadManager, splitFileIntents);
+        this.syncLoad = syncLoad;
         this.loadListener = loadListener;
-        this.appContext = loadManager.getContext();
-        this.mainHandler = new Handler(Looper.getMainLooper());
-        this.infoManager = SplitInfoManagerService.getInstance();
-        this.activator = new SplitActivator(loadManager.getContext());
     }
 
-    abstract SplitLoader createSplitLoader();
+    Context getContext() {
+        return loadHandler.getContext();
+    }
 
-    abstract ClassLoader loadCode(SplitLoader loader,
-                                  String splitName,
-                                  List<String> addedDexPaths,
-                                  File optimizedDirectory,
-                                  File librarySearchPath,
-                                  List<String> dependencies) throws SplitLoadException;
+    SplitLoader getSplitLoader() {
+        if (splitLoader == null) {
+            splitLoader = createSplitLoader();
+        }
+        return splitLoader;
+    }
 
-    abstract void onSplitActivateFailed(ClassLoader classLoader);
+    @Override
+    public void loadResources(String splitApkPath) throws SplitLoadException {
+        getSplitLoader().loadResources(splitApkPath);
+    }
 
     @Override
     public final void run() {
-        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-            loadSplitInternal();
-        } else {
-            synchronized (mLock) {
-                mainHandler.post(new Runnable() {
+        if (loadHandler.getSplitLoadMode() == SplitLoad.SINGLE_CLASSLOADER) {
+            SplitLog.d(TAG, "When split mode is single-classloader, we must load them on main thread.");
+            //only load splits on main thread.
+            if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+                loadHandler.loadSplitsSync(this);
+            } else {
+                synchronized (this) {
+                    loadHandler.getMainHandler().post(new Runnable() {
 
-                    @Override
-                    public void run() {
-                        synchronized (mLock) {
-                            loadSplitInternal();
-                            mLock.notifyAll();
+                        @Override
+                        public void run() {
+                            synchronized (SplitLoadTask.this) {
+                                loadHandler.loadSplitsSync(SplitLoadTask.this);
+                                SplitLoadTask.this.notifyAll();
+                            }
+                        }
+                    });
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        if (loadListener != null) {
+                            loadListener.onFailed(SplitLoadError.INTERRUPTED_ERROR);
                         }
                     }
-                });
-                try {
-                    mLock.wait();
-                } catch (InterruptedException e) {
-                    String splitName = splitFileIntents.get(0).getStringExtra(SplitConstants.KET_NAME);
-                    SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
-                    if (info != null) {
-                        SplitBriefInfo splitBriefInfo = new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn());
-                        reportLoadResult(Collections.<SplitBriefInfo>emptyList(), Collections.singletonList(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERRUPTED_ERROR, e)), 0);
-                    }
                 }
+            }
+        } else {
+            if (syncLoad) {
+                loadHandler.loadSplitsSync(this);
+            } else {
+                SplitLog.d(TAG, "Load splits asynchronously");
+                loadHandler.loadSplitsAsync(this);
             }
         }
     }
 
-    private void loadSplitInternal() {
-        long time = System.currentTimeMillis();
-        SplitLoader loader = createSplitLoader();
-        Set<Split> splits = new HashSet<>();
-        List<SplitLoadError> loadErrors = new ArrayList<>(0);
-        List<SplitBriefInfo> splitBriefInfoList = new ArrayList<>(splitFileIntents.size());
-        for (Intent splitFileIntent : splitFileIntents) {
-            String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
-            SplitInfo info = infoManager.getSplitInfo(appContext, splitName);
-            if (info == null) {
-                SplitLog.w(TAG, "Unable to get info of %s, just skip!", splitName == null ? "null" : splitName);
-                continue;
-            }
-            SplitBriefInfo splitBriefInfo = new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn());
-            //if if split has been loaded, just skip.
-            if (checkSplitLoaded(splitName)) {
-                SplitLog.i(TAG, "Split %s has been loaded!", splitName);
-                continue;
-            }
-            File splitDir = SplitPathManager.require().getSplitDir(info);
-            String splitApkPath = splitFileIntent.getStringExtra(SplitConstants.KEY_APK);
-            String dexOptPath = splitFileIntent.getStringExtra(SplitConstants.KEY_DEX_OPT_DIR);
-            String nativeLibPath = splitFileIntent.getStringExtra(SplitConstants.KEY_NATIVE_LIB_DIR);
-            List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
-            try {
-                //load split's resources.
-                loader.loadResources(splitApkPath);
-            } catch (SplitLoadException e) {
-                SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s resources!", splitName);
-                loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
-                continue;
-            }
-            if (info.hasDex() && dexOptPath == null) {
-                SplitLog.w(TAG, "Failed to %s get dex-opt-dir", splitName);
-                loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("dex-opt-dir of " + splitName + " is missing!")));
-                continue;
-            }
-            try {
-                SplitInfo.LibData libData = info.getPrimaryLibData(appContext);
-                if (libData != null && nativeLibPath == null) {
-                    SplitLog.w(TAG, "Failed to %s get native-lib-dir", splitName);
-                    loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("native-lib-dir of " + splitName + " is missing!")));
-                    continue;
-                }
-            } catch (IOException e) {
-                loadErrors.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, e));
-                continue;
-            }
-            ClassLoader classLoader;
-            try {
-                classLoader = loadCode(loader, splitName,
-                        addedDexPaths, dexOptPath == null ? null : new File(dexOptPath),
-                        nativeLibPath == null ? null : new File(nativeLibPath),
-                        info.getDependencies()
-                );
-            } catch (SplitLoadException e) {
-                SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s code!", splitName);
-                loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
-                continue;
-            }
-            //activate split, include application and provider.
-            try {
-                activator.activate(classLoader, splitName);
-            } catch (SplitLoadException e) {
-                SplitLog.printErrStackTrace(TAG, e, "Failed to activate " + splitName);
-                loadErrors.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
-                onSplitActivateFailed(classLoader);
-                continue;
-            }
-            if (!splitDir.setLastModified(System.currentTimeMillis())) {
-                SplitLog.w(TAG, "Failed to set last modified time for " + splitName);
-            }
-            splitBriefInfoList.add(splitBriefInfo);
-            splits.add(new Split(splitName, splitApkPath));
-        }
-        loadManager.putSplits(splits);
-        reportLoadResult(splitBriefInfoList, loadErrors, System.currentTimeMillis() - time);
-    }
-
-    private void reportLoadResult(List<SplitBriefInfo> splitBriefInfoList, List<SplitLoadError> errors, long cost) {
+    @Override
+    public void onLoadFinish(List<SplitBriefInfo> loadOKSplits, List<SplitLoadError> loadErrorSplits, String process, long totalTimeCost) {
         SplitLoadReporter loadReporter = SplitLoadReporterManager.getLoadReporter();
-        if (!errors.isEmpty()) {
+        if (!loadErrorSplits.isEmpty()) {
             if (loadListener != null) {
-                int lastErrorCode = errors.get(errors.size() - 1).errorCode;
+                int lastErrorCode = loadErrorSplits.get(loadErrorSplits.size() - 1).errorCode;
                 loadListener.onFailed(lastErrorCode);
             }
             if (loadReporter != null) {
-                loadReporter.onLoadFailed(loadManager.currentProcessName, splitBriefInfoList, errors, cost);
+                loadReporter.onLoadFailed(process, loadOKSplits, loadErrorSplits, totalTimeCost);
             }
         } else {
             if (loadListener != null) {
                 loadListener.onCompleted();
             }
             if (loadReporter != null) {
-                loadReporter.onLoadOK(loadManager.currentProcessName, splitBriefInfoList, cost);
+                loadReporter.onLoadOK(process, loadOKSplits, totalTimeCost);
             }
         }
     }
-
-    private boolean checkSplitLoaded(String splitName) {
-        for (Split split : loadManager.getLoadedSplits()) {
-            if (split.splitName.equals(splitName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
 }

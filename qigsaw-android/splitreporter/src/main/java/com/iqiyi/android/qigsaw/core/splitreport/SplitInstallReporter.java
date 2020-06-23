@@ -39,34 +39,34 @@ public interface SplitInstallReporter {
      * When all modules are installed successfully,
      * this method will be invoked.
      *
-     * @param installedSplits splits which have been installed successfully.
+     * @param installOKSplits splits which have been installed successfully.
      * @param cost            time in ms.
      */
     @WorkerThread
-    void onStartInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost);
+    void onStartInstallOK(@NonNull List<SplitBriefInfo> installOKSplits, long cost);
 
     /**
      * Using {@code startInstall} to install modules,
      * When one module is installed failed,
      * installation would be cancelled and this method will be invoked.
      *
-     * @param installedSplits splits which have been installed successfully, maybe empty.
-     * @param error           split which has been installed unsuccessfully.
-     * @param cost            time in ms.
+     * @param installOKSplits    splits which have been installed successfully, maybe empty.
+     * @param installErrorSplit split which has been installed unsuccessfully.
+     * @param cost               time in ms.
      */
     @WorkerThread
-    void onStartInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull SplitInstallError error, long cost);
+    void onStartInstallFailed(@NonNull List<SplitBriefInfo> installOKSplits, @NonNull SplitInstallError installErrorSplit, long cost);
 
     /**
      * Using {@code deferredInstall} to install modules.
      * When all modules are installed successfully,
      * this method will be invoked.
      *
-     * @param installedSplits splits which have been installed successfully.
+     * @param installOKSplits splits which have been installed successfully.
      * @param cost            time in ms.
      */
     @WorkerThread
-    void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost);
+    void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installOKSplits, long cost);
 
     /**
      * Using {@code deferredInstall} to install modules.
@@ -74,11 +74,11 @@ public interface SplitInstallReporter {
      * and at least one module failed,
      * this method will be invoked.
      *
-     * @param installedSplits splits which have been installed successfully, maybe empty.
-     * @param errors          splits which have been installed unsuccessfully.
-     * @param cost            time in ms.
+     * @param installOKSplits    splits which have been installed successfully, maybe empty.
+     * @param installErrorSplits splits which have been installed unsuccessfully.
+     * @param cost               time in ms.
      */
     @WorkerThread
-    void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull List<SplitInstallError> errors, long cost);
+    void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installOKSplits, @NonNull List<SplitInstallError> installErrorSplits, long cost);
 
 }

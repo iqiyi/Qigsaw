@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -42,17 +43,16 @@ public class DefaultSplitLoadReporter implements SplitLoadReporter {
     }
 
     @Override
-    public void onLoadOK(String processName, @NonNull List<SplitBriefInfo> loadedSplits, long cost) {
-        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms!", loadedSplits, processName, cost);
+    public void onLoadOK(String processName, @NonNull List<SplitBriefInfo> loadOKSplits, long cost) {
+        SplitLog.i(TAG, "Success to load %s in process %s cost %d ms!", loadOKSplits, processName, cost);
     }
 
     @Override
-    public void onLoadFailed(String processName, @NonNull List<SplitBriefInfo> loadedSplits, @NonNull List<SplitLoadError> errors, long cost) {
-        for (SplitLoadError loadError : errors) {
+    public void onLoadFailed(String processName, @NonNull List<SplitBriefInfo> loadOKSplits, @NonNull List<SplitLoadError> loadErrorSplits, long cost) {
+        for (SplitLoadError loadError : loadErrorSplits) {
             SplitLog.printErrStackTrace(TAG, loadError.cause,
                     "Failed to load split %s in process %s cost %d ms, error code: %d!",
                     loadError.splitName, processName, cost, loadError.errorCode);
         }
     }
-
 }

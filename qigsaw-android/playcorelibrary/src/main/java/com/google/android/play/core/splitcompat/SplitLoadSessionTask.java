@@ -31,7 +31,7 @@ final class SplitLoadSessionTask implements Runnable, OnSplitLoadListener {
         //load installed splits
         SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
         if (loadManager != null) {
-            Runnable splitLoadTask = loadManager.createSplitLoadTask(splitFileIntents, this);
+            Runnable splitLoadTask = loadManager.createSplitLoadTask(splitFileIntents, this, false);
             splitLoadTask.run();
         }
     }

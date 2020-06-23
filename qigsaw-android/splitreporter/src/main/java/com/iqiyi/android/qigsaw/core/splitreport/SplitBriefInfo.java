@@ -44,6 +44,8 @@ public class SplitBriefInfo {
 
     public final boolean builtIn;
 
+    private long timeCost = -1L;
+
     private int installFlag = UNKNOWN;
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
@@ -58,8 +60,19 @@ public class SplitBriefInfo {
     }
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    public void setInstallFlag(int installFlag) {
+    public SplitBriefInfo setInstallFlag(int installFlag) {
         this.installFlag = installFlag;
+        return this;
+    }
+
+    public long getTimeCost() {
+        return timeCost;
+    }
+
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
+    public SplitBriefInfo setTimeCost(long timeCost) {
+        this.timeCost = timeCost;
+        return this;
     }
 
     @Override

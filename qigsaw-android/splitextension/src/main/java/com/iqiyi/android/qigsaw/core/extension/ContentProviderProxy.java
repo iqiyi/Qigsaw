@@ -39,20 +39,17 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RestrictTo;
-
-import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public abstract class ContentProviderProxy extends ContentProvider {
-
-    private static final String TAG = "Split:ContentProviderProxy";
 
     private ContentProvider realContentProvider;
 
@@ -68,31 +65,24 @@ public abstract class ContentProviderProxy extends ContentProvider {
         return realContentProvider;
     }
 
-    void activateRealContentProvider(ClassLoader classLoader) throws AABExtensionException {
+    void createAndActivateRealContentProvider(ClassLoader classLoader) throws AABExtensionException {
+        if (realContentProviderClassName == null) {
+            throw new AABExtensionException("Unable to read real content-provider for " + getClass().getName());
+        }
         Throwable error = null;
         try {
-            realContentProvider = createRealContentProvider(classLoader);
-        } catch (ClassNotFoundException e) {
-            error = e;
+            realContentProvider = (ContentProvider) classLoader.loadClass(realContentProviderClassName).newInstance();
+            realContentProvider.attachInfo(getContext(), providerInfo);
         } catch (IllegalAccessException e) {
             error = e;
         } catch (InstantiationException e) {
+            error = e;
+        } catch (ClassNotFoundException e) {
             error = e;
         }
         if (error != null) {
             throw new AABExtensionException(error);
         }
-    }
-
-    private ContentProvider createRealContentProvider(ClassLoader classLoader) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        if (getContext() == null || realContentProviderClassName == null) {
-            SplitLog.w(TAG, "Cause of null context, we can't create real provider " + realContentProviderClassName);
-            return null;
-        }
-        ContentProvider realContentProvider = (ContentProvider) classLoader.loadClass(realContentProviderClassName).newInstance();
-        realContentProvider.attachInfo(getContext(), providerInfo);
-        SplitLog.d(TAG, "Success to create provider " + realContentProviderClassName);
-        return realContentProvider;
     }
 
     @Override

@@ -50,22 +50,23 @@ abstract class SplitInstallTask implements Runnable {
     @Override
     public final void run() {
         onPreInstall();
-        long currentTime = System.currentTimeMillis();
+        long totalInstallStart = System.currentTimeMillis();
         boolean installCompleted = true;
         boolean isStartInstall = isStartInstallOperation();
         List<SplitInstaller.InstallResult> installResults = new ArrayList<>();
-        List<SplitBriefInfo> installedSplits = new ArrayList<>(needUpdateSplits.size());
-        List<SplitInstallError> installErrors = new ArrayList<>();
+        List<SplitBriefInfo> installOKSplits = new ArrayList<>(needUpdateSplits.size());
+        List<SplitInstallError> installErrorSplits = new ArrayList<>();
         for (SplitInfo info : needUpdateSplits) {
             SplitBriefInfo briefInfo = new SplitBriefInfo(info.getSplitName(), info.getSplitVersion(), info.isBuiltIn());
             try {
+                long installStart = System.currentTimeMillis();
                 SplitInstaller.InstallResult installResult = installer.install(isStartInstall, info);
-                briefInfo.setInstallFlag(installResult.firstInstalled ? SplitBriefInfo.FIRST_INSTALLED : SplitBriefInfo.ALREADY_INSTALLED);
-                installedSplits.add(briefInfo);
+                int installFlag = installResult.firstInstalled ? SplitBriefInfo.FIRST_INSTALLED : SplitBriefInfo.ALREADY_INSTALLED;
+                installOKSplits.add(briefInfo.setInstallFlag(installFlag).setTimeCost(System.currentTimeMillis() - installStart));
                 installResults.add(installResult);
             } catch (SplitInstaller.InstallException error) {
                 installCompleted = false;
-                installErrors.add(new SplitInstallError(briefInfo, error.getErrorCode(), error.getCause()));
+                installErrorSplits.add(new SplitInstallError(briefInfo, error.getErrorCode(), error.getCause()));
                 if (isStartInstall) {
                     break;
                 }
@@ -76,18 +77,18 @@ abstract class SplitInstallTask implements Runnable {
             onInstallCompleted(installResults);
             if (installReporter != null) {
                 if (isStartInstall) {
-                    installReporter.onStartInstallOK(installedSplits, System.currentTimeMillis() - currentTime);
+                    installReporter.onStartInstallOK(installOKSplits, System.currentTimeMillis() - totalInstallStart);
                 } else {
-                    installReporter.onDeferredInstallOK(installedSplits, System.currentTimeMillis() - currentTime);
+                    installReporter.onDeferredInstallOK(installOKSplits, System.currentTimeMillis() - totalInstallStart);
                 }
             }
         } else {
-            onInstallFailed(installErrors);
+            onInstallFailed(installErrorSplits);
             if (installReporter != null) {
                 if (isStartInstall) {
-                    installReporter.onStartInstallFailed(installedSplits, installErrors.get(0), System.currentTimeMillis() - currentTime);
+                    installReporter.onStartInstallFailed(installOKSplits, installErrorSplits.get(0), System.currentTimeMillis() - totalInstallStart);
                 } else {
-                    installReporter.onDeferredInstallFailed(installedSplits, installErrors, System.currentTimeMillis() - currentTime);
+                    installReporter.onDeferredInstallFailed(installOKSplits, installErrorSplits, System.currentTimeMillis() - totalInstallStart);
                 }
             }
         }

@@ -22,9 +22,9 @@ public class SampleSplitInstallReporter extends DefaultSplitInstallReporter {
 
     @SuppressLint("LongLogTag")
     @Override
-    public void onStartInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
-        super.onStartInstallOK(installedSplits, cost);
-        for (SplitBriefInfo info : installedSplits) {
+    public void onStartInstallOK(@NonNull List<SplitBriefInfo> installOKSplits, long cost) {
+        super.onStartInstallOK(installOKSplits, cost);
+        for (SplitBriefInfo info : installOKSplits) {
             if (info.getInstallFlag() == SplitBriefInfo.ALREADY_INSTALLED) {
                 Log.d(TAG, String.format("Split %s has been installed, don't need delivery this result", info.splitName));
             } else if (info.getInstallFlag() == SplitBriefInfo.FIRST_INSTALLED) {
@@ -36,17 +36,17 @@ public class SampleSplitInstallReporter extends DefaultSplitInstallReporter {
     }
 
     @Override
-    public void onStartInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull SplitInstallError error, long cost) {
-        super.onStartInstallFailed(installedSplits, error, cost);
+    public void onStartInstallFailed(@NonNull List<SplitBriefInfo> installOKSplits, @NonNull SplitInstallError installErrorSplit, long cost) {
+        super.onStartInstallFailed(installOKSplits, installErrorSplit, cost);
     }
 
     @Override
-    public void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
-        super.onDeferredInstallOK(installedSplits, cost);
+    public void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installOKSplits, long cost) {
+        super.onDeferredInstallOK(installOKSplits, cost);
     }
 
     @Override
-    public void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull List<SplitInstallError> errors, long cost) {
-        super.onDeferredInstallFailed(installedSplits, errors, cost);
+    public void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installOKSplits, @NonNull List<SplitInstallError> installErrorSplit, long cost) {
+        super.onDeferredInstallFailed(installOKSplits, installErrorSplit, cost);
     }
 }

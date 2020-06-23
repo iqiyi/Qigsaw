@@ -26,6 +26,8 @@ package com.iqiyi.android.qigsaw.core.splitload;
 
 import android.text.TextUtils;
 
+import androidx.annotation.Keep;
+
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
 import java.io.File;
@@ -36,6 +38,7 @@ import java.util.Set;
 
 import dalvik.system.BaseDexClassLoader;
 
+@Keep
 final class SplitDexClassLoader extends BaseDexClassLoader {
 
     private static final String TAG = "SplitDexClassLoader";

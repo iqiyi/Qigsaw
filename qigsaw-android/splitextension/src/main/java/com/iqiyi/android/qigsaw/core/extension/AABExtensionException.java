@@ -31,6 +31,10 @@ import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 @RestrictTo(LIBRARY_GROUP)
 public class AABExtensionException extends Exception {
 
+    AABExtensionException(String message) {
+        super(message);
+    }
+
     AABExtensionException(Throwable error) {
         super(error);
     }

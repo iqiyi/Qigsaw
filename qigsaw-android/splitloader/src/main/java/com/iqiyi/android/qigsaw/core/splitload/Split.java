@@ -24,6 +24,8 @@
 
 package com.iqiyi.android.qigsaw.core.splitload;
 
+import androidx.annotation.NonNull;
+
 final class Split {
 
     final String splitName;
@@ -35,4 +37,9 @@ final class Split {
         this.splitApkPath = splitApkPath;
     }
 
+    @NonNull
+    @Override
+    public String toString() {
+        return "{" + splitName + "," + splitApkPath + "}";
+    }
 }

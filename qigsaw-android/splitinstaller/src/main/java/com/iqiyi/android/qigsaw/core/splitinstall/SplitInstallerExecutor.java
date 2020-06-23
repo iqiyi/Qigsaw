@@ -22,26 +22,16 @@
  * SOFTWARE.
  */
 
-package com.iqiyi.android.qigsaw.core.splitload;
+package com.iqiyi.android.qigsaw.core.splitinstall;
 
-import androidx.annotation.RestrictTo;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
-import com.iqiyi.android.qigsaw.core.extension.ContentProviderProxy;
+final class SplitInstallerExecutor {
 
-@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-public abstract class SplitContentProvider extends ContentProviderProxy {
+    private static final Executor sExecutor = Executors.newSingleThreadScheduledExecutor(new SplitInstallerThread());
 
-    @Override
-    protected boolean checkRealContentProviderInstallStatus(String splitName) {
-        if (getRealContentProvider() != null) {
-            return true;
-        } else {
-            if (SplitLoadManagerService.hasInstance()) {
-                SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                loadManager.loadInstalledSplits(true);
-                return getRealContentProvider() != null;
-            }
-        }
-        return false;
+    static Executor getExecutor() {
+        return sExecutor;
     }
 }

@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitreport;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -41,24 +42,25 @@ public class DefaultSplitInstallReporter implements SplitInstallReporter {
         this.context = context;
     }
 
+
     @Override
-    public void onStartInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
-        SplitLog.i(TAG, "Start install %s OK, cost time %d ms.", installedSplits.toString(), cost);
+    public void onStartInstallOK(@NonNull List<SplitBriefInfo> installOKSplits, long cost) {
+        SplitLog.i(TAG, "Start install %s OK, cost time %d ms.", installOKSplits.toString(), cost);
     }
 
     @Override
-    public void onStartInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull SplitInstallError error, long cost) {
-        SplitLog.printErrStackTrace(TAG, error.cause, "Start to install split %s failed, cost time %d ms.", error.splitName, cost);
+    public void onStartInstallFailed(@NonNull List<SplitBriefInfo> installOKSplits, @NonNull SplitInstallError installErrorSplit, long cost) {
+        SplitLog.printErrStackTrace(TAG, installErrorSplit.cause, "Start to install split %s failed, cost time %d ms.", installErrorSplit.splitName, cost);
     }
 
     @Override
-    public void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installedSplits, long cost) {
-        SplitLog.i(TAG, "Deferred install %s OK, cost time %d ms.", installedSplits.toString(), cost);
+    public void onDeferredInstallOK(@NonNull List<SplitBriefInfo> installOKSplits, long cost) {
+        SplitLog.i(TAG, "Deferred install %s OK, cost time %d ms.", installOKSplits.toString(), cost);
     }
 
     @Override
-    public void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installedSplits, @NonNull List<SplitInstallError> errors, long cost) {
-        for (SplitInstallError installError : errors) {
+    public void onDeferredInstallFailed(@NonNull List<SplitBriefInfo> installOKSplits, @NonNull List<SplitInstallError> installErrorSplit, long cost) {
+        for (SplitInstallError installError : installErrorSplit) {
             SplitLog.printErrStackTrace(TAG, installError.cause,
                     "Defer to install split %s failed with error code %d, cost time %d ms.",
                     installError.splitName, installError.errorCode, cost);

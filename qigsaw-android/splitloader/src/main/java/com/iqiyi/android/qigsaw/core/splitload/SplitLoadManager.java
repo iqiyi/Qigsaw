@@ -37,9 +37,11 @@ import com.iqiyi.android.qigsaw.core.splitload.listener.OnSplitLoadListener;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -50,15 +52,11 @@ public abstract class SplitLoadManager {
 
     private final Context context;
 
-    private final Set<Split> loadedSplits = new HashSet<>(0);
-
-    private final Set<String> loadedSplitNames = new HashSet<>(0);
-
-    private final Set<String> loadedSplitApkPaths = new HashSet<>(0);
+    private final Set<Split> loadedSplits = Collections.newSetFromMap(new ConcurrentHashMap<Split, Boolean>());
 
     final String currentProcessName;
 
-    final int splitLoadMode;
+    private final int splitLoadMode;
 
     SplitLoadManager(Context context,
                      String currentProcessName,
@@ -91,14 +89,17 @@ public abstract class SplitLoadManager {
      *
      * @param splitFileIntents a list of installed splits details.
      * @param loadListener     a callback to be invoked when splits loaded.
+     * @param loadSync         whether to load all splits synchronously.
      * @return load splits runnable.
      */
-    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener);
+    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean loadSync);
 
     /**
      * Using to load all installed splits.
+     *
+     * @param loadSync whether to  load all splits synchronously.
      */
-    public abstract void loadInstalledSplits();
+    public abstract void loadInstalledSplits(boolean loadSync);
 
     /**
      * Get names of loaded splits
@@ -106,12 +107,14 @@ public abstract class SplitLoadManager {
      * @return a list of loaded split names.
      */
     public Set<String> getLoadedSplitNames() {
-        synchronized (this) {
-            return loadedSplitNames;
+        Set<String> loadedSplitNames = new HashSet<>(0);
+        for (Split split : loadedSplits) {
+            loadedSplitNames.add(split.splitName);
         }
+        return loadedSplitNames;
     }
 
-    public int splitLoadMode() {
+    int splitLoadMode() {
         return splitLoadMode;
     }
 
@@ -121,18 +124,16 @@ public abstract class SplitLoadManager {
      * @return a list of loaded split apk file path.
      */
     Set<String> getLoadedSplitApkPaths() {
-        synchronized (this) {
-            Set<String> loadedSplitApkPathsInsure = new HashSet<>(loadedSplitApkPaths.size());
-            for (String path : loadedSplitApkPaths) {
-                File file = new File(path);
-                if (file.exists() && file.isFile()) {
-                    loadedSplitApkPathsInsure.add(path);
-                } else {
-                    SplitLog.w(TAG, "Split has been loaded, but its file %s is not exist!", path);
-                }
+        Set<String> splitApkPaths = new HashSet<>(0);
+        for (Split split : loadedSplits) {
+            File file = new File(split.splitApkPath);
+            if (file.exists() && file.isFile()) {
+                splitApkPaths.add(split.splitApkPath);
+            } else {
+                SplitLog.w(TAG, "Split has been loaded, but its file %s is not exist!", split.splitApkPath);
             }
-            return loadedSplitApkPathsInsure;
         }
+        return splitApkPaths;
     }
 
     Context getContext() {
@@ -140,19 +141,11 @@ public abstract class SplitLoadManager {
     }
 
     final void putSplits(Collection<Split> splits) {
-        synchronized (this) {
-            loadedSplits.addAll(splits);
-            for (Split split : splits) {
-                loadedSplitNames.add(split.splitName);
-                loadedSplitApkPaths.add(split.splitApkPath);
-            }
-        }
+        loadedSplits.addAll(splits);
     }
 
     final Set<Split> getLoadedSplits() {
-        synchronized (this) {
-            return loadedSplits;
-        }
+        return loadedSplits;
     }
 
 }
