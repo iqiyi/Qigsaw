@@ -185,7 +185,7 @@ public class SplitCompatResourcesLoader {
             return ctx;
         }
 
-        private static void checkOrUpdateResourcesForContext(Context context, Resources preResources, Resources newResources)
+        private static void checkOrUpdateResourcesForContext(Context context, Resources preResources, Object newResources)
                 throws NoSuchFieldException, IllegalAccessException, ClassNotFoundException {
             //if context is a ContextThemeWrapper.
             if (context instanceof ContextThemeWrapper && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -226,7 +226,7 @@ public class SplitCompatResourcesLoader {
         @SuppressLint("PrivateApi")
         private static void installSplitResDirs(Context context, Resources preResources, List<String> splitResPaths) throws Throwable {
             //create a new Resources.
-            Resources newResources = createResources(context, preResources, splitResPaths);
+            Object newResources = createResources(context, preResources, splitResPaths);
             checkOrUpdateResourcesForContext(context, preResources, newResources);
             Object activityThread = getActivityThread();
             Map<IBinder, Object> activities = (Map<IBinder, Object>) mActivitiesInActivityThread().get(activityThread);
@@ -239,15 +239,15 @@ public class SplitCompatResourcesLoader {
                 }
             }
 
-            Map<Object, WeakReference<Resources>> activeResources;
+            Map<Object, WeakReference<Object>> activeResources;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-                activeResources = (Map<Object, WeakReference<Resources>>) mActiveResourcesInActivityThread().get(activityThread);
+                activeResources = (Map<Object, WeakReference<Object>>) mActiveResourcesInActivityThread().get(activityThread);
             } else {
                 Object resourcesManager = getResourcesManager();
-                activeResources = (Map<Object, WeakReference<Resources>>) mActiveResourcesInResourcesManager().get(resourcesManager);
+                activeResources = (Map<Object, WeakReference<Object>>) mActiveResourcesInResourcesManager().get(resourcesManager);
             }
-            for (Map.Entry<Object, WeakReference<Resources>> entry : activeResources.entrySet()) {
-                Resources res = entry.getValue().get();
+            for (Map.Entry<Object, WeakReference<Object>> entry : activeResources.entrySet()) {
+                Object res = entry.getValue().get();
                 if (res == null) {
                     continue;
                 }
@@ -316,13 +316,13 @@ public class SplitCompatResourcesLoader {
             return existedAppResDirList;
         }
 
-        private static Resources createResources(Context context, Resources oldRes, List<String> splitResPaths) throws NoSuchFieldException,
+        private static Object createResources(Context context, Resources oldRes, List<String> splitResPaths) throws NoSuchFieldException,
                 IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException {
             String appResDir = context.getPackageResourcePath();
             AssetManager oldAsset = oldRes.getAssets();
             List<String> resDirs = getAppResDirs(appResDir, oldAsset);
             resDirs.addAll(0, splitResPaths);
-            AssetManager newAsset = createAssetManager();
+            Object newAsset = createAssetManager(oldAsset.getClass());
             for (String recent : resDirs) {
                 int ret = (int) getAddAssetPathMethod().invoke(newAsset, recent);
                 if (ret == 0) {
@@ -333,14 +333,14 @@ public class SplitCompatResourcesLoader {
             return newResources(oldRes, newAsset);
         }
 
-        private static Resources newResources(Resources originRes, AssetManager asset)
+        private static Object newResources(Resources originRes, Object newAsset)
                 throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-            return (Resources) HiddenApiReflection.findConstructor(originRes, AssetManager.class, DisplayMetrics.class, Configuration.class)
-                    .newInstance(asset, originRes.getDisplayMetrics(), originRes.getConfiguration());
+            return HiddenApiReflection.findConstructor(originRes, AssetManager.class, DisplayMetrics.class, Configuration.class)
+                    .newInstance(newAsset, originRes.getDisplayMetrics(), originRes.getConfiguration());
         }
 
-        private static AssetManager createAssetManager() throws IllegalAccessException, InstantiationException {
-            return AssetManager.class.newInstance();
+        private static Object createAssetManager(Class assetManagerClass) throws IllegalAccessException, InstantiationException {
+            return assetManagerClass.newInstance();
         }
     }
 

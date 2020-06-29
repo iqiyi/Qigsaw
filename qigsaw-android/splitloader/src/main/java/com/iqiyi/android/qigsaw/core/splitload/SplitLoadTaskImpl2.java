@@ -42,9 +42,8 @@ final class SplitLoadTaskImpl2 extends SplitLoadTask {
 
     SplitLoadTaskImpl2(@NonNull SplitLoadManager loadManager,
                        @NonNull List<Intent> splitFileIntents,
-                       @Nullable OnSplitLoadListener loadListener,
-                       boolean loadSync) {
-        super(loadManager, splitFileIntents, loadListener, loadSync);
+                       @Nullable OnSplitLoadListener loadListener) {
+        super(loadManager, splitFileIntents, loadListener);
     }
 
     @Override

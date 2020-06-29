@@ -111,9 +111,9 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     @Override
     public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean loadSync) {
         if (splitLoadMode() == SplitLoad.MULTIPLE_CLASSLOADER) {
-            return new SplitLoadTaskImpl(this, splitFileIntents, loadListener, loadSync);
+            return new SplitLoadTaskImpl(this, splitFileIntents, loadListener);
         } else {
-            return new SplitLoadTaskImpl2(this, splitFileIntents, loadListener, loadSync);
+            return new SplitLoadTaskImpl2(this, splitFileIntents, loadListener);
         }
     }
 

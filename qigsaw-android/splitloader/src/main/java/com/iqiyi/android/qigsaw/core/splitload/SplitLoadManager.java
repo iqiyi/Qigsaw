@@ -92,7 +92,7 @@ public abstract class SplitLoadManager {
      * @param loadSync         whether to load all splits synchronously.
      * @return load splits runnable.
      */
-    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean loadSync);
+    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, /*retained field*/boolean loadSync);
 
     /**
      * Using to load all installed splits.

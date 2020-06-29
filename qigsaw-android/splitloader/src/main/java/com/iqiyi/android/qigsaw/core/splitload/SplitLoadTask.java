@@ -47,16 +47,12 @@ abstract class SplitLoadTask implements SplitLoaderWrapper, Runnable, SplitLoadH
 
     private final OnSplitLoadListener loadListener;
 
-    private final boolean syncLoad;
-
     private SplitLoader splitLoader;
 
     SplitLoadTask(@NonNull SplitLoadManager loadManager,
                   @NonNull List<Intent> splitFileIntents,
-                  @Nullable OnSplitLoadListener loadListener,
-                  boolean syncLoad) {
+                  @Nullable OnSplitLoadListener loadListener) {
         this.loadHandler = new SplitLoadHandler(this, loadManager, splitFileIntents);
-        this.syncLoad = syncLoad;
         this.loadListener = loadListener;
     }
 
@@ -78,38 +74,29 @@ abstract class SplitLoadTask implements SplitLoaderWrapper, Runnable, SplitLoadH
 
     @Override
     public final void run() {
-        if (loadHandler.getSplitLoadMode() == SplitLoad.SINGLE_CLASSLOADER) {
-            SplitLog.d(TAG, "When split mode is single-classloader, we must load them on main thread.");
-            //only load splits on main thread.
-            if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-                loadHandler.loadSplitsSync(this);
-            } else {
-                synchronized (this) {
-                    loadHandler.getMainHandler().post(new Runnable() {
+        SplitLog.d(TAG, "When split mode is single-classloader, we must load them on main thread.");
+        //only load splits on main thread.
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            loadHandler.loadSplitsSync(this);
+        } else {
+            synchronized (this) {
+                loadHandler.getMainHandler().post(new Runnable() {
 
-                        @Override
-                        public void run() {
-                            synchronized (SplitLoadTask.this) {
-                                loadHandler.loadSplitsSync(SplitLoadTask.this);
-                                SplitLoadTask.this.notifyAll();
-                            }
-                        }
-                    });
-                    try {
-                        wait();
-                    } catch (InterruptedException e) {
-                        if (loadListener != null) {
-                            loadListener.onFailed(SplitLoadError.INTERRUPTED_ERROR);
+                    @Override
+                    public void run() {
+                        synchronized (SplitLoadTask.this) {
+                            loadHandler.loadSplitsSync(SplitLoadTask.this);
+                            SplitLoadTask.this.notifyAll();
                         }
                     }
+                });
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    if (loadListener != null) {
+                        loadListener.onFailed(SplitLoadError.INTERRUPTED_ERROR);
+                    }
                 }
-            }
-        } else {
-            if (syncLoad) {
-                loadHandler.loadSplitsSync(this);
-            } else {
-                SplitLog.d(TAG, "Load splits asynchronously");
-                loadHandler.loadSplitsAsync(this);
             }
         }
     }
