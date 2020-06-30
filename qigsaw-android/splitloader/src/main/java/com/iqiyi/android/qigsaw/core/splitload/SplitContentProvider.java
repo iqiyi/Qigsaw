@@ -38,7 +38,7 @@ public abstract class SplitContentProvider extends ContentProviderProxy {
         } else {
             if (SplitLoadManagerService.hasInstance()) {
                 SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
-                loadManager.loadInstalledSplits(true);
+                loadManager.loadInstalledSplits();
                 return getRealContentProvider() != null;
             }
         }

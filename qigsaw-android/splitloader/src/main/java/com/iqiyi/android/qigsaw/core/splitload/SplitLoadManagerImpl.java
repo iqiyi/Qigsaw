@@ -90,12 +90,12 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public void loadInstalledSplitsWhenAppLaunches() {
+    public void preloadInstalledSplits(Collection<String> splitNames) {
         if (!qigsawMode) {
             return;
         }
         if (isProcessAllowedToWork()) {
-            loadInstalledSplits(false);
+            loadInstalledSplitsInternal(splitNames);
         }
     }
 
@@ -109,7 +109,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, boolean loadSync) {
+    public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {
         if (splitLoadMode() == SplitLoad.MULTIPLE_CLASSLOADER) {
             return new SplitLoadTaskImpl(this, splitFileIntents, loadListener);
         } else {
@@ -118,14 +118,23 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
     }
 
     @Override
-    public void loadInstalledSplits(boolean loadSync) {
+    public void loadInstalledSplits() {
+        loadInstalledSplitsInternal(null);
+    }
+
+    private void loadInstalledSplitsInternal(Collection<String> splitNames) {
         SplitInfoManager manager = SplitInfoManagerService.getInstance();
         if (manager == null) {
             SplitLog.w(TAG, "Failed to get SplitInfoManager instance, have you invoke Qigsaw#install(...) method?");
             return;
         }
-        Collection<SplitInfo> splitInfoList = manager.getAllSplitInfo(getContext());
-        if (splitInfoList == null) {
+        Collection<SplitInfo> splitInfoList;
+        if (splitNames == null) {
+            splitInfoList = manager.getAllSplitInfo(getContext());
+        } else {
+            splitInfoList = manager.getSplitInfos(getContext(), splitNames);
+        }
+        if (splitInfoList == null || splitInfoList.isEmpty()) {
             SplitLog.w(TAG, "Failed to get Split-Info list!");
             return;
         }
@@ -135,7 +144,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             SplitLog.w(TAG, "There are no installed splits!");
             return;
         }
-        createSplitLoadTask(splitFileIntents, null, loadSync).run();
+        createSplitLoadTask(splitFileIntents, null).run();
     }
 
     private boolean isInjectPathClassloaderNeeded() {

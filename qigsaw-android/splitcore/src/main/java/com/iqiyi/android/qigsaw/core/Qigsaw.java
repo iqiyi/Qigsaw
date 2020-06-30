@@ -51,6 +51,7 @@ import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitUninstallReporter;
 import com.iqiyi.android.qigsaw.core.splitreport.DefaultSplitUpdateReporter;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitUpdateReporterManager;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Keep
@@ -157,7 +158,14 @@ public class Qigsaw {
                 cleanStaleSplits(context);
             }
         }
-        SplitLoadManagerService.getInstance().loadInstalledSplitsWhenAppLaunches();
+    }
+
+    /**
+     * Preload installed splits.
+     * @param splitNames a list of split names, if null would load all installed splits.
+     */
+    public static void preloadInstalledSplits(Collection<String> splitNames) {
+        SplitLoadManagerService.getInstance().preloadInstalledSplits(splitNames);
     }
 
     public static void onApplicationCreated() {

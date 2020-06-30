@@ -72,11 +72,6 @@ public abstract class SplitLoadManager {
     public abstract void injectPathClassloader();
 
     /**
-     * Load all installed splits when application launches.
-     */
-    public abstract void loadInstalledSplitsWhenAppLaunches();
-
-    /**
      * Called this method in {@link Application#getResources()}.
      * Check whether splits resources are loaded.
      *
@@ -89,17 +84,20 @@ public abstract class SplitLoadManager {
      *
      * @param splitFileIntents a list of installed splits details.
      * @param loadListener     a callback to be invoked when splits loaded.
-     * @param loadSync         whether to load all splits synchronously.
      * @return load splits runnable.
      */
-    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener, /*retained field*/boolean loadSync);
+    public abstract Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener);
+
+    /**
+     * @param splitNames a list of split names.
+     *                   Preload installed splits.
+     */
+    public abstract void preloadInstalledSplits(Collection<String> splitNames);
 
     /**
      * Using to load all installed splits.
-     *
-     * @param loadSync whether to  load all splits synchronously.
      */
-    public abstract void loadInstalledSplits(boolean loadSync);
+    public abstract void loadInstalledSplits();
 
     /**
      * Get names of loaded splits

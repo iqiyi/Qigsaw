@@ -69,7 +69,7 @@ final class DefaultClassNotFoundInterceptor implements ClassNotFoundInterceptor 
         }
         Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
         if (fakeComponent != null || isSplitEntryFragments(name)) {
-            SplitLoadManagerService.getInstance().loadInstalledSplits(true);
+            SplitLoadManagerService.getInstance().loadInstalledSplits();
             ret = findClassInSplits(name);
             if (ret != null) {
                 SplitLog.i(TAG, "Class %s is found in Splits after loading all installed splits.", name);
@@ -97,7 +97,7 @@ final class DefaultClassNotFoundInterceptor implements ClassNotFoundInterceptor 
     private Class<?> onClassNotFound2(String name) {
         Class<?> fakeComponent = AABExtension.getInstance().getFakeComponent(name);
         if (fakeComponent != null || isSplitEntryFragments(name)) {
-            SplitLoadManagerService.getInstance().loadInstalledSplits(true);
+            SplitLoadManagerService.getInstance().loadInstalledSplits();
             try {
                 return originClassLoader.loadClass(name);
             } catch (ClassNotFoundException e) {

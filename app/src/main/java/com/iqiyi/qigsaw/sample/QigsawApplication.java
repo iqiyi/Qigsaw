@@ -5,9 +5,11 @@ import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.multidex.MultiDex;
+
 import android.util.Log;
 
 import com.iqiyi.android.qigsaw.core.SplitActivityLifecycleCallbacks;
@@ -21,6 +23,8 @@ import com.iqiyi.qigsaw.sample.reporter.SampleSplitInstallReporter;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitLoadReporter;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitUninstallReporter;
 import com.iqiyi.qigsaw.sample.reporter.SampleSplitUpdateReporter;
+
+import java.util.Arrays;
 
 public class QigsawApplication extends Application {
 
@@ -55,6 +59,8 @@ public class QigsawApplication extends Application {
     public void onCreate() {
         super.onCreate();
         Qigsaw.onApplicationCreated();
+        //you can decide when to load splits if them have been installed.
+        Qigsaw.preloadInstalledSplits(Arrays.asList(QigsawConfig.DYNAMIC_FEATURES));
         Qigsaw.registerSplitActivityLifecycleCallbacks(new SplitActivityLifecycleCallbacks() {
 
             @Override
