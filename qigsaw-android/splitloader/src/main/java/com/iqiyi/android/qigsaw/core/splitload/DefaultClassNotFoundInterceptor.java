@@ -111,7 +111,7 @@ final class DefaultClassNotFoundInterceptor implements ClassNotFoundInterceptor 
     }
 
     private Class<?> findClassInSplits(String name) {
-        Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+        Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getValidClassLoaders();
         for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
             try {
                 Class<?> clazz = classLoader.loadClassItself(name);

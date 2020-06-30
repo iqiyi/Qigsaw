@@ -78,7 +78,7 @@ public class SplitLibraryLoaderHelper {
                                 return false;
                             }
                         } else {
-                            SplitDexClassLoader classLoader = SplitApplicationLoaders.getInstance().getClassLoader(info.getSplitName());
+                            SplitDexClassLoader classLoader = SplitApplicationLoaders.getInstance().getValidClassLoader(info.getSplitName());
                             if (classLoader != null) {
                                 return loadSplitLibrary0(classLoader, info.getSplitName(), libraryName);
                             }

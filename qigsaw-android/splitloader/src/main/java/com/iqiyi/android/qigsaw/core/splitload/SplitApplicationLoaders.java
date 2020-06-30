@@ -50,22 +50,38 @@ final class SplitApplicationLoaders {
         splitDexClassLoaders.add(classLoader);
     }
 
-    Set<SplitDexClassLoader> getClassLoaders() {
-        return splitDexClassLoaders;
+    Set<SplitDexClassLoader> getValidClassLoaders() {
+        Set<SplitDexClassLoader> validClassLoaders = new HashSet<>(splitDexClassLoaders.size());
+        for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+            if (classLoader.isValid()) {
+                validClassLoaders.add(classLoader);
+            }
+        }
+        return validClassLoaders;
     }
 
     @Nullable
-    Set<SplitDexClassLoader> getClassLoaders(@Nullable List<String> moduleNames) {
+    Set<SplitDexClassLoader> getValidClassLoaders(@Nullable List<String> moduleNames) {
         if (moduleNames == null) {
             return null;
         }
         Set<SplitDexClassLoader> loaders = new HashSet<>(moduleNames.size());
         for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
-            if (moduleNames.contains(classLoader.moduleName())) {
+            if (moduleNames.contains(classLoader.moduleName()) && classLoader.isValid()) {
                 loaders.add(classLoader);
             }
         }
         return loaders;
+    }
+
+    @Nullable
+    SplitDexClassLoader getValidClassLoader(String moduleName) {
+        for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
+            if (classLoader.moduleName().equals(moduleName) && classLoader.isValid()) {
+                return classLoader;
+            }
+        }
+        return null;
     }
 
     @Nullable

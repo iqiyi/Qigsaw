@@ -167,9 +167,6 @@ final class SplitLoadHandler {
             }
             loadOKSplitInfos.add(splitBriefInfo.setTimeCost(System.currentTimeMillis() - loadStart));
             loadedSpits.add(new Split(splitName, splitApkPath));
-            if (classLoader instanceof SplitDexClassLoader) {
-                SplitApplicationLoaders.getInstance().addClassLoader((SplitDexClassLoader) classLoader);
-            }
         }
         loadManager.putSplits(loadedSpits);
         if (loadFinishListener != null) {

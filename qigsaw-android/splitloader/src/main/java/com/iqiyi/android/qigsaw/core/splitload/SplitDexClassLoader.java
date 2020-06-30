@@ -45,6 +45,8 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
 
     private final String moduleName;
 
+    private boolean valid;
+
     private Set<SplitDexClassLoader> dependenciesLoaders;
 
     private SplitDexClassLoader(String moduleName,
@@ -55,7 +57,7 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
                                 ClassLoader parent) throws Throwable {
         super((dexPaths == null) ? "" : TextUtils.join(File.pathSeparator, dexPaths), optimizedDirectory, librarySearchPath, parent);
         this.moduleName = moduleName;
-        this.dependenciesLoaders = SplitApplicationLoaders.getInstance().getClassLoaders(dependencies);
+        this.dependenciesLoaders = SplitApplicationLoaders.getInstance().getValidClassLoaders(dependencies);
         SplitUnKnownFileTypeDexLoader.loadDex(this, dexPaths, optimizedDirectory);
     }
 
@@ -93,6 +95,14 @@ final class SplitDexClassLoader extends BaseDexClassLoader {
             }
             throw e1;
         }
+    }
+
+    void setValid(boolean valid) {
+        this.valid = valid;
+    }
+
+    boolean isValid() {
+        return valid;
     }
 
     String moduleName() {

@@ -56,12 +56,16 @@ final class SplitLoadTaskImpl extends SplitLoadTask {
         SplitDexClassLoader classLoader = SplitApplicationLoaders.getInstance().getClassLoader(splitName);
         if (classLoader == null) {
             classLoader = getSplitLoader().loadCode(splitName, addedDexPaths, optimizedDirectory, librarySearchPath, dependencies);
+            classLoader.setValid(true);
+            SplitApplicationLoaders.getInstance().addClassLoader(classLoader);
         }
         return classLoader;
     }
 
     @Override
     public void unloadCode(ClassLoader classLoader) {
-
+        if (classLoader instanceof SplitDexClassLoader) {
+            ((SplitDexClassLoader) classLoader).setValid(false);
+        }
     }
 }

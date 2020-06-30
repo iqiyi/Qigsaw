@@ -93,7 +93,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
     protected URL findResource(String name) {
         URL resource = super.findResource(name);
         if (resource == null) {
-            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getValidClassLoaders();
             for (SplitDexClassLoader loader : splitDexClassLoaders) {
                 resource = loader.findResourceItself(name);
                 if (resource != null) {
@@ -108,7 +108,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
     protected Enumeration<URL> findResources(String name) {
         Enumeration<URL> resources = super.findResources(name);
         if (resources == null) {
-            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getValidClassLoaders();
             for (SplitDexClassLoader loader : splitDexClassLoaders) {
                 resources = loader.findResourcesItself(name);
                 if (resources != null) {
@@ -128,7 +128,7 @@ final class SplitDelegateClassloader extends PathClassLoader {
     public String findLibrary(String name) {
         String libName = originClassLoader.findLibrary(name);
         if (libName == null) {
-            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getClassLoaders();
+            Set<SplitDexClassLoader> splitDexClassLoaders = SplitApplicationLoaders.getInstance().getValidClassLoaders();
             for (SplitDexClassLoader classLoader : splitDexClassLoaders) {
                 libName = classLoader.findLibraryItself(name);
                 if (libName != null) {
