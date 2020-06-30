@@ -69,6 +69,8 @@ public class Qigsaw {
 
     private final boolean isMainProcess;
 
+    private boolean onApplicationCreated = false;
+
     private Qigsaw(Context context,
                    Downloader downloader,
                    @NonNull SplitConfiguration splitConfiguration) {
@@ -158,13 +160,18 @@ public class Qigsaw {
                 cleanStaleSplits(context);
             }
         }
+        onApplicationCreated = true;
     }
 
     /**
      * Preload installed splits.
+     *
      * @param splitNames a list of split names, if null would load all installed splits.
      */
     public static void preloadInstalledSplits(Collection<String> splitNames) {
+        if (!Qigsaw.instance().onApplicationCreated) {
+            throw new RuntimeException("This method must be invoked after Qigsaw#onApplicationCreated()!");
+        }
         SplitLoadManagerService.getInstance().preloadInstalledSplits(splitNames);
     }
 
