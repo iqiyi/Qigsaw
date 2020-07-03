@@ -74,8 +74,6 @@ abstract class SplitLoadTask implements SplitLoaderWrapper, Runnable, SplitLoadH
 
     @Override
     public final void run() {
-        SplitLog.d(TAG, "When split mode is single-classloader, we must load them on main thread.");
-        //only load splits on main thread.
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
             loadHandler.loadSplitsSync(this);
         } else {
@@ -93,6 +91,7 @@ abstract class SplitLoadTask implements SplitLoaderWrapper, Runnable, SplitLoadH
                 try {
                     wait();
                 } catch (InterruptedException e) {
+                    SplitLog.w(TAG, "Failed to block thread " + Thread.currentThread().getName(), e);
                     if (loadListener != null) {
                         loadListener.onFailed(SplitLoadError.INTERRUPTED_ERROR);
                     }

@@ -88,8 +88,8 @@ final class SplitLoadHandler {
     private void loadSplits(final OnSplitLoadFinishListener loadFinishListener) {
         long totalLoadStart = System.currentTimeMillis();
         Set<Split> loadedSpits = new HashSet<>();
-        List<SplitLoadError> loadErrorSplitInfos = new ArrayList<>(0);
-        List<SplitBriefInfo> loadOKSplitInfos = new ArrayList<>(splitFileIntents.size());
+        List<SplitLoadError> loadErrorInfos = new ArrayList<>(0);
+        List<SplitBriefInfo> loadOKInfos = new ArrayList<>(splitFileIntents.size());
         for (Intent splitFileIntent : splitFileIntents) {
             long loadStart = System.currentTimeMillis();
             final String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
@@ -107,14 +107,14 @@ final class SplitLoadHandler {
             String splitApkPath = splitFileIntent.getStringExtra(SplitConstants.KEY_APK);
             if (splitApkPath == null) {
                 SplitLog.w(TAG, "Failed to read split %s apk path", splitName);
-                loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("split apk path " + splitName + " is missing!")));
+                loadErrorInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("split apk path " + splitName + " is missing!")));
                 continue;
             }
             String dexOptPath = splitFileIntent.getStringExtra(SplitConstants.KEY_DEX_OPT_DIR);
             //check opt-path for split.
             if (info.hasDex() && dexOptPath == null) {
                 SplitLog.w(TAG, "Failed to %s get dex-opt-dir", splitName);
-                loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("dex-opt-dir of " + splitName + " is missing!")));
+                loadErrorInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("dex-opt-dir of " + splitName + " is missing!")));
                 continue;
             }
             //check native library path for split.
@@ -123,11 +123,11 @@ final class SplitLoadHandler {
                 SplitInfo.LibData libData = info.getPrimaryLibData(getContext());
                 if (libData != null && nativeLibPath == null) {
                     SplitLog.w(TAG, "Failed to get %s native-lib-dir", splitName);
-                    loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("native-lib-dir of " + splitName + " is missing!")));
+                    loadErrorInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, new Exception("native-lib-dir of " + splitName + " is missing!")));
                     continue;
                 }
             } catch (IOException e) {
-                loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, e));
+                loadErrorInfos.add(new SplitLoadError(splitBriefInfo, SplitLoadError.INTERNAL_ERROR, e));
                 continue;
             }
             //load split's dex files
@@ -141,7 +141,7 @@ final class SplitLoadHandler {
                 );
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to load split %s code!", splitName);
-                loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
+                loadErrorInfos.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 continue;
             }
             //create split application instance.
@@ -150,14 +150,14 @@ final class SplitLoadHandler {
                 application = activator.createSplitApplication(classLoader, splitName);
             } catch (SplitLoadException e) {
                 SplitLog.printErrStackTrace(TAG, e, "Failed to create %s application ", splitName);
-                loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
+                loadErrorInfos.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 splitLoader.unloadCode(classLoader);
                 continue;
             }
             try {
                 activateSplit(splitName, splitApkPath, application, classLoader);
             } catch (SplitLoadException e) {
-                loadErrorSplitInfos.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
+                loadErrorInfos.add(new SplitLoadError(splitBriefInfo, e.getErrorCode(), e.getCause()));
                 splitLoader.unloadCode(classLoader);
                 continue;
             }
@@ -165,12 +165,12 @@ final class SplitLoadHandler {
             if (!splitDir.setLastModified(System.currentTimeMillis())) {
                 SplitLog.w(TAG, "Failed to set last modified time for " + splitName);
             }
-            loadOKSplitInfos.add(splitBriefInfo.setTimeCost(System.currentTimeMillis() - loadStart));
+            loadOKInfos.add(splitBriefInfo.setTimeCost(System.currentTimeMillis() - loadStart));
             loadedSpits.add(new Split(splitName, splitApkPath));
         }
         loadManager.putSplits(loadedSpits);
         if (loadFinishListener != null) {
-            loadFinishListener.onLoadFinish(loadOKSplitInfos, loadErrorSplitInfos, loadManager.currentProcessName, System.currentTimeMillis() - totalLoadStart);
+            loadFinishListener.onLoadFinish(loadOKInfos, loadErrorInfos, loadManager.currentProcessName, System.currentTimeMillis() - totalLoadStart);
         }
     }
 
