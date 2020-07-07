@@ -150,16 +150,20 @@ public class SplitCompatResourcesLoader {
         List<String> existedAppResDirList = new ArrayList<>();
         if (Build.VERSION.SDK_INT >= 28) {
             Object[] apkAssets = (Object[]) VersionCompat.getGetApkAssetsMethod().invoke(asset);
-            for (Object apkAsset : apkAssets) {
-                String path = (String) VersionCompat.getGetAssetPathMethod().invoke(apkAsset);
-                existedAppResDirList.add(path);
+            if (apkAssets != null) {
+                for (Object apkAsset : apkAssets) {
+                    String path = (String) VersionCompat.getGetAssetPathMethod().invoke(apkAsset);
+                    existedAppResDirList.add(path);
+                }
             }
         } else {
             Object[] appStringBlocks = (Object[]) VersionCompat.mStringBlocksInAssetManager().get(asset);
-            int totalResCount = appStringBlocks.length;
-            for (int appResIndex = 1; appResIndex <= totalResCount; ++appResIndex) {
-                String inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
-                existedAppResDirList.add(inApp);
+            if (appStringBlocks != null && appStringBlocks.length > 0) {
+                int totalResCount = appStringBlocks.length;
+                for (int appResIndex = 1; appResIndex <= totalResCount; ++appResIndex) {
+                    String inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
+                    existedAppResDirList.add(inApp);
+                }
             }
         }
         return existedAppResDirList;

@@ -3,6 +3,7 @@ package com.google.android.play.core.listener;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+
 import androidx.annotation.RestrictTo;
 
 import com.google.android.play.core.splitcompat.util.PlayCore;
@@ -44,7 +45,11 @@ public abstract class StateUpdateListenerRegister<StateT> {
             }
             mStateUpdatedListeners.add(listener);
             if (mStateUpdatedListeners.size() == 1) {
-                context.registerReceiver(receiver, intentFilter);
+                try {
+                    context.registerReceiver(receiver, intentFilter);
+                } catch (Throwable e) {
+                    //maybe occur DeadSystemException
+                }
             }
         }
     }
