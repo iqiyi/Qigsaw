@@ -161,8 +161,12 @@ public class SplitCompatResourcesLoader {
             if (appStringBlocks != null && appStringBlocks.length > 0) {
                 int totalResCount = appStringBlocks.length;
                 for (int appResIndex = 1; appResIndex <= totalResCount; ++appResIndex) {
-                    String inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
-                    existedAppResDirList.add(inApp);
+                    try {
+                        String inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
+                        existedAppResDirList.add(inApp);
+                    } catch (IndexOutOfBoundsException e) {
+                        //some phone like LG and SONY, may occur empty cookie error.
+                    }
                 }
             }
         }
