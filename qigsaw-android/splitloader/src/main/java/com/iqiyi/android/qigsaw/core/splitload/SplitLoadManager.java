@@ -125,7 +125,7 @@ public abstract class SplitLoadManager {
         Set<String> splitApkPaths = new HashSet<>(0);
         for (Split split : loadedSplits) {
             File file = new File(split.splitApkPath);
-            if (file.exists() && file.isFile()) {
+            if (file.exists()) {
                 splitApkPaths.add(split.splitApkPath);
             } else {
                 SplitLog.w(TAG, "Split has been loaded, but its file %s is not exist!", split.splitApkPath);
