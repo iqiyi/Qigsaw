@@ -400,7 +400,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
 
         @Override
         protected void onTargetVariantFound(ApplicationVariant splitVariant, Task copySplitManifest) {
-            qigsawProcessManifest.mustRunAfter copySplitManifest
+            qigsawProcessManifest.dependsOn copySplitManifest
             String versionName = splitVariant.mergedFlavor.versionName
             if (versionName == null) {
                 throw new GradleException("Qigsaw Error:versionName must be set in ${splitProject.name}/build.gradle!")
