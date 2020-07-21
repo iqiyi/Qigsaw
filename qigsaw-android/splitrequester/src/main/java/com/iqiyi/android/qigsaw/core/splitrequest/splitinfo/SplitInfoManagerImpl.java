@@ -32,7 +32,6 @@ import androidx.annotation.Nullable;
 
 import android.text.TextUtils;
 
-import com.iqiyi.android.qigsaw.core.common.AbiUtil;
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -51,25 +50,26 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 final class SplitInfoManagerImpl implements SplitInfoManager {
 
     private static final String TAG = "SplitInfoManagerImpl";
 
-    private SplitDetails mSplitDetails;
+    private AtomicReference<SplitDetails> splitDetailsRef = new AtomicReference<>();
 
-    private SplitInfoVersionManager mVersionManager;
+    private SplitInfoVersionManager versionManager;
 
     void attach(SplitInfoVersionManager versionManager) {
-        this.mVersionManager = versionManager;
+        this.versionManager = versionManager;
     }
 
     private SplitInfoVersionManager getSplitInfoVersionManager() {
-        return mVersionManager;
+        return versionManager;
     }
 
     private SplitDetails getSplitDetails() {
-        return mSplitDetails;
+        return splitDetailsRef.get();
     }
 
     @Override
@@ -77,7 +77,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
     public String getBaseAppVersionName(Context context) {
         SplitDetails details = getOrCreateSplitDetails(context);
         if (details != null) {
-            return mSplitDetails.getAppVersionName();
+            return details.getAppVersionName();
         }
         return null;
     }
@@ -145,7 +145,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
     public Collection<SplitInfo> getAllSplitInfo(Context context) {
         SplitDetails details = getOrCreateSplitDetails(context);
         if (details != null) {
-            return mSplitDetails.getSplitInfoListing().getSplitInfoMap().values();
+            return details.getSplitInfoListing().getSplitInfoMap().values();
         }
         return null;
     }
@@ -217,7 +217,7 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
                     return null;
                 }
             }
-            mSplitDetails = details;
+            splitDetailsRef.compareAndSet(null, details);
         }
         return details;
     }

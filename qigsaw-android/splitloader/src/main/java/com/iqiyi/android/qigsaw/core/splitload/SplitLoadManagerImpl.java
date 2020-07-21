@@ -334,7 +334,7 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
         return true;
     }
 
-    private String getCompleteProcessName(@Nullable String process) {
+    private String getCompleteProcessName(String process) {
         String packageName = getContext().getPackageName();
         if (TextUtils.isEmpty(process)) {
             return packageName;
