@@ -171,6 +171,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 }
                 QigsawInstallTask qigsawInstall = project.tasks.create("qigsawInstall${baseVariant.name.capitalize()}", QigsawInstallTask)
                 qigsawInstall.variantData = baseVariant.variantData
+                qigsawInstall.versionAGP = versionAGP
                 qigsawInstall.baseApkFiles = baseApkFiles
                 qigsawInstall.setGroup(QIGSAW)
 
@@ -211,8 +212,13 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     qigsawProcessManifest.bundleManifestFile = bundleManifestFile
                     qigsawProcessManifest.mustRunAfter processManifest
                     generateQigsawConfig.dependsOn qigsawProcessManifest
-
-                    boolean multiDexEnabled = baseVariant.variantData.variantConfiguration.isMultiDexEnabled()
+                    boolean multiDexEnabled
+                    try {
+                        multiDexEnabled = baseVariant.variantData.variantConfiguration.isMultiDexEnabled()
+                    } catch(Throwable e) {
+                        //compat for AGP 4.x
+                        multiDexEnabled = baseVariant.variantData.variantDslInfo.isMultiDexEnabled()
+                    }
                     if (multiDexEnabled) {
                         Task multiDex = AGPCompat.getMultiDexTask(project, baseVariant.name.capitalize())
                         if (multiDex != null) {

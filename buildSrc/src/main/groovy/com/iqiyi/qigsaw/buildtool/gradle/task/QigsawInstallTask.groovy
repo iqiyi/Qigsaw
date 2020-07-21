@@ -26,10 +26,8 @@ package com.iqiyi.qigsaw.buildtool.gradle.task
 
 import com.android.annotations.NonNull
 import com.android.build.gradle.internal.LoggerWrapper
-import com.android.build.gradle.internal.core.GradleVariantConfiguration
 import com.android.build.gradle.internal.variant.BaseVariantData
 import com.android.builder.internal.InstallUtils
-import com.android.builder.testing.ConnectedDeviceProvider
 import com.android.builder.testing.api.DeviceConnector
 import com.android.builder.testing.api.DeviceProvider
 import com.android.sdklib.AndroidVersion
@@ -42,9 +40,16 @@ import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 
+import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.AGPCompat
+import org.gradle.util.VersionNumber
+
+import java.util.concurrent.Callable
+
 class QigsawInstallTask extends DefaultTask {
 
     BaseVariantData variantData
+
+    def versionAGP
 
     @InputFiles
     List<File> baseApkFiles
@@ -57,11 +62,11 @@ class QigsawInstallTask extends DefaultTask {
         File adbExecutable = null
         try {
             adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
-        } catch (Throwable e) {
+        } catch (Throwable ignored) {
             try {
                 adbExecutable = variantData.scope.globalScope.sdkComponents.adbExecutableProvider.get()
-            } catch (Throwable ignored) {
-
+            } catch (Throwable e) {
+                //
             }
         }
         if (adbExecutable == null) {
@@ -71,19 +76,58 @@ class QigsawInstallTask extends DefaultTask {
         String projectName = variantData.scope.globalScope.project.name
         Collection<String> installOptions = variantData.scope.globalScope.extension.adbOptions.installOptions
         final ILogger iLogger = new LoggerWrapper(getLogger())
-        DeviceProvider deviceProvider =
-                new ConnectedDeviceProvider(adbExecutable, timeOutInMs, iLogger)
+        DeviceProvider deviceProvider = AGPCompat.createDeviceProviderCompat(adbExecutable, timeOutInMs, iLogger)
+        if (deviceProvider == null) {
+            throw new GradleException("Qigsaw has not adapt this AGP version yet!")
+        }
+        if (versionAGP < VersionNumber.parse("4.0.0")) {
+            installBelowAGP4(variantData, projectName, deviceProvider, baseApkFiles.get(0), installOptions, timeOutInMs, logger)
+        } else {
+            installAboveAGP4(variantData, projectName, deviceProvider, baseApkFiles.get(0), installOptions, timeOutInMs, logger)
+        }
+    }
+
+    static installAboveAGP4(BaseVariantData variantData,
+                            @NonNull String projectName,
+                            @NonNull DeviceProvider deviceProvider,
+                            @NonNull File apkFile,
+                            @NonNull Collection<String> installOptions,
+                            int timeOutInMs,
+                            @NonNull Logger logger) {
+        deviceProvider.use(new Callable<Object>() {
+            @Override
+            Object call() throws Exception {
+                install(
+                        projectName,
+                        variantData.getName(),
+                        deviceProvider,
+                        variantData.getVariantDslInfo().getMinSdkVersion(),
+                        apkFile,
+                        installOptions,
+                        timeOutInMs,
+                        logger
+                )
+                return null
+            }
+        })
+    }
+
+
+    static installBelowAGP4(BaseVariantData variantData,
+                            @NonNull String projectName,
+                            @NonNull DeviceProvider deviceProvider,
+                            @NonNull File apkFile,
+                            @NonNull Collection<String> installOptions,
+                            int timeOutInMs,
+                            @NonNull Logger logger) {
         deviceProvider.init()
-
         try {
-            GradleVariantConfiguration variantConfig = variantData.getVariantConfiguration()
-
             install(
                     projectName,
-                    variantConfig.getFullName(),
+                    variantData.getVariantConfiguration().getFullName(),
                     deviceProvider,
-                    variantConfig.getMinSdkVersion(),
-                    baseApkFiles.get(0),
+                    variantData.getVariantConfiguration().getMinSdkVersion(),
+                    apkFile,
                     installOptions,
                     timeOutInMs,
                     logger)
@@ -95,7 +139,7 @@ class QigsawInstallTask extends DefaultTask {
     static void install(
             @NonNull String projectName,
             @NonNull String variantName,
-            @NonNull DeviceProvider deviceProvider,
+            @NonNull Object deviceProvider,
             @NonNull AndroidVersion minSkdVersion,
             @NonNull File apkFile,
             @NonNull Collection<String> installOptions,
@@ -124,5 +168,4 @@ class QigsawInstallTask extends DefaultTask {
                     successfulInstallCount == 1 ? "device" : "devices")
         }
     }
-
 }

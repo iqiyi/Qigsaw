@@ -164,8 +164,15 @@ class ProcessSplitApkTask extends DefaultTask {
     }
 
     void createSplitConfigApkAndroidManifest(String splitName, String abi, File androidManifestFile) {
-        AndroidManifest androidManifest = AndroidManifest.createForConfigSplit(
-                applicationId, splitVersion.split("@")[1].toInteger(), "${splitName}.config.${abi}", splitName, java.util.Optional.of(true))
+        AndroidManifest androidManifest
+        try {
+            androidManifest = AndroidManifest.createForConfigSplit(
+                    applicationId, splitVersion.split("@")[1].toInteger(), "${splitName}.config.${abi}", splitName, java.util.Optional.of(true))
+        } catch (Throwable e) {
+            //compat for 4.x
+            androidManifest = AndroidManifest.createForConfigSplit(
+                    applicationId, java.util.Optional.of(splitVersion.split("@")[1].toInteger()), "${splitName}.config.${abi}", splitName, java.util.Optional.of(true))
+        }
         androidManifestFile.withOutputStream {
             it.write(androidManifest.manifestRoot.proto.toByteArray())
         }

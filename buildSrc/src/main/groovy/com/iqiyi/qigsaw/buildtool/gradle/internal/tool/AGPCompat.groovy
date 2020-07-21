@@ -27,11 +27,13 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.scope.GlobalScope
+import com.android.utils.ILogger
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.util.VersionNumber
 
+import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 
 class AGPCompat {
@@ -247,6 +249,24 @@ class AGPCompat {
             task = project.tasks.findByName("merge${variantName}NativeLibs")
         }
         return task
+    }
+
+    /**
+     * Create instance of class {@link com.android.builder.testing.api.DeviceProvider}
+     */
+    static Object createDeviceProviderCompat(File adbExecutable, int timeOutInMs, ILogger iLogger) {
+        Class classDeviceProvider = null
+        try {
+            classDeviceProvider = Class.forName("com.android.build.gradle.internal.testing.ConnectedDeviceProvider")
+        } catch (Throwable e) {
+
+        }
+        if (classDeviceProvider != null) {
+            Constructor constructor = classDeviceProvider.getDeclaredConstructor(File.class, int.class, ILogger.class)
+            constructor.setAccessible(true)
+            return constructor.newInstance(adbExecutable, timeOutInMs, iLogger)
+        }
+        throw new GradleException("Qigsaw has not adapt this AGP version yet, class 'com.android.builder.testing.api.DeviceProvider' is not found!")
     }
 
 }
