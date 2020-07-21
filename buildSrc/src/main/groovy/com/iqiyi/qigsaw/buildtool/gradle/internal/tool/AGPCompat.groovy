@@ -255,11 +255,11 @@ class AGPCompat {
      * Create instance of class {@link com.android.builder.testing.api.DeviceProvider}
      */
     static Object createDeviceProviderCompat(File adbExecutable, int timeOutInMs, ILogger iLogger) {
-        Class classDeviceProvider = null
+        Class classDeviceProvider
         try {
-            classDeviceProvider = Class.forName("com.android.build.gradle.internal.testing.ConnectedDeviceProvider")
+            classDeviceProvider = Class.forName("com.android.builder.testing.ConnectedDeviceProvider")
         } catch (Throwable e) {
-
+            classDeviceProvider = Class.forName("com.android.build.gradle.internal.testing.ConnectedDeviceProvider")
         }
         if (classDeviceProvider != null) {
             Constructor constructor = classDeviceProvider.getDeclaredConstructor(File.class, int.class, ILogger.class)

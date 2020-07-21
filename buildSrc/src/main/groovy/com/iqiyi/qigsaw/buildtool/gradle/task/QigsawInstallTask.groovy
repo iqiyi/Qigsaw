@@ -139,7 +139,7 @@ class QigsawInstallTask extends DefaultTask {
     static void install(
             @NonNull String projectName,
             @NonNull String variantName,
-            @NonNull Object deviceProvider,
+            @NonNull DeviceProvider deviceProvider,
             @NonNull AndroidVersion minSkdVersion,
             @NonNull File apkFile,
             @NonNull Collection<String> installOptions,
