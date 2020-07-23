@@ -167,6 +167,7 @@ public class SplitCompatResourcesLoader {
                         existedAppResDirList.add(inApp);
                     } catch (IndexOutOfBoundsException e) {
                         //some phone like LG and SONY, may occur empty cookie error.
+                    } catch (InvocationTargetException e) {
                         SplitLog.w(TAG, "Unable to get cookie name for resources index " + appResIndex, e);
                     }
                 }
