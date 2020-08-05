@@ -140,15 +140,21 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
                 info.apkData.each {
                     File destSplitApk = new File(qigsawMergedAssetsDir, "${info.splitName}-${it.abi + SdkConstants.DOT_ZIP}")
                     if (splitDetails.updateRecord.updateMode != SplitDetails.UpdateRecord.DEFAULT) {
-                        File oldSplitApk = getOldSplitApk(info.splitName, it.abi)
-                        if (!oldSplitApk.exists()) {
-                            throw new GradleException("Old split apk ${oldSplitApk.absolutePath} is not found, make sure oldApk is existing!")
+                        File sourceSplitApk
+                        if (splitDetails.updateRecord.updateSplits != null && splitDetails.updateRecord.updateSplits.contains(info.splitName)) {
+                            //Built-in apk version has been changed.
+                            sourceSplitApk = new File(splitApksDir, "${info.splitName}-${it.abi + SdkConstants.DOT_ANDROID_PACKAGE}")
+                        } else {
+                            sourceSplitApk = getOldSplitApk(info.splitName, it.abi)
                         }
-                        FileUtils.copyFile(oldSplitApk, destSplitApk)
+                        if (!sourceSplitApk.exists()) {
+                            throw new GradleException("Split apk ${sourceSplitApk.absolutePath} is not found, mode changed!")
+                        }
+                        FileUtils.copyFile(sourceSplitApk, destSplitApk)
                     } else {
                         File sourceSplitApk = new File(splitApksDir, "${info.splitName}-${it.abi + SdkConstants.DOT_ANDROID_PACKAGE}")
                         if (!sourceSplitApk.exists()) {
-                            throw new GradleException("Split apk ${sourceSplitApk.absolutePath} is not found!")
+                            throw new GradleException("Split apk ${sourceSplitApk.absolutePath} is not found, mode defalut!")
                         }
                         FileUtils.copyFile(sourceSplitApk, destSplitApk)
                     }
@@ -192,7 +198,6 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
 
     SplitDetails createSplitDetails(List<SplitInfo> splitInfoList, File oldSplitDetailsFile) {
         String qigsawId = this.qigsawId
-        List<String> updateSplits = null
         SplitDetails.UpdateRecord updateRecord = new SplitDetails.UpdateRecord()
         if (oldSplitDetailsFile != null && oldSplitDetailsFile.exists()) {
             SplitDetails oldSplitDetails = TypeClassFileParser.parseFile(oldSplitDetailsFile, SplitDetails)
@@ -216,7 +221,7 @@ class CreateSplitDetailsFileTask extends ProcessOldOutputsBaseTask {
         splitDetails.updateRecord = updateRecord
         splitDetails.qigsawId = qigsawId
         splitDetails.appVersionName = baseVersionName
-        splitDetails.updateSplits = updateSplits
+        splitDetails.updateSplits = updateRecord.updateSplits
         splitDetails.splitEntryFragments = splitEntryFragments
         splitDetails.splits = splitInfoList
         return splitDetails
