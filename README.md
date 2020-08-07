@@ -17,7 +17,7 @@ Import qigsaw-gradle-plugin as a dependency in your main `build.gradle` in the r
 ```gradle
 buildscript {
     dependencies {
-        classpath 'com.iqiyi.android.qigsaw:gradle-plugin:1.4.1'
+        classpath 'com.iqiyi.android.qigsaw:gradle-plugin:1.4.1-hotfix01'
     }
 }
 ```
@@ -26,7 +26,7 @@ Then "apply" the plugin and import dependencies by adding the following lines to
 ```gradle
 dependencies {
     //qigsaw core lib
-    implementation "com.iqiyi.android.qigsaw:splitcore:1.4.1"
+    implementation "com.iqiyi.android.qigsaw:splitcore:1.4.1-hotfix01"
 }
 ...
 ...
