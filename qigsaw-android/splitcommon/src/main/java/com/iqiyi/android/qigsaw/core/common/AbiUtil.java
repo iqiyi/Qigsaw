@@ -111,7 +111,7 @@ public class AbiUtil {
         }
     }
 
-    private static String findPrimaryAbiFromProperties(Context context) {
+    private static String findPrimaryAbiFromProperties(Context context) throws IOException {
         try {
             InputStream is = context.getAssets().open("base.app.cpu.abilist.properties");
             Properties properties = new Properties();
@@ -128,12 +128,12 @@ public class AbiUtil {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IOException("Failed to read asset file 'assets/base.app.cpu.abilist.properties'!", e);
         }
         return null;
     }
 
-    private static String findPrimaryAbiFromBaseApk(Context context) {
+    private static String findPrimaryAbiFromBaseApk(Context context) throws IOException {
         String baseApk = context.getApplicationInfo().sourceDir;
         ZipFile zipFile = null;
         Set<String> apkSupportedAbis = new HashSet<>();
@@ -161,7 +161,7 @@ public class AbiUtil {
                 }
             }
         } catch (IOException e) {
-            SplitLog.w(TAG, "Failed to open base apk " + baseApk, e);
+            throw new IOException("Failed to open base apk " + baseApk, e);
         } finally {
             if (zipFile != null) {
                 FileUtil.closeQuietly(zipFile);
@@ -195,7 +195,7 @@ public class AbiUtil {
         return ret;
     }
 
-    public static String getBasePrimaryAbi(@NonNull Context context) {
+    public static String getBasePrimaryAbi(@NonNull Context context) throws IOException {
         if (!TextUtils.isEmpty(basePrimaryAbi.get())) {
             return basePrimaryAbi.get();
         }
@@ -230,7 +230,7 @@ public class AbiUtil {
         }
     }
 
-    private static String findBasePrimaryAbi(Collection<String> sortedAbis) {
+    private static String findBasePrimaryAbi(Collection<String> sortedAbis) throws IOException {
         List<String> supportedAbis = getSupportedAbis();
         if (sortedAbis == null || sortedAbis.isEmpty()) {
             return supportedAbis.get(0);
@@ -241,7 +241,7 @@ public class AbiUtil {
                 }
             }
         }
-        throw new RuntimeException(String.format("No supported abi for this device, supported abis: %s, sorted abis: %s", supportedAbis.toString(), sortedAbis.toString()));
+        throw new IOException(String.format("No supported abi for this device, supported abis: %s, sorted abis: %s", supportedAbis.toString(), sortedAbis.toString()));
     }
 
     public static String findSplitPrimaryAbi(@NonNull String basePrimaryAbi, @NonNull List<String> splitAbis) {
