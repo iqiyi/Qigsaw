@@ -162,14 +162,15 @@ public class SplitCompatResourcesLoader {
                 int totalResCount = appStringBlocks.length;
                 SplitLog.i(TAG, "Total resources count: " + totalResCount);
                 for (int appResIndex = 1; appResIndex <= totalResCount; ++appResIndex) {
+                    String inApp;
                     try {
-                        String inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
-                        existedAppResDirList.add(inApp);
-                    } catch (IndexOutOfBoundsException e) {
+                        inApp = (String) VersionCompat.getGetCookieNameMethod().invoke(asset, appResIndex);
+                    } catch (Throwable e) {
                         //some phone like LG and SONY, may occur empty cookie error.
-                    } catch (InvocationTargetException e) {
                         SplitLog.w(TAG, "Unable to get cookie name for resources index " + appResIndex, e);
+                        continue;
                     }
+                    existedAppResDirList.add(inApp);
                 }
             }
         }

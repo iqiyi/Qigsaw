@@ -177,4 +177,8 @@ public class AABExtension {
         return modules;
     }
 
+    public final void clear() {
+        sSplitContentProviderMap.clear();
+        aabApplications.clear();
+    }
 }

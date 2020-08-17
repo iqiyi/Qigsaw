@@ -146,4 +146,7 @@ public abstract class SplitLoadManager {
         return loadedSplits;
     }
 
+    public final void clear() {
+        loadedSplits.clear();
+    }
 }

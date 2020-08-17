@@ -109,9 +109,11 @@ public class Qigsaw {
     public static void install(@NonNull Context context,
                                @NonNull Downloader downloader,
                                @NonNull SplitConfiguration configuration) {
-        if (sReference.compareAndSet(null, new Qigsaw(context, downloader, configuration))) {
-            Qigsaw.instance().onBaseContextAttached();
+        //Qigsaw instance may be cached.
+        if (sReference.get() == null) {
+            sReference.set(new Qigsaw(context, downloader, configuration));
         }
+        Qigsaw.instance().onBaseContextAttached();
     }
 
     private void onBaseContextAttached() {
@@ -129,7 +131,11 @@ public class Qigsaw {
                 currentProcessName,
                 splitConfiguration.workProcesses,
                 splitConfiguration.forbiddenWorkProcesses);
+        //data may be cached.
+        SplitLoadManagerService.getInstance().clear();
         SplitLoadManagerService.getInstance().injectPathClassloader();
+        //data may be cached.
+        AABExtension.getInstance().clear();
         AABExtension.getInstance().createAndActiveSplitApplication(context, qigsawMode);
         SplitCompat.install(context);
     }

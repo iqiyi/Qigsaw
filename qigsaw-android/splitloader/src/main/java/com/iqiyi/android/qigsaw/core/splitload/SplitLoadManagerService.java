@@ -46,7 +46,9 @@ public class SplitLoadManagerService {
                                String currentProcessName,
                                String[] workProcesses,
                                String[] forbiddenWorkProcesses) {
-        sReference.set(create(context, splitLoadMode, qigsawMode, isMainProcess, currentProcessName, workProcesses, forbiddenWorkProcesses));
+        if (sReference.get() == null) {
+            sReference.set(create(context, splitLoadMode, qigsawMode, isMainProcess, currentProcessName, workProcesses, forbiddenWorkProcesses));
+        }
     }
 
     public static boolean hasInstance() {
