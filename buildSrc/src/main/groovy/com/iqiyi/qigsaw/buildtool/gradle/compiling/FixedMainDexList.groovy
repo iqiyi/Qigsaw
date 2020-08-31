@@ -145,7 +145,7 @@ class FixedMainDexList {
         }
 
         if (multiDexKeepProguard == null) {
-            mProject.logger.error("can't get multiDexKeepProguard file")
+            SplitLogger.e("can't get multiDexKeepProguard file")
         }
         return multiDexKeepProguard
     }

@@ -215,7 +215,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     boolean multiDexEnabled
                     try {
                         multiDexEnabled = baseVariant.variantData.variantConfiguration.isMultiDexEnabled()
-                    } catch(Throwable e) {
+                    } catch (Throwable e) {
                         //compat for AGP 4.x
                         multiDexEnabled = baseVariant.variantData.variantDslInfo.isMultiDexEnabled()
                     }
@@ -227,7 +227,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                             if (r8 != null) {
                                 removeRulesAboutMultiDex(r8, baseVariant)
                             } else {
-                                throw new GradleException("Qigsaw Error: MultiDex or R8 task is missing")
+                                SplitLogger.w("multiDexEnabled is not necessary.")
                             }
                         }
                     }
