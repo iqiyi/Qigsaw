@@ -175,6 +175,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawInstall.baseApkFiles = baseApkFiles
                 qigsawInstall.setGroup(QIGSAW)
 
+                extractTargetFilesFromOldApk.dependsOn processManifest
                 qigsawAssemble.dependsOn extractTargetFilesFromOldApk
                 generateQigsawConfig.dependsOn extractTargetFilesFromOldApk
                 generateQigsawConfig.dependsOn generateBuildConfig
