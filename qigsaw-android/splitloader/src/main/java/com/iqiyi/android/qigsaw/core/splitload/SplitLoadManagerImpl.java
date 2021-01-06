@@ -110,10 +110,14 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
 
     @Override
     public Runnable createSplitLoadTask(List<Intent> splitFileIntents, @Nullable OnSplitLoadListener loadListener) {
+        List<Intent> filterSplitFileIntentList = filterIntentsCanWorkInThisProcess(splitFileIntents);
+        if (filterSplitFileIntentList.isEmpty()) {
+            return new SkipSplitLoadTaskImpl();
+        }
         if (splitLoadMode() == SplitLoad.MULTIPLE_CLASSLOADER) {
-            return new SplitLoadTaskImpl(this, splitFileIntents, loadListener);
+            return new SplitLoadTaskImpl(this, filterSplitFileIntentList, loadListener);
         } else {
-            return new SplitLoadTaskImpl2(this, splitFileIntents, loadListener);
+            return new SplitLoadTaskImpl2(this, filterSplitFileIntentList, loadListener);
         }
     }
 
@@ -145,6 +149,25 @@ final class SplitLoadManagerImpl extends SplitLoadManager {
             return;
         }
         createSplitLoadTask(splitFileIntents, null).run();
+    }
+
+    private List<Intent> filterIntentsCanWorkInThisProcess(@NonNull List<Intent> intentList) {
+        List<Intent> filterIntentList = new ArrayList<>(intentList.size());
+        SplitInfoManager infoManager = SplitInfoManagerService.getInstance();
+        if (infoManager == null) {
+            return intentList;
+        }
+        for (Intent splitFileIntent : intentList) {
+            final String splitName = splitFileIntent.getStringExtra(SplitConstants.KET_NAME);
+            SplitInfo info = infoManager.getSplitInfo(getContext(), splitName);
+            if (canBeWorkedInThisProcessForSplit(info)) {
+                filterIntentList.add(splitFileIntent);
+                SplitLog.i(TAG, "Split %s need load in process %s", info.getSplitName(), currentProcessName);
+            } else {
+                SplitLog.i(TAG, "Split %s do not need load in process %s", info.getSplitName(), currentProcessName);
+            }
+        }
+        return filterIntentList;
     }
 
     private boolean isInjectPathClassloaderNeeded() {
