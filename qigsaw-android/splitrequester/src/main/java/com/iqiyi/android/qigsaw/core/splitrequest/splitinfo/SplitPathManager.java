@@ -45,11 +45,16 @@ public final class SplitPathManager {
 
     private static final AtomicReference<SplitPathManager> sSplitPathManagerRef = new AtomicReference<>();
 
+    private final File baseRootDir;
     private final File rootDir;
+    private File commonSoDir;
 
     private final String qigsawId;
 
+    private static final String COMMON_SO_DIR_NAME = "common_so";
+
     private SplitPathManager(File rootDir, String qigsawId) {
+        baseRootDir = rootDir;
         this.rootDir = new File(rootDir, qigsawId);
         this.qigsawId = qigsawId;
     }
@@ -179,11 +184,23 @@ public final class SplitPathManager {
         File[] qigsawIdFiles = qigsawIdDir.listFiles();
         if (qigsawIdFiles != null && qigsawIdFiles.length > 0) {
             for (File file : qigsawIdFiles) {
-                if (file.isDirectory() && !file.getName().equals(qigsawId)) {
+                String filename = file.getName();
+                if (file.isDirectory() && !filename.equals(qigsawId) && !filename.equals(COMMON_SO_DIR_NAME)) {
                     FileUtil.deleteDir(file);
                     SplitLog.i(TAG, "Success to delete all obsolete splits for current app version!");
                 }
             }
         }
     }
+
+    public File getCommonSoDir() {
+        if (commonSoDir == null) {
+            commonSoDir = new File(baseRootDir, COMMON_SO_DIR_NAME);
+            if (!commonSoDir.exists()) {
+                commonSoDir.mkdirs();
+            }
+        }
+        return commonSoDir;
+    }
+
 }

@@ -35,6 +35,8 @@ import androidx.annotation.NonNull;
 
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
+import com.iqiyi.android.qigsaw.core.splitload.compat.NativePathMapper;
+import com.iqiyi.android.qigsaw.core.splitload.compat.NativePathMapperImpl;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitBriefInfo;
 import com.iqiyi.android.qigsaw.core.splitreport.SplitLoadError;
 import com.iqiyi.android.qigsaw.core.splitrequest.splitinfo.SplitInfo;
@@ -65,6 +67,8 @@ final class SplitLoadHandler {
 
     private final SplitActivator activator;
 
+    private final NativePathMapper mapper;
+
     SplitLoadHandler(@NonNull SplitLoaderWrapper splitLoader,
                      @NonNull SplitLoadManager loadManager,
                      @NonNull List<Intent> splitFileIntents) {
@@ -74,6 +78,7 @@ final class SplitLoadHandler {
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.infoManager = SplitInfoManagerService.getInstance();
         this.activator = new SplitActivator(loadManager.getContext());
+        this.mapper = new NativePathMapperImpl(loadManager.getContext());
     }
 
     Handler getMainHandler() {
@@ -133,6 +138,12 @@ final class SplitLoadHandler {
             //load split's dex files
             List<String> addedDexPaths = splitFileIntent.getStringArrayListExtra(SplitConstants.KEY_ADDED_DEX);
             ClassLoader classLoader;
+
+            // check if need compat native lib path on android 5.x
+            SplitLog.d(TAG, "split name: %s, origin native path: %s", splitName, nativeLibPath);
+            nativeLibPath = mapper.map(splitName, nativeLibPath);
+            SplitLog.d(TAG, "split name: %s, mapped native path: %s", splitName, nativeLibPath);
+
             try {
                 classLoader = splitLoader.loadCode(splitName,
                         addedDexPaths, dexOptPath == null ? null : new File(dexOptPath),
