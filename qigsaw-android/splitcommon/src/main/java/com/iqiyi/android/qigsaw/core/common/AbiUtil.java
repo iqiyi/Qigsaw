@@ -279,4 +279,16 @@ public class AbiUtil {
         }
         return null;
     }
+
+    public static boolean isArm64(Context context) {
+        String baseApi = null;
+        try {
+            baseApi = getBasePrimaryAbi(context);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return !TextUtils.isEmpty(baseApi) && baseApi.equals(armv8);
+    }
+
 }
