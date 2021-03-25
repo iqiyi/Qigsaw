@@ -25,6 +25,7 @@
 package com.iqiyi.android.qigsaw.core.splitdownload;
 
 import androidx.annotation.Keep;
+import androidx.annotation.NonNull;
 
 import java.util.List;
 
@@ -73,4 +74,8 @@ public interface Downloader {
      */
     boolean isDeferredDownloadOnlyWhenUsingWifiData();
 
+    /**
+     * @param totalBytesToDownload when no caches
+     */
+    long calculateDownloadSize(@NonNull List<DownloadRequest> requests, long totalBytesToDownload);
 }

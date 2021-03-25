@@ -24,6 +24,8 @@
 
 package com.iqiyi.android.qigsaw.core.extension;
 
+import com.iqiyi.android.qigsaw.core.common.CompatBundle;
+
 import java.lang.reflect.Field;
 
 final class ComponentInfoManager {
@@ -41,7 +43,10 @@ final class ComponentInfoManager {
 
     private static final String APPLICATION_SUFFIX = "_APPLICATION";
 
-    private static Class getComponentInfoClass() throws ClassNotFoundException {
+    private static Class<?> getComponentInfoClass() throws ClassNotFoundException, IllegalAccessException {
+        if (CompatBundle.instance != null && CompatBundle.instance.disableComponentInfoManager()) {
+            throw new IllegalAccessException("disabled ComponentInfoManager");
+        }
         return Class.forName(CLASS_ComponentInfo);
     }
 

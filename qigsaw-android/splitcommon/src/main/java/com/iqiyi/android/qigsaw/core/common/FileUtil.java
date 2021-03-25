@@ -135,6 +135,7 @@ public class FileUtil {
      * @param file
      */
     public static String getMD5(final File file) {
+        if (CompatBundle.instance != null) return CompatBundle.instance.getMD5(file);
         if (file == null || !file.exists()) {
             return null;
         }
@@ -157,6 +158,7 @@ public class FileUtil {
      * @param is
      */
     public static String getMD5(final InputStream is) {
+        if (CompatBundle.instance != null) return CompatBundle.instance.getMD5(is);
         if (is == null) {
             return null;
         }

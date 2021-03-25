@@ -59,8 +59,9 @@ public class SplitBaseInfoProvider {
         sPackageName = packageName;
     }
 
-    private static Class getQigsawConfigClass() throws ClassNotFoundException {
+    private static Class<?> getQigsawConfigClass() throws ClassNotFoundException {
         try {
+            if (CompatBundle.instance != null) return CompatBundle.instance.qigsawConfigClass();
             return Class.forName(sPackageName + CLASS_QigsawConfig);
         } catch (ClassNotFoundException e) {
             SplitLog.w(TAG, "Qigsaw Warning: Can't find class " + sPackageName + ".QigsawConfig.class!");
