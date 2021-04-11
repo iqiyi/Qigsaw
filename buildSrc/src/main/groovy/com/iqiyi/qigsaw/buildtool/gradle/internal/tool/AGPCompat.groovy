@@ -56,7 +56,13 @@ class AGPCompat {
             Class class_Aapt2MavenUtils = Class.forName("com.android.build.gradle.internal.res.Aapt2MavenUtils")
             Method method_getAapt2FromMaven = class_Aapt2MavenUtils.getDeclaredMethod("getAapt2FromMaven", GlobalScope)
             method_getAapt2FromMaven.setAccessible(true)
-            def aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.scope.globalScope).singleFile
+            def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
+            def aapt2
+            if(versionAGP >= VersionNumber.parse("4.1.0")){
+                aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.globalScope).singleFile
+            }else{
+                aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.scope.globalScope).singleFile
+            }
             return aapt2
         } catch (Throwable e) {
             throw new GradleException("Unable to obtain aapt2", e)
@@ -72,9 +78,15 @@ class AGPCompat {
     }
 
     private static String getMergedManifestDirCompat(Task processManifestTask) {
+        def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
+
         String manifestOutputBaseDir
         try {
-            manifestOutputBaseDir = processManifestTask.manifestOutputDirectory.asFile.get()
+            if (versionAGP >= VersionNumber.parse("4.1.0")) {
+                manifestOutputBaseDir = processManifestTask.multiApkManifestOutputDirectory.get().getAsFile().getAbsolutePath()
+            }else{
+                manifestOutputBaseDir = processManifestTask.manifestOutputDirectory.asFile.get()
+            }
         } catch (Throwable ignored) {
             manifestOutputBaseDir = processManifestTask.manifestOutputDirectory
         }
@@ -92,9 +104,15 @@ class AGPCompat {
         if (versionAGP < VersionNumber.parse("3.3.0")) {
             return null
         }
+
         File bundleManifestDir = null
         try {
-            bundleManifestDir = processManifestTask.bundleManifestOutputDirectory
+            if (versionAGP >= VersionNumber.parse("4.1.0")) {
+                bundleManifestDir = processManifestTask.bundleManifest.get().getAsFile()
+
+            }else{
+                bundleManifestDir = processManifestTask.bundleManifestOutputDirectory
+            }
         } catch (Throwable e) {
             try {
                 bundleManifestDir = processManifestTask.getBundleManifestOutputDirectory().get().getAsFile()
@@ -182,6 +200,11 @@ class AGPCompat {
 
     static Task getProcessManifestTask(Project project, String variantName) {
         String mergeManifestTaskName = "process${variantName}Manifest"
+        return project.tasks.findByName(mergeManifestTaskName)
+    }
+
+    static Task getProcessManifestForBundleTask(Project project, String variantName) {
+        String mergeManifestTaskName = "processApplicationManifest${variantName}ForBundle"
         return project.tasks.findByName(mergeManifestTaskName)
     }
 
