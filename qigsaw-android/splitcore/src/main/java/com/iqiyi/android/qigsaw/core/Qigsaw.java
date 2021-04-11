@@ -79,6 +79,7 @@ public class Qigsaw {
         this.splitConfiguration = splitConfiguration;
         this.currentProcessName = ProcessUtil.getProcessName(context);
         this.isMainProcess = context.getPackageName().equals(currentProcessName);
+        InjectActivityResource.inject((Application) context);
     }
 
     private static Qigsaw instance() {

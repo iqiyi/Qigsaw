@@ -2,6 +2,8 @@ package com.iqiyi.qigsaw.sample.downloader;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.iqiyi.android.qigsaw.core.splitdownload.DownloadCallback;
 import com.iqiyi.android.qigsaw.core.splitdownload.DownloadRequest;
 import com.iqiyi.android.qigsaw.core.splitdownload.Downloader;
@@ -152,6 +154,11 @@ public class SampleDownloader implements Downloader {
     @Override
     public long getDownloadSizeThresholdWhenUsingMobileData() {
         return 10 * 1024 * 1024;
+    }
+
+    @Override
+    public long calculateDownloadSize(@NonNull List<DownloadRequest> requests, long totalBytesToDownload) {
+        return totalBytesToDownload;
     }
 
     @Override
