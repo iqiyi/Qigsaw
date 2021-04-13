@@ -39,12 +39,25 @@ public final class DownloadRequest implements Parcelable {
 
     private final String fileMD5;
 
+    private final long size;
+
     private DownloadRequest(Parcel in) {
         url = in.readString();
         fileDir = in.readString();
         fileName = in.readString();
         moduleName = in.readString();
         fileMD5 = in.readString();
+        size = in.readLong();
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(url);
+        dest.writeString(fileDir);
+        dest.writeString(fileName);
+        dest.writeString(moduleName);
+        dest.writeString(fileMD5);
+        dest.writeLong(size);
     }
 
     public static final Creator<DownloadRequest> CREATOR = new Creator<DownloadRequest>() {
@@ -69,6 +82,7 @@ public final class DownloadRequest implements Parcelable {
         this.fileName = builder.fileName;
         this.moduleName = builder.moduleName;
         this.fileMD5 = builder.fileMD5;
+        this.size = builder.size;
     }
 
     public String getUrl() {
@@ -91,17 +105,13 @@ public final class DownloadRequest implements Parcelable {
         return fileMD5;
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    public long getSize() {
+        return size;
     }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(url);
-        dest.writeString(fileDir);
-        dest.writeString(fileName);
-        dest.writeString(moduleName);
+    public int describeContents() {
+        return 0;
     }
 
     public static class Builder {
@@ -115,6 +125,8 @@ public final class DownloadRequest implements Parcelable {
         private String moduleName;
 
         private String fileMD5;
+
+        private long size;
 
         public Builder url(String url) {
             this.url = url;
@@ -141,9 +153,13 @@ public final class DownloadRequest implements Parcelable {
             return this;
         }
 
+        public Builder size(long size) {
+            this.size = size;
+            return this;
+        }
+
         public DownloadRequest build() {
             return new DownloadRequest(this);
         }
-
     }
 }

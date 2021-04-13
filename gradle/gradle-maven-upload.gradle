@@ -1,3 +1,5 @@
+if (project.hasProperty('publishToNexusGAV')) publishToNexusGAV(GROUP_ID, POM_ARTIFACT_ID, VERSION_NAME)
+
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'signing'
 

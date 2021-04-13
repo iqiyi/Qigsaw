@@ -99,6 +99,10 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 ApkSigner apkSigner = new ApkSigner(project, baseVariant)
 
                 Task processManifest = AGPCompat.getProcessManifestTask(project, baseVariant.name.capitalize())
+                Task processManifestForBundle = null
+                if(versionAGP >= VersionNumber.parse("4.1.0")){
+                    processManifestForBundle = AGPCompat.getProcessManifestForBundleTask(project, baseVariant.name.capitalize())
+                }
                 Task mergeAssets = AGPCompat.getMergeAssetsTask(project, baseVariant.name.capitalize())
                 Task packageApp = AGPCompat.getPackageTask(project, baseVariant.name.capitalize())
                 Task baseAssemble = AGPCompat.getAssemble(baseVariant)
@@ -106,8 +110,14 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 Task mergeJniLibs = AGPCompat.getMergeJniLibsTask(project, baseVariant.name.capitalize())
                 Task r8 = AGPCompat.getR8Task(project, baseVariant.name.capitalize())
 
-                //3.2.x has no bundle_manifest dir
-                File bundleManifestDir = AGPCompat.getBundleManifestDirCompat(processManifest, versionAGP)
+                File bundleManifestDir
+                if(processManifestForBundle!=null){
+                    //4.x has no bundle_manifest dir
+                    bundleManifestDir = AGPCompat.getBundleManifestDirCompat(processManifestForBundle, versionAGP).getParentFile()
+                }else{
+                    //3.2.x has no bundle_manifest dir
+                    bundleManifestDir = AGPCompat.getBundleManifestDirCompat(processManifest, versionAGP)
+                }
                 File bundleManifestFile = bundleManifestDir == null ? null : new File(bundleManifestDir, SdkConstants.ANDROID_MANIFEST_XML)
                 File mergedManifestFile = AGPCompat.getMergedManifestFileCompat(processManifest)
                 File mergedAssetsDir = new File(AGPCompat.getMergedAssetsBaseDirCompat(mergeAssets))
@@ -144,7 +154,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 generateQigsawConfig.defaultSplitInfoVersion = completeSplitInfoVersion
                 generateQigsawConfig.dynamicFeatureNames = dynamicFeaturesNames
                 generateQigsawConfig.outputDir = qigsawConfigDir
-                generateQigsawConfig.buildConfigDir = baseVariant.variantData.scope.buildConfigSourceOutputDir
+                if(versionAGP>=VersionNumber.parse("4.1.0")){
+                    generateQigsawConfig.buildConfigDir = baseVariant.variantData.paths.buildConfigSourceOutputDir
+                }else{
+                    generateQigsawConfig.buildConfigDir = baseVariant.variantData.scope.buildConfigSourceOutputDir
+                }
                 generateQigsawConfig.targetFilesExtractedDir = targetFilesExtractedDir
                 generateQigsawConfig.setGroup(QIGSAW)
 
@@ -176,6 +190,9 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 qigsawInstall.setGroup(QIGSAW)
 
                 extractTargetFilesFromOldApk.dependsOn processManifest
+                if(processManifestForBundle!=null){
+                    extractTargetFilesFromOldApk.dependsOn processManifestForBundle
+                }
                 qigsawAssemble.dependsOn extractTargetFilesFromOldApk
                 generateQigsawConfig.dependsOn extractTargetFilesFromOldApk
                 generateQigsawConfig.dependsOn generateBuildConfig

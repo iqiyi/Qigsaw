@@ -26,12 +26,12 @@ package com.iqiyi.android.qigsaw.core.splitrequest.splitinfo;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import android.text.TextUtils;
-
+import com.iqiyi.android.qigsaw.core.common.CompatBundle;
 import com.iqiyi.android.qigsaw.core.common.FileUtil;
 import com.iqiyi.android.qigsaw.core.common.SplitConstants;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
@@ -222,9 +222,11 @@ final class SplitInfoManagerImpl implements SplitInfoManager {
         return details;
     }
 
-    private static SplitDetails parseSplitContentsForDefaultVersion(Context context, String fileName)
-            throws IOException, JSONException {
-        String content = readInputStreamContent(createInputStreamFromAssets(context, fileName));
+    private static SplitDetails parseSplitContentsForDefaultVersion(Context context, String fileName) throws IOException, JSONException {
+        String content;
+        if (CompatBundle.instance != null) {
+            content = CompatBundle.instance.readDefaultSplitVersionContent(context, fileName);
+        } else content = readInputStreamContent(createInputStreamFromAssets(context, fileName));
         return parseSplitsContent(content);
     }
 
