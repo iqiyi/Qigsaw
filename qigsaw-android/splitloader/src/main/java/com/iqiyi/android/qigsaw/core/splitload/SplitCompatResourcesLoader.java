@@ -35,13 +35,14 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-
-import androidx.annotation.RequiresApi;
-import androidx.annotation.RestrictTo;
-
 import android.util.DisplayMetrics;
 import android.view.ContextThemeWrapper;
 
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.RestrictTo;
+
+import com.iqiyi.android.qigsaw.core.common.SplitBaseInfoProvider;
 import com.iqiyi.android.qigsaw.core.common.SplitLog;
 
 import java.lang.ref.WeakReference;
@@ -49,10 +50,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import static androidx.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -71,7 +74,7 @@ public class SplitCompatResourcesLoader {
      * After Android 7.0, WebView.apk resources is added dynamically.
      */
     public static void loadResources(Context context, Resources resources) throws Throwable {
-        checkOrUpdateResources(context, resources);
+        if (!fullyLoadedRes.containsKey(resources)) checkOrUpdateResources(context, resources);
     }
 
     static void loadResources(Context context, Resources preResources, String splitApkPath) throws Throwable {
@@ -100,6 +103,7 @@ public class SplitCompatResourcesLoader {
                 }
                 try {
                     installSplitResDirs(context, resources, unloadedSplitPaths);
+                    if (isFullyLoadedRes()) fullyLoadedRes.put(resources, null);
                 } catch (Throwable e) {
                     throw new SplitCompatResourcesException("Failed to install resources " + unloadedSplitPaths.toString() + " for " + context.getClass().getName(), e);
                 }
@@ -557,4 +561,33 @@ public class SplitCompatResourcesLoader {
             return getApkAssetsMethod;
         }
     }
+
+    //region fullyLoadedRes
+    private static final Map<Resources, Void> fullyLoadedRes = new WeakHashMap<>();
+    private static List<String> dynamicFeatures;
+
+    private static boolean isFullyLoadedRes() {
+        Collection<String> dynamicFeatures = getDynamicFeatures();
+        Collection<String> loadedSplitNames = getLoadedSplitNames();
+        if (dynamicFeatures != null && loadedSplitNames != null) {
+            return loadedSplitNames.containsAll(dynamicFeatures);
+        } else return false;
+    }
+
+    @Nullable
+    private static Collection<String> getDynamicFeatures() {
+        if (dynamicFeatures != null && dynamicFeatures.size() > 0) return dynamicFeatures;
+        String[] features = SplitBaseInfoProvider.getDynamicFeatures();
+        dynamicFeatures = features != null ? Arrays.asList(features) : null;
+        return dynamicFeatures;
+    }
+
+    private static Collection<String> getLoadedSplitNames() {
+        SplitLoadManager loadManager = SplitLoadManagerService.getInstance();
+        if (loadManager != null) {
+            return loadManager.getLoadedSplitNames();
+        }
+        return null;
+    }
+//endregion
 }
