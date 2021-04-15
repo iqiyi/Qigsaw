@@ -107,7 +107,7 @@ public class SplitCompatResourcesLoader {
                 } catch (Throwable e) {
                     throw new SplitCompatResourcesException("Failed to install resources " + unloadedSplitPaths.toString() + " for " + context.getClass().getName(), e);
                 }
-            }
+            } else if (isFullyLoadedRes()) fullyLoadedRes.put(resources, null);
         }
     }
 
