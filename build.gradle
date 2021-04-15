@@ -2,7 +2,20 @@
 
 
 buildscript {
-
+    ext.applyRootProjectProperties = {
+        Properties local_properties = new Properties()
+        File localGradlePropertiesFile = project.rootProject.file('local.properties')
+        println localGradlePropertiesFile.path
+        if (localGradlePropertiesFile.exists()) {
+            local_properties.load(localGradlePropertiesFile.newDataInputStream())
+        }
+        Map<String, String> localProperties = new HashMap<>()
+        local_properties.each { key, value ->
+            localProperties.put(key, value)
+        }
+        return localProperties
+    }
+    ext.localProperties = applyRootProjectProperties()
     repositories {
         google()
         jcenter()
@@ -23,7 +36,12 @@ allprojects {
     }
 }
 
-subprojects {
+subprojects { Project project ->
+    if (!localProperties.isEmpty()) {
+        localProperties.forEach { key, value ->
+            project.ext[key] = value
+        }
+    }
     apply from: rootProject.file('./gradle/checkStyle.gradle')
 }
 
@@ -34,5 +52,5 @@ ext {
             'targetSdk' : 28,
             'support'   : '27.1.1'
     ]
-    sample=false
+    sample = false
 }
