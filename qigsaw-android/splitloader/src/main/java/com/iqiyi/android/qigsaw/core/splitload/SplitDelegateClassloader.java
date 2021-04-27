@@ -53,6 +53,15 @@ final class SplitDelegateClassloader extends PathClassLoader {
         if (packageInfo != null) {
             HiddenApiReflection.findField(packageInfo, "mClassLoader").set(packageInfo, reflectClassLoader);
         }
+        try {
+            // Tinker(since 1.9.14.9) will set the mBase.mClassLoader field with its own ClassLoader,
+            // so we will re-set it with ours.
+            HiddenApiReflection.findField(baseContext, "mClassLoader").set(baseContext, reflectClassLoader);
+        } catch (Throwable ignored) {
+            // There's no mClassLoader field in ContextImpl before Android O.
+            // However we should try our best to replace this field in case some
+            // customized system has one.
+        }
     }
 
     static void inject(ClassLoader originalClassloader, Context baseContext) throws Exception {
