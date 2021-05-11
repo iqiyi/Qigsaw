@@ -229,6 +229,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                     qigsawProcessManifest.mergedManifestFile = mergedManifestFile
                     qigsawProcessManifest.bundleManifestFile = bundleManifestFile
                     qigsawProcessManifest.mustRunAfter processManifest
+                    processManifest.finalizedBy qigsawProcessManifest
                     generateQigsawConfig.dependsOn qigsawProcessManifest
                     boolean multiDexEnabled
                     try {
