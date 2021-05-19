@@ -20,6 +20,10 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+#copy from multidexkeep.pro
+-keep class * implements com.iqiyi.android.qigsaw.core.splitdownload.Downloader {
+    <init>(...);
+}
 
 
 
