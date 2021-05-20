@@ -11,7 +11,7 @@
 }
 
 # ${yourApplicationId}.QigsawConfig, QigsawVersion >= 1.2.2
--keep class com.iqiyi.qigsaw.sample.QigsawConfig {
+-keep class **.QigsawConfig {
     *;
 }
 

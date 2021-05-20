@@ -20,6 +20,21 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+#copy from multidexkeep.pro
+-keep class com.iqiyi.android.qigsaw.core.Qigsaw {
+    <init>(...);
+    void install(...);
+    void onAppGetResources(Resources);
+}
+
+# ${yourApplicationId}.QigsawConfig, QigsawVersion >= 1.2.2
+-keep class **.QigsawConfig {
+    *;
+}
+
+-keep class com.iqiyi.android.qigsaw.core.extension.ComponentInfo {
+    *;
+}
 
 
 
