@@ -59,6 +59,16 @@ class QigsawInstallTask extends DefaultTask {
         if (baseApkFiles.size() > 1) {
             throw new GradleException("Qigsaw Error: Qigsaw don't support multi-apks.")
         }
+        if (versionAGP < VersionNumber.parse("4.0.0")) {
+            installBelowAGP4()
+        } else if (versionAGP < VersionNumber.parse("4.1.0")) {
+            installAboveAGP4()
+        } else {
+            installAboveAGP41()
+        }
+    }
+
+    void installAboveAGP4() {
         File adbExecutable = null
         try {
             adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
@@ -80,20 +90,6 @@ class QigsawInstallTask extends DefaultTask {
         if (deviceProvider == null) {
             throw new GradleException("Qigsaw has not adapt this AGP version yet!")
         }
-        if (versionAGP < VersionNumber.parse("4.0.0")) {
-            installBelowAGP4(variantData, projectName, deviceProvider, baseApkFiles.get(0), installOptions, timeOutInMs, logger)
-        } else {
-            installAboveAGP4(variantData, projectName, deviceProvider, baseApkFiles.get(0), installOptions, timeOutInMs, logger)
-        }
-    }
-
-    static installAboveAGP4(BaseVariantData variantData,
-                            @NonNull String projectName,
-                            @NonNull DeviceProvider deviceProvider,
-                            @NonNull File apkFile,
-                            @NonNull Collection<String> installOptions,
-                            int timeOutInMs,
-                            @NonNull Logger logger) {
         deviceProvider.use(new Callable<Object>() {
             @Override
             Object call() throws Exception {
@@ -112,14 +108,64 @@ class QigsawInstallTask extends DefaultTask {
         })
     }
 
+    void installAboveAGP41() {
+        File adbExecutable = null
+        try {
+            adbExecutable = variantData.globalScope.sdkComponents.get().adbExecutableProvider.get().getAsFile()
+        } catch (Throwable ignored) {
+        }
+        if (adbExecutable == null) {
+            throw new GradleException("> Task :Qigsaw don't support current AGP version, adbExecutable is null!")
+        }
+        int timeOutInMs = variantData.globalScope.extension.adbOptions.timeOutInMs
+        String projectName = project.name
+        Collection<String> installOptions = variantData.globalScope.extension.adbOptions.installOptions
+        final ILogger iLogger = new LoggerWrapper(getLogger())
+        DeviceProvider deviceProvider = AGPCompat.createDeviceProviderCompat(adbExecutable, timeOutInMs, iLogger)
+        if (deviceProvider == null) {
+            throw new GradleException("Qigsaw has not adapt this AGP version yet!")
+        }
+        deviceProvider.use(new Callable<Object>() {
+            @Override
+            Object call() throws Exception {
+                install(
+                        projectName,
+                        variantData.variantSources.getFullName(),
+                        deviceProvider,
+                        variantData.getVariantDslInfo().getMinSdkVersion(),
+                        baseApkFiles.get(0),
+                        installOptions,
+                        timeOutInMs,
+                        logger
+                )
+                return null
+            }
+        })
+    }
 
-    static installBelowAGP4(BaseVariantData variantData,
-                            @NonNull String projectName,
-                            @NonNull DeviceProvider deviceProvider,
-                            @NonNull File apkFile,
-                            @NonNull Collection<String> installOptions,
-                            int timeOutInMs,
-                            @NonNull Logger logger) {
+
+    void installBelowAGP4() {
+        File adbExecutable = null
+        try {
+            adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
+        } catch (Throwable ignored) {
+            try {
+                adbExecutable = variantData.scope.globalScope.sdkComponents.adbExecutableProvider.get()
+            } catch (Throwable e) {
+                //
+            }
+        }
+        if (adbExecutable == null) {
+            throw new GradleException("> Task :Qigsaw don't support current AGP version, adbExecutable is null!")
+        }
+        int timeOutInMs = variantData.scope.globalScope.extension.adbOptions.timeOutInMs
+        String projectName = variantData.scope.globalScope.project.name
+        Collection<String> installOptions = variantData.scope.globalScope.extension.adbOptions.installOptions
+        final ILogger iLogger = new LoggerWrapper(getLogger())
+        DeviceProvider deviceProvider = AGPCompat.createDeviceProviderCompat(adbExecutable, timeOutInMs, iLogger)
+        if (deviceProvider == null) {
+            throw new GradleException("Qigsaw has not adapt this AGP version yet!")
+        }
         deviceProvider.init()
         try {
             install(
@@ -127,7 +173,7 @@ class QigsawInstallTask extends DefaultTask {
                     variantData.getVariantConfiguration().getFullName(),
                     deviceProvider,
                     variantData.getVariantConfiguration().getMinSdkVersion(),
-                    apkFile,
+                    baseApkFiles.get(0),
                     installOptions,
                     timeOutInMs,
                     logger)
