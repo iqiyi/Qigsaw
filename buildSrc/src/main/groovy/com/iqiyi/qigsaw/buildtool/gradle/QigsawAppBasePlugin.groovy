@@ -123,7 +123,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 File qigsawProguardDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/old-outputs/mapping/${baseVariant.name}")
                 File splitDetailsDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-details/${baseVariant.name}")
                 File baseApksDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/base-outputs/apks/${baseVariant.name}")
-                File unzipBaseApkDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/base-outputs/unzip/${baseVariant.name}/${project.name}")
 
                 File splitDetailsFile = new File(splitDetailsDir, "qigsaw" + "_" + completeSplitInfoVersion + SdkConstants.DOT_JSON)
                 File updateRecordFile = new File(splitDetailsDir, "_update_record_${SdkConstants.DOT_JSON}")
@@ -192,13 +191,11 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         SplitBaseApkForABIsTask splitBaseApkForABIs = project.tasks.create("split${baseVariant.name.capitalize()}BaseApkForABIs", SplitBaseApkForABIsTask)
                         splitBaseApkForABIs.baseVariant = baseVariant
                         splitBaseApkForABIs.apkSigner = apkSigner
-                        splitBaseApkForABIs.use7z = QigsawSplitExtensionHelper.isUse7z(project)
                         splitBaseApkForABIs.dynamicFeaturesNames = dynamicFeaturesNames
                         splitBaseApkForABIs.baseAppCpuAbiListFile = baseAppCpuAbiListFile
                         splitBaseApkForABIs.baseApkFiles = baseApkFiles
                         splitBaseApkForABIs.packageAppDir = packageAppDir
                         splitBaseApkForABIs.baseApksDir = baseApksDir
-                        splitBaseApkForABIs.unzipBaseApkDir = unzipBaseApkDir
                         baseAssemble.dependsOn splitBaseApkForABIs
                         packageApp.finalizedBy splitBaseApkForABIs
                     }
