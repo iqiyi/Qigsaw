@@ -49,7 +49,15 @@ class SplitBaseApkForABIsTask extends DefaultTask {
             FileUtils.deleteDir(baseApksDir)
         }
         File baseApk = baseApkFiles[0]
-        List<String> abiList = supportABIs != null ? supportABIs.split(",") : null
+        Properties properties = new Properties()
+        if (!baseAppCpuAbiListFile.exists()) {
+            throw new GradleException("Unable to find file ${baseAppCpuAbiListFile.absolutePath}")
+        }
+        baseAppCpuAbiListFile.withInputStream {
+            properties.load(it)
+        }
+        String abiListText = properties."abiList"
+        List<String> abiList = abiListText != null ? abiListText.split(",") : null
         if (abiList == null || abiList.isEmpty()) {
             SplitLogger.e("Base apk ${baseApk.absolutePath} has no native-library abi folder, multiple apks don't need.")
             return
