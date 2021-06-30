@@ -124,14 +124,11 @@ class SplitBaseApkForABIsTask extends DefaultTask {
                 }
                 boolean isSigningNeed = signingConfig != null && signingConfig.isSigningReady()
                 if (isSigningNeed) {
-                    File unsignBaseApk = new File(baseApksDir, copyBaseApk.getName().replaceAll(SdkConstants.DOT_ANDROID_PACKAGE, SdkConstants.DOT_ZIP))
-                    if (unsignBaseApk.exists()) {
-                        unsignBaseApk.delete()
+                    File signedBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
+                    if (signedBaseApk.exists()) {
+                        signedBaseApk.delete()
                     }
-                    copyBaseApk.renameTo(unsignBaseApk)
-                    File signedBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}${SdkConstants.DOT_ANDROID_PACKAGE}")
-                    apkSigner.signApkIfNeed(unsignBaseApk, signedBaseApk)
-                    unsignBaseApk.delete()
+                    apkSigner.signApkIfNeed(copyBaseApk, signedBaseApk)
                     File destBaseApk = new File(packageAppDir, signedBaseApk.name)
                     if (destBaseApk.exists()) {
                         destBaseApk.delete()
