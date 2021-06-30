@@ -28,9 +28,6 @@ class SplitBaseApkForABIsTask extends DefaultTask {
     @InputFile
     File baseAppCpuAbiListFile
 
-    @Input
-    String supportABIs
-
     @InputFiles
     List<File> baseApkFiles
 
