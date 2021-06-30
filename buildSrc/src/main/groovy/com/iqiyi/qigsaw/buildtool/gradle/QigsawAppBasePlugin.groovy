@@ -199,8 +199,19 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         splitBaseApkForABIs.packageAppDir = packageAppDir
                         splitBaseApkForABIs.baseApksDir = baseApksDir
                         splitBaseApkForABIs.unzipBaseApkDir = unzipBaseApkDir
-                        baseAssemble.dependsOn splitBaseApkForABIs
-                        packageApp.finalizedBy splitBaseApkForABIs
+                        Task resguardTask = AGPCompat.getResguardTask(project, "${baseVariant.name.capitalize()}")
+                        // apply plugin: 'AndResGuard' 必须在 qigsaw application 插件后应用，否则会查找不到 resguardTask
+                        if (resguardTask != null) {
+                            SplitLogger.w("found resguardTask")
+                            resguardTask.dependsOn baseAssemble
+                            baseAssemble.finalizedBy resguardTask
+                            splitBaseApkForABIs.dependsOn resguardTask
+                            resguardTask.finalizedBy splitBaseApkForABIs
+                        } else {
+                            SplitLogger.w("not found resguardTask")
+                            baseAssemble.dependsOn splitBaseApkForABIs
+                            packageApp.finalizedBy splitBaseApkForABIs
+                        }
                     }
 
                     //for supporting split content-provider
