@@ -198,7 +198,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                         splitBaseApkForABIs.baseApksDir = baseApksDir
                         Task resguardTask = AGPCompat.getResguardTask(project, baseVariant.name.capitalize())
                         if (resguardTask != null) {
-                            splitBaseApkForABIs.dependsOn baseAssemble
+                            splitBaseApkForABIs.dependsOn resguardTask
                             resguardTask.finalizedBy splitBaseApkForABIs
                         } else {
                             baseAssemble.dependsOn splitBaseApkForABIs
