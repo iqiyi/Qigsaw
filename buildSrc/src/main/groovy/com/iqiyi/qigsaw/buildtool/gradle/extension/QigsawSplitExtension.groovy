@@ -31,12 +31,6 @@ class QigsawSplitExtension {
     final static String EMPTY = ""
 
     /**
-     * Whether repack base apk with 7z format.
-     * default value is {@code false}
-     */
-    boolean use7z = false
-
-    /**
      * the old apk path
      */
     String oldApk = EMPTY

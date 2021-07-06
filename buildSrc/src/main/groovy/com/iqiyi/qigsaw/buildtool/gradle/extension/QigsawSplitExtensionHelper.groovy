@@ -93,14 +93,6 @@ class QigsawSplitExtensionHelper {
         return null
     }
 
-    static boolean isUse7z(Project project) {
-        try {
-            return project.extensions.qigsawSplit.use7z
-        } catch (Throwable ignored) {
-            return false
-        }
-    }
-
     static Set<String> getSplitEntryFragments(Project project) {
         try {
             List<String> value = project.extensions.qigsawSplit.splitEntryFragments
