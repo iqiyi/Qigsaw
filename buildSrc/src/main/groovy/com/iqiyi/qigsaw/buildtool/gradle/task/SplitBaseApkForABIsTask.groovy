@@ -6,7 +6,6 @@ import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.CommandUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.FileUtils
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ApkSigner
 import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.SplitLogger
-import com.iqiyi.qigsaw.buildtool.gradle.internal.tool.ZipUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.Input
@@ -24,9 +23,6 @@ class SplitBaseApkForABIsTask extends DefaultTask {
     ApkSigner apkSigner
 
     @Input
-    boolean use7z
-
-    @Input
     Set<String> dynamicFeaturesNames
 
     @InputFile
@@ -41,16 +37,10 @@ class SplitBaseApkForABIsTask extends DefaultTask {
     @OutputDirectory
     File baseApksDir
 
-    @OutputDirectory
-    File unzipBaseApkDir
-
     @TaskAction
     void splitBaseApk() {
         if (baseApkFiles.size() > 1) {
             throw new GradleException("Qigsaw Error: Qigsaw don't support multi-apks.")
-        }
-        if (unzipBaseApkDir.exists()) {
-            FileUtils.deleteDir(unzipBaseApkDir)
         }
         if (baseApksDir.exists()) {
             FileUtils.deleteDir(baseApksDir)
@@ -73,82 +63,94 @@ class SplitBaseApkForABIsTask extends DefaultTask {
             SplitLogger.e("Base apk ${baseApk.absolutePath} has only one native-library abi folder, multiple apks don't need.")
             return
         }
-        if (use7z) {
-            abiList.add(abiList.join("-"))
-        }
-        SigningConfig signingConfig = null
-        try {
-            signingConfig = apkSigner.getSigningConfig()
-        } catch (Throwable ignored) {
-
-        }
-        boolean isSigningNeed = signingConfig != null && signingConfig.isSigningReady()
         abiList.each { String abi ->
-            File unzipBaseApkDirForAbi = new File(unzipBaseApkDir, abi)
-            if (unzipBaseApkDirForAbi.exists()) {
-                FileUtils.deleteDir(unzipBaseApkDirForAbi)
-            }
-            unzipBaseApkDirForAbi.mkdirs()
-            HashMap<String, Integer> compress = ZipUtils.unzipApk(baseApk, unzipBaseApkDirForAbi)
             if (SUPPORTED_ABIS.contains(abi)) {
-                File baseAppCpuAbiListFileForAbi = new File(unzipBaseApkDirForAbi, "assets/${baseAppCpuAbiListFile.name}")
-                baseAppCpuAbiListFileForAbi.write("abiList=${abi}")
-                File[] libDirs = new File(unzipBaseApkDirForAbi, "lib").listFiles()
-                libDirs.each { File abiDir ->
-                    if (abiDir.name != abi) {
-                        FileUtils.deleteDir(abiDir)
-                    }
+                // Copy base apk
+                File copyBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}${SdkConstants.DOT_ANDROID_PACKAGE}")
+                if (!copyBaseApk.parentFile.exists()) {
+                    copyBaseApk.parentFile.mkdirs()
                 }
-                dynamicFeaturesNames.each { String splitName ->
-                    File baseApkQigsawAssetsDir = new File(unzipBaseApkDirForAbi, "assets/qigsaw")
-                    File[] splitApkFiles = baseApkQigsawAssetsDir.listFiles(new FileFilter() {
-                        @Override
-                        boolean accept(File file) {
-                            return file.name.endsWith(SdkConstants.DOT_ZIP)
-                        }
-                    })
-                    if (splitApkFiles != null) {
-                        splitApkFiles.each { File file ->
-                            if (file.name.startsWith(splitName) && !file.name.contains(abi) && !file.name.startsWith("${splitName}-master")) {
-                                file.delete()
+                if (copyBaseApk.exists()) {
+                    copyBaseApk.delete()
+                }
+                FileUtils.copyFile(baseApk, copyBaseApk)
+                String copyBaseApkPath = copyBaseApk.getAbsolutePath()
+
+                // Delete signature related files
+                runCmd("zip", "-d", copyBaseApkPath, "META-INF/CERT.RSA")
+                runCmd("zip", "-d", copyBaseApkPath, "META-INF/CERT.SF")
+                runCmd("zip", "-d", copyBaseApkPath, "META-INF/MANIFEST.MF")
+
+                Set<String> masterSplitHandleFlags= new HashSet<>()
+                abiList.each { String ABI ->
+                    if (abi != ABI) {
+                        // Delete other ABI's lib
+                        runCmd("zip", "-d", copyBaseApkPath, "lib/${ABI}/**")
+
+                        // Delete other ABI's built-in splits (include master)
+                        dynamicFeaturesNames.each { String splitName ->
+                            if (!masterSplitHandleFlags.contains(splitName)) {
+                                runCmd("zip", "-d", copyBaseApkPath, "assets/qigsaw/${splitName}-master**.zip")
+                                masterSplitHandleFlags.add(splitName)
                             }
+                            runCmd("zip", "-d", copyBaseApkPath, "assets/qigsaw/${splitName}-${ABI}**.zip")
                         }
                     }
                 }
-            }
-            File unsignedBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}-${use7z ? "7z" : "non7z"}-unsigned${SdkConstants.DOT_ANDROID_PACKAGE}")
-            if (!unsignedBaseApk.parentFile.exists()) {
-                unsignedBaseApk.parentFile.mkdirs()
-            }
-            if (use7z) {
-                run7zCmd("7za", "a", "-tzip", unsignedBaseApk.absolutePath, unzipBaseApkDirForAbi.absolutePath + File.separator + "*", "-mx9")
-            } else {
-                ZipUtils.zipFiles(Arrays.asList(unzipBaseApkDirForAbi.listFiles()), unzipBaseApkDirForAbi, unsignedBaseApk, compress)
-            }
-            if (isSigningNeed) {
-                File signedBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}-${use7z ? "7z" : "non7z"}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
-                apkSigner.signApkIfNeed(unsignedBaseApk, signedBaseApk)
-                File destBaseApk = new File(packageAppDir, signedBaseApk.name)
-                if (destBaseApk.exists()) {
-                    destBaseApk.delete()
+
+                // Update base apk cpu abi list file
+                File baseAppCpuAbiListFileForAbi = new File(baseApksDir,"assets/${baseAppCpuAbiListFile.name}")
+                if (!baseAppCpuAbiListFileForAbi.parentFile.exists()) {
+                    baseAppCpuAbiListFileForAbi.parentFile.mkdirs()
                 }
-                FileUtils.copyFile(signedBaseApk, destBaseApk)
-            } else {
-                File destBaseApk = new File(packageAppDir, unsignedBaseApk.name)
-                if (destBaseApk.exists()) {
-                    destBaseApk.delete()
+                if (baseAppCpuAbiListFileForAbi.exists()) {
+                    baseAppCpuAbiListFileForAbi.delete()
                 }
-                FileUtils.copyFile(unsignedBaseApk, destBaseApk)
+                baseAppCpuAbiListFileForAbi.write("abiList=${abi}")
+                // ProcessBuilder execute multi commands
+                File baseAppCpuAbiScript = new File(baseApksDir,"baseAppCpuAbiScript")
+                if (baseAppCpuAbiScript.exists()) {
+                    baseAppCpuAbiScript.delete()
+                }
+                baseAppCpuAbiScript.write("#!/usr/bin/env bash\ncd \$1\nzip -d \$2 \$3\nzip -m \$2 \$3")
+                runCmd("chmod", "755", baseAppCpuAbiScript.getAbsolutePath())
+                runCmd(baseAppCpuAbiScript.getAbsolutePath(), copyBaseApk.getParent(), copyBaseApk.getName(), "assets/${baseAppCpuAbiListFile.name}")
+
+                // Resign apk if need
+                SigningConfig signingConfig = null
+                try {
+                    signingConfig = apkSigner.getSigningConfig()
+                } catch (Throwable ignored) {
+                }
+                boolean isSigningNeed = signingConfig != null && signingConfig.isSigningReady()
+                if (isSigningNeed) {
+                    File signedBaseApk = new File(baseApksDir, "${project.name}-${baseVariant.name.uncapitalize()}-${abi}-signed${SdkConstants.DOT_ANDROID_PACKAGE}")
+                    if (signedBaseApk.exists()) {
+                        signedBaseApk.delete()
+                    }
+                    apkSigner.signApkIfNeed(copyBaseApk, signedBaseApk)
+                    File destBaseApk = new File(packageAppDir, signedBaseApk.name)
+                    if (destBaseApk.exists()) {
+                        destBaseApk.delete()
+                    }
+                    FileUtils.copyFile(signedBaseApk, destBaseApk)
+                } else {
+                    File destBaseApk = new File(packageAppDir, copyBaseApk.name)
+                    if (destBaseApk.exists()) {
+                        destBaseApk.delete()
+                    }
+                    FileUtils.copyFile(copyBaseApk, destBaseApk)
+                }
             }
         }
     }
 
-    static void run7zCmd(String... cmd) {
+    private static void runCmd(String... cmd) {
         try {
             String cmdResult = CommandUtils.runCmd(cmd)
-            SplitLogger.w("Run command successfully, result: " + cmdResult)
+            SplitLogger.w("Run command ${cmd} successfully, result: " + cmdResult)
         } catch (Throwable e) {
-            throw new GradleException("'7za' command is not found, have you install 7zip?", e)
+            SplitLogger.w("Run command ${cmd} error: " + e)
         }
     }
 }

@@ -249,4 +249,8 @@ class AGPCompat {
         return task
     }
 
+    static Task getResguardTask(Project project, String variantName) {
+        String resguardTaskName = "resguard${variantName}"
+        return project.tasks.findByName(resguardTaskName)
+    }
 }

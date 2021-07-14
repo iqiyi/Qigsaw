@@ -64,12 +64,6 @@ def qigsawPath = file("qigsaw/")
 qigsawSplit {
 
     /**
-     * Whether repack base apk with 7z format.
-     * default value is {@code false}
-     */
-    use7z = false
-
-    /**
      * optional，default 'null'
      * if you want to update split version, oldApk must be set.
      */
