@@ -2,6 +2,7 @@ apply plugin: 'groovy'
 
 buildscript {
     repositories {
+        mavenLocal()
         maven { url 'https://jitpack.io' }
         google()
         jcenter()
@@ -37,6 +38,7 @@ sourceSets {
 
 allprojects {
     repositories {
+        mavenLocal()
         maven { url 'https://jitpack.io' }
         google()
         jcenter()

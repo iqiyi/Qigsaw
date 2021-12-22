@@ -87,7 +87,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 dynamicFeaturesNames.add(splitProject.name)
             }
             componentTransform.dynamicFeatureNames = dynamicFeaturesNames
-            File splitManifestParentDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-outputs/manifests")
+            File splitManifestParentDir = project.file("${project.buildDir.absolutePath}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-outputs/manifests")
             componentTransform.splitManifestParentDir = splitManifestParentDir
             android.applicationVariants.all { ApplicationVariant baseVariant ->
                 if (baseVariant.versionName == null || baseVariant.applicationId == null) {

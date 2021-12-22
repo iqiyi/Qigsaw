@@ -27,6 +27,7 @@ package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 import com.android.SdkConstants
 import com.android.build.gradle.api.ApplicationVariant
 import com.android.build.gradle.internal.scope.GlobalScope
+import com.android.build.gradle.options.ProjectOptions
 import com.android.utils.ILogger
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -53,20 +54,32 @@ class AGPCompat {
 
     static File getAapt2FromMavenCompat(def variant) {
         try {
+            def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
+
+            if (versionAGP == VersionNumber.parse("4.2.2")) {
+                return getAapt2FromMaven422(variant)
+            }
+
             Class class_Aapt2MavenUtils = Class.forName("com.android.build.gradle.internal.res.Aapt2MavenUtils")
             Method method_getAapt2FromMaven = class_Aapt2MavenUtils.getDeclaredMethod("getAapt2FromMaven", GlobalScope)
             method_getAapt2FromMaven.setAccessible(true)
-            def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
             def aapt2
-            if(versionAGP >= VersionNumber.parse("4.1.0")){
+            if (versionAGP >= VersionNumber.parse("4.1.0")) {
                 aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.globalScope).singleFile
-            }else{
+            } else {
                 aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.scope.globalScope).singleFile
             }
             return aapt2
         } catch (Throwable e) {
             throw new GradleException("Unable to obtain aapt2", e)
         }
+    }
+
+    static File getAapt2FromMaven422(def variant) {
+        Class class_Aapt2FromMaven = Class.forName("com.android.build.gradle.internal.res.Aapt2FromMaven")
+        Method method_create = class_Aapt2FromMaven.getDeclaredMethod("create", Project, ProjectOptions)
+        method_create.setAccessible(true)
+        return method_create.invoke(null, variant.variantData.globalScope.project, variant.variantData.globalScope.getProjectOptions()).aapt2Directory.singleFile
     }
 
     static File getPackageApplicationDirCompat(Task packageApplicationTask) {
@@ -84,7 +97,7 @@ class AGPCompat {
         try {
             if (versionAGP >= VersionNumber.parse("4.1.0")) {
                 manifestOutputBaseDir = processManifestTask.multiApkManifestOutputDirectory.get().getAsFile().getAbsolutePath()
-            }else{
+            } else {
                 manifestOutputBaseDir = processManifestTask.manifestOutputDirectory.asFile.get()
             }
         } catch (Throwable ignored) {
@@ -110,7 +123,7 @@ class AGPCompat {
             if (versionAGP >= VersionNumber.parse("4.1.0")) {
                 bundleManifestDir = processManifestTask.bundleManifest.get().getAsFile()
 
-            }else{
+            } else {
                 bundleManifestDir = processManifestTask.bundleManifestOutputDirectory
             }
         } catch (Throwable e) {
