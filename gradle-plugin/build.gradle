@@ -1,0 +1,50 @@
+apply plugin: 'groovy'
+
+buildscript {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        google()
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+        classpath 'com.github.dcendents:android-maven-gradle-plugin:2.1'
+    }
+}
+
+
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "com.android.tools.build:gradle:${AGP_VERSION}"
+    implementation 'com.google.code.gson:gson:2.8.2'
+    implementation 'org.dom4j:dom4j:2.0.2'
+    implementation 'org.codehaus.plexus:plexus-utils:3.1.0'
+    implementation gradleApi()
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDir '../buildSrc/src/main/groovy'
+        }
+
+        resources {
+            srcDir '../buildSrc/src/main/resources'
+        }
+    }
+}
+
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+        google()
+        jcenter()
+    }
+}
+
+//apply from: file('../gradle/checkStyle.gradle')
+apply from: file('../gradle/java-artifacts.gradle')
+apply from: file('../gradle/gradle-bintray-upload.gradle')
+apply from: file('../gradle/gradle-maven-upload.gradle')
+

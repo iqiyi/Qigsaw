@@ -18,3 +18,5 @@ project(':splitrequester').projectDir = new File("./qigsaw-android/splitrequeste
 project(':splitreporter').projectDir = new File("./qigsaw-android/splitreporter")
 project(':splitcommon').projectDir = new File("./qigsaw-android/splitcommon")
 project(':splitextension').projectDir = new File("./qigsaw-android/splitextension")
+
+include ':gradle-plugin'
