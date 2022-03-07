@@ -94,7 +94,7 @@ class QigsawProcessManifestTask extends DefaultTask {
         OutputFormat format = OutputFormat.createPrettyPrint()
         format.setEncoding("UTF-8")
         XMLWriter writer = new XMLWriter(
-                new OutputStreamWriter(new FileOutputStream(xmlFile)), format)
+                new OutputStreamWriter(new FileOutputStream(xmlFile), "UTF-8"), format)
         writer.write(document)
         writer.close()
     }
