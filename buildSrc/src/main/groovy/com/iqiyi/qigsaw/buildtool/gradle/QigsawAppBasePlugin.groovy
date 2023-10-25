@@ -64,6 +64,8 @@ class QigsawAppBasePlugin extends QigsawPlugin {
         def android = project.extensions.android
         //create ComponentInfo.class to record Android Component of dynamic features.
         SplitComponentTransform componentTransform = new SplitComponentTransform(project)
+        File splitManifestParentDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-outputs/manifests")
+        componentTransform.splitManifestParentDir = splitManifestParentDir
         SplitResourcesLoaderTransform resourcesLoaderTransform = new SplitResourcesLoaderTransform(project, true)
         android.registerTransform(componentTransform)
 
@@ -87,8 +89,6 @@ class QigsawAppBasePlugin extends QigsawPlugin {
                 dynamicFeaturesNames.add(splitProject.name)
             }
             componentTransform.dynamicFeatureNames = dynamicFeaturesNames
-            File splitManifestParentDir = project.file("${project.buildDir}/${AndroidProject.FD_INTERMEDIATES}/${QIGSAW}/split-outputs/manifests")
-            componentTransform.splitManifestParentDir = splitManifestParentDir
             android.applicationVariants.all { ApplicationVariant baseVariant ->
                 if (baseVariant.versionName == null || baseVariant.applicationId == null) {
                     throw new GradleException("versionName and applicationId must be set in ${project.name}/build.gradle ")
@@ -450,7 +450,7 @@ class QigsawAppBasePlugin extends QigsawPlugin {
             Task splitAssemble = AGPCompat.getAssemble(splitVariant)
             ProcessSplitApkTask processSplitApk = splitProject.tasks.create("processSplitApk${splitVariant.name.capitalize()}", ProcessSplitApkTask)
             processSplitApk.apkSigner = apkSigner
-            processSplitApk.aapt2File = new File(AGPCompat.getAapt2FromMavenCompat(baseVariant), SdkConstants.FN_AAPT2)
+            processSplitApk.aapt2File = new File(AGPCompat.getAapt2FromMavenCompat(baseVariant,splitProject), SdkConstants.FN_AAPT2)
             processSplitApk.releaseSplitApk = QigsawSplitExtensionHelper.isReleaseSplitApk(baseProject)
             processSplitApk.restrictWorkProcessesForSplits = QigsawSplitExtensionHelper.getRestrictWorkProcessesForSplits(baseProject)
             processSplitApk.minApiLevel = minApiLevel
