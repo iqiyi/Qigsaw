@@ -25,8 +25,11 @@
 package com.iqiyi.qigsaw.buildtool.gradle.internal.tool
 
 import com.android.SdkConstants
+import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.api.ApplicationVariant
+import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.internal.scope.GlobalScope
+import com.android.build.gradle.internal.variant.BaseVariantData
 import com.android.utils.ILogger
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -51,16 +54,26 @@ class AGPCompat {
         return mergedAssetsOutputDir
     }
 
-    static File getAapt2FromMavenCompat(def variant) {
+    static File getAapt2FromMavenCompat(def variant, def splitProject) {
+
+        def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
+        if (versionAGP >= VersionNumber.parse("4.2.0")) {
+            return splitProject.getPlugins()
+                    .getPlugin(com.android.build.gradle.internal.plugins.DynamicFeaturePlugin.class)
+                    .projectServices
+                    .aapt2FromMaven
+                    .aapt2Directory
+                    .singleFile
+        }
+
         try {
             Class class_Aapt2MavenUtils = Class.forName("com.android.build.gradle.internal.res.Aapt2MavenUtils")
             Method method_getAapt2FromMaven = class_Aapt2MavenUtils.getDeclaredMethod("getAapt2FromMaven", GlobalScope)
             method_getAapt2FromMaven.setAccessible(true)
-            def versionAGP = VersionNumber.parse(getAndroidGradlePluginVersionCompat())
             def aapt2
-            if(versionAGP >= VersionNumber.parse("4.1.0")){
+            if (versionAGP >= VersionNumber.parse("4.1.0")) {
                 aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.globalScope).singleFile
-            }else{
+            } else {
                 aapt2 = method_getAapt2FromMaven.invoke(null, variant.variantData.scope.globalScope).singleFile
             }
             return aapt2
@@ -84,7 +97,7 @@ class AGPCompat {
         try {
             if (versionAGP >= VersionNumber.parse("4.1.0")) {
                 manifestOutputBaseDir = processManifestTask.multiApkManifestOutputDirectory.get().getAsFile().getAbsolutePath()
-            }else{
+            } else {
                 manifestOutputBaseDir = processManifestTask.manifestOutputDirectory.asFile.get()
             }
         } catch (Throwable ignored) {
@@ -110,7 +123,7 @@ class AGPCompat {
             if (versionAGP >= VersionNumber.parse("4.1.0")) {
                 bundleManifestDir = processManifestTask.bundleManifest.get().getAsFile()
 
-            }else{
+            } else {
                 bundleManifestDir = processManifestTask.bundleManifestOutputDirectory
             }
         } catch (Throwable e) {
@@ -290,6 +303,35 @@ class AGPCompat {
             return constructor.newInstance(adbExecutable, timeOutInMs, iLogger)
         }
         throw new GradleException("Qigsaw has not adapt this AGP version yet, class 'com.android.builder.testing.api.DeviceProvider' is not found!")
+    }
+
+    static File getAdbExecutable(BaseVariantData variantData, Project project) {
+        File adbExecutable = null
+        def versionAGP = VersionNumber.parse(AGPCompat.getAndroidGradlePluginVersionCompat())
+        if (versionAGP < VersionNumber.parse("4.1.0")) {//[ , 4.1.0)
+            try {
+                adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
+            } catch (Throwable ignored) {
+            }
+            try {
+                adbExecutable = variantData.scope.globalScope.sdkComponents.adbExecutableProvider.get()
+            } catch (Throwable e) {
+            }
+        } else if (versionAGP < VersionNumber.parse("4.2.0")) {//[4.1.0 , 4.2.0)
+            try {
+                adbExecutable = variantData.globalScope.sdkComponents.get().adbExecutableProvider.get().getAsFile()
+            } catch (Throwable ignored) {
+            }
+        } else {//[4.2.0 , +]
+            try {
+                adbExecutable = project.getExtensions().getByType(BaseExtension.class).adbExecutable
+            } catch (Throwable ignored) {
+            }
+        }
+        if (adbExecutable == null) {
+            throw new GradleException("> Task :Qigsaw don't support current AGP version, adbExecutable is null!")
+        }
+        return adbExecutable
     }
 
 }

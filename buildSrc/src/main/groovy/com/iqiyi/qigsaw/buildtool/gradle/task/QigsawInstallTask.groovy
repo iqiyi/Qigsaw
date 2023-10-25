@@ -69,19 +69,7 @@ class QigsawInstallTask extends DefaultTask {
     }
 
     void installAboveAGP4() {
-        File adbExecutable = null
-        try {
-            adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
-        } catch (Throwable ignored) {
-            try {
-                adbExecutable = variantData.scope.globalScope.sdkComponents.adbExecutableProvider.get()
-            } catch (Throwable e) {
-                //
-            }
-        }
-        if (adbExecutable == null) {
-            throw new GradleException("> Task :Qigsaw don't support current AGP version, adbExecutable is null!")
-        }
+        File adbExecutable = AGPCompat.getAdbExecutable(variantData, project)
         int timeOutInMs = variantData.scope.globalScope.extension.adbOptions.timeOutInMs
         String projectName = variantData.scope.globalScope.project.name
         Collection<String> installOptions = variantData.scope.globalScope.extension.adbOptions.installOptions
@@ -109,14 +97,7 @@ class QigsawInstallTask extends DefaultTask {
     }
 
     void installAboveAGP41() {
-        File adbExecutable = null
-        try {
-            adbExecutable = variantData.globalScope.sdkComponents.get().adbExecutableProvider.get().getAsFile()
-        } catch (Throwable ignored) {
-        }
-        if (adbExecutable == null) {
-            throw new GradleException("> Task :Qigsaw don't support current AGP version, adbExecutable is null!")
-        }
+        File adbExecutable = AGPCompat.getAdbExecutable(variantData, project)
         int timeOutInMs = variantData.globalScope.extension.adbOptions.timeOutInMs
         String projectName = project.name
         Collection<String> installOptions = variantData.globalScope.extension.adbOptions.installOptions
@@ -145,19 +126,7 @@ class QigsawInstallTask extends DefaultTask {
 
 
     void installBelowAGP4() {
-        File adbExecutable = null
-        try {
-            adbExecutable = variantData.scope.globalScope.sdkHandler.sdkInfo.adb
-        } catch (Throwable ignored) {
-            try {
-                adbExecutable = variantData.scope.globalScope.sdkComponents.adbExecutableProvider.get()
-            } catch (Throwable e) {
-                //
-            }
-        }
-        if (adbExecutable == null) {
-            throw new GradleException("> Task :Qigsaw don't support current AGP version, adbExecutable is null!")
-        }
+        File adbExecutable = AGPCompat.getAdbExecutable(variantData, project)
         int timeOutInMs = variantData.scope.globalScope.extension.adbOptions.timeOutInMs
         String projectName = variantData.scope.globalScope.project.name
         Collection<String> installOptions = variantData.scope.globalScope.extension.adbOptions.installOptions
